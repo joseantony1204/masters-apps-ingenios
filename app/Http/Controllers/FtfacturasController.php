@@ -22,8 +22,62 @@ class FtfacturasController extends Controller
      */
     public function index(Request $request)
     {
+        // 1. Obtenemos el comercio del usuario
+        $user = User::where('persona_id', Auth::user()->persona_id)->first();
+        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+
+        if (!$comercio) {
+            return back()->with('error', 'No se encontró un comercio asociado a este usuario.');
+        }
+
+        // 2. Construimos la consulta base con relaciones
+        $query = Ftfacturas::with([
+            'turnos.terminal.sede',
+            'estado'
+        ]);
+
+        // 3. FILTRO CRÍTICO: Solo facturas que pertenecen a sedes de MI comercio
+        $query->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
+            $q->where('comercio_id', $comercio->id);
+        });
+
+        // 4. Agregamos los datos del cliente (Persona Natural)
+        // Usamos leftJoin para no perder facturas si algo falla en la relación
+        $query->select([
+            'ftfacturas.*', 
+            'p.identificacion',
+            'p.telefonomovil',
+            'p.email',
+            'p.direccion',
+            // Calculamos el total sumando los items de la factura
+            DB::raw("(SELECT SUM(totalapagar) FROM ftdetalles WHERE factura_id = ftfacturas.id) as grand_total"),
+            DB::raw("CONCAT_WS('',UPPER(LEFT(pn.nombre,1)),UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"), 
+            ])
+            ->leftJoin("personas AS p", function($join) {
+                $join->on("p.id", "=", "ftfacturas.model_type_id");
+            })
+            ->leftJoin("personasnaturales AS pn", "p.id", "=", "pn.persona_id");
+
+        // 5. Filtros adicionales opcionales (por si quieres buscar por número o fecha)
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('ftfacturas.numero', 'LIKE', "%$search%")
+                ->orwhere('p.identificacion','LIKE', explode(' ','%'.$search.'%'))
+                ->orWhere('pn.nombre','LIKE', explode(' ','%'.$search.'%'))
+                ->orWhere('pn.segundonombre','LIKE', explode(' ','%'.$search.'%'))
+                ->orWhere('pn.apellido','LIKE', explode(' ','%'.$search.'%'))
+                ->orWhere('pn.segundoapellido','LIKE', explode(' ','%'.$search.'%'));
+            });
+        }
+
+        $ftfacturas = $query->orderBy('ftfacturas.fecha', 'DESC')->get();
+
         return Inertia::render('ftfacturas/index', [
-            'ftfacturas' => Ftfacturas::whereNull('deleted_at')->get() 
+            'ftfacturas' => $ftfacturas,
+            'filters' => $request->only(['search'])
         ]);
     }
 

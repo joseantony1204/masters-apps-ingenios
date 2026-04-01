@@ -79,7 +79,7 @@ class Ftfacturas extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function turno()
+    public function turnos()
     {
         return $this->belongsTo(\App\Models\Ftturnos::class, 'turno_id', 'id');
     }

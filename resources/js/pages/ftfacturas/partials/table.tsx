@@ -1,119 +1,125 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Ftfacturas  } from '@/types';
-import { useForm } from '@inertiajs/react';
+import { Ftfacturas } from '@/types';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    ftfacturas: Ftfacturas[];
+    ftfacturas: any[]; // Usamos any temporalmente por los campos agregados en el join
 }
 
 export default function Table({ ftfacturas }: Props) {
     const tableRef = useRef<HTMLTableElement>(null);
+
     useEffect(() => {
         if (tableRef.current) {
-          initDataTable(tableRef.current);
+            initDataTable(tableRef.current);
         }
     }, []);
-    const { delete: destroy } = useForm();
 
-    const handleDelete = (id: number) => {
-        if (confirm('¿Seguro que quiere eliminar este elemento?')) {
-            destroy(route('ftfacturas.destroy', id));
-        }
-    };
-    
-    const handleEdit = (id: number) => {
-        router.visit(route('ftfacturas.edit', id));
-    };
-
-    const handleView = (id: number) => {
-        router.visit(route('ftfacturas.show', id));
-    };
-    
+    const handleEdit = (id: number) => router.visit(route('ftfacturas.edit', id));
+    const handleView = (id: number) => router.visit(route('ftfacturas.show', id));
 
     return (
-        <>
-            <table ref={tableRef} className="table table-hover">
-                <thead>
+        <div className="table-responsive">
+            <table ref={tableRef} className="table table-hover align-middle">
+                <thead className="table-light">
                     <tr>
-                        <th className="text-center" style={{ width: '1%' }}>Editar</th>
-                        <th className="text-left" style={{ width: '2%' }}>Item</th>
-                        
-									<th >Codigoseguridad</th>
-									<th >Numero</th>
-									<th >Fecha</th>
-									<th >Fechanavencimiento</th>
-									<th >Observaciones</th>
-									<th >Tabla Id</th>
-									<th >Referencia Id</th>
-									<th >Origen Id</th>
-									<th >Destino Id</th>
-									<th >Tipo Id</th>
-									<th >Turno Id</th>
-									<th >Estado Id</th>
-									<th >Comercio Id</th>
-									<th >Created By</th>
-									<th >Updated By</th>
-									<th >Deleted By</th>
-
+                        <th className="text-center" style={{ width: '50px' }}>#</th>
+                        <th>Factura / Fecha</th>
+                        <th>Cliente</th>
+                        <th>Sede / Caja</th>
+                        <th className="text-end">Total</th>
+                        <th>Estado</th>
+                        <th className="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                {ftfacturas.map((ftfacturas, index) => (
-                    <tr key={ftfacturas.id}>
-                        <td className="text-center">
-                        <ul className="list-inline mb-0">
-                            {/*
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleView(ftfacturas.id)}
-                                    className="avtar avtar-s btn-link-info btn-pc-default">
-                                    <i className="ti ti-eye f-20"></i>
-                                </button>
-                            </li>
-                            */}
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleEdit(ftfacturas.id)}
-                                    className="avtar avtar-s btn-link-success btn-pc-default">
-                                    <i className="ti ti-edit f-20"></i>
-                                </button>
-                            </li>
-                            {/*
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleDelete(ftfacturas.id)}
-                                    className="avtar avtar-s btn-link-danger btn-pc-default">
-                                    <i className="ti ti-trash f-20"></i>
-                                </button>
-                            </li>
-                            */}
-                        </ul>
-                        </td>
-                        <td className="text-center">{index + 1}</td>
-                        
-										<td >{ ftfacturas.codigoseguridad }</td>
-										<td >{ ftfacturas.numero }</td>
-										<td >{ ftfacturas.fecha }</td>
-										<td >{ ftfacturas.fechanavencimiento }</td>
-										<td >{ ftfacturas.observaciones }</td>
-										<td >{ ftfacturas.tabla_id }</td>
-										<td >{ ftfacturas.referencia_id }</td>
-										<td >{ ftfacturas.origen_id }</td>
-										<td >{ ftfacturas.destino_id }</td>
-										<td >{ ftfacturas.tipo_id }</td>
-										<td >{ ftfacturas.turno_id }</td>
-										<td >{ ftfacturas.estado_id }</td>
-										<td >{ ftfacturas.comercio_id }</td>
-										<td >{ ftfacturas.created_by }</td>
-										<td >{ ftfacturas.updated_by }</td>
-										<td >{ ftfacturas.deleted_by }</td>
+                    {ftfacturas.map((item, index) => (
+                        <tr key={item.id}>
+                            <td className="text-center text-muted">{index + 1}</td>
+                            
+                            {/* Información de la Factura */}
+                            <td>
+                                <div className="d-flex flex-column">
+                                    <span className="fw-bold text-dark">
+                                        #{item.numero === "0" ? 'Borrador' : item.numero}
+                                    </span>
+                                    <small className="text-muted">
+                                        <i className="ti ti-calendar me-1"></i>{item.fecha}
+                                    </small>
+                                </div>
+                            </td>
 
-                    </tr>
+                            {/* Información del Cliente */}
+                            <td>
+                                <div className="d-flex align-items-center">
+                                    <div className="avtar avtar-s bg-light-primary text-primary me-2">
+                                        {item.round || item.nombres?.charAt(0)}
+                                    </div>
+                                    <div className="d-flex flex-column">
+                                        <span className="fw-bold">{item.nombres} {item.apellidos}</span>
+                                        <small className="text-muted">{item.identificacion}</small>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {/* Información de Sede y Turno */}
+                            <td>
+                                <div className="d-flex flex-column">
+                                    <span className="small fw-bold">{item.turnos?.terminal?.sede?.nombre || 'N/A'}</span>
+                                    <small className="badge bg-light-secondary text-secondary" style={{width: 'fit-content'}}>
+                                        {item.turnos?.terminal?.nombre || 'Sin Terminal'}
+                                    </small>
+                                </div>
+                            </td>
+
+                            {/* Monto Total (Si no tienes el campo grand_total en el JSON, ajustarlo) */}
+                            <td className="text-end">
+                                <span className="fw-bold text-dark">
+                                    ${new Intl.NumberFormat().format(item.grand_total || 0)}
+                                </span>
+                            </td>
+
+                            {/* Estado con Badge Dinámico */}
+                            <td>
+                                <span className={`badge rounded-pill ${
+                                    item.estado_id === 937 ? 'bg-light-warning text-warning' : 
+                                    item.estado_id === 11 ? 'bg-light-success text-success' : 'bg-light-secondary'
+                                }`}>
+                                    <i className={`${item.estado?.observacion || 'ti ti-circle'} me-1`}></i>
+                                    {item.estado?.nombre || 'Desconocido'}
+                                </span>
+                            </td>
+
+                            {/* Acciones */}
+                            <td className="text-center">
+                                <div className="d-flex justify-content-center gap-1">
+                                    <button
+                                        onClick={() => handleView(item.id)}
+                                        className="btn btn-sm btn-icon btn-link-info"
+                                        title="Ver Detalle"
+                                    >
+                                        <i className="ti ti-eye fs-4"></i>
+                                    </button>
+                                    <button
+                                        onClick={() => handleEdit(item.id)}
+                                        className="btn btn-sm btn-icon btn-link-success"
+                                        title="Editar"
+                                    >
+                                        <i className="ti ti-edit fs-4"></i>
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-icon btn-link-secondary"
+                                        title="Imprimir"
+                                    >
+                                        <i className="ti ti-printer fs-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                     ))}
                 </tbody>
             </table>
-        </> 
+        </div>
     );
-  }
+}
