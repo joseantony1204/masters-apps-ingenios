@@ -1,0 +1,184 @@
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\{Auth,DB,Hash};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
+
+    static $rules = [
+		'username' => 'required',
+        'perfil_id' => 'required',
+		'persona_id' => 'required',
+    ];
+
+    protected $with = ['personas.personasnaturales'];
+    protected $appends = ['modulos','nombreCompleto'];
+    
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+
+    protected $perPage = 10000;
+    public $timestamps = false;
+    protected $fillable = ['username','telefonomovil','avatar','email', 'password','alias','perfil_id','persona_id','estado_id','updated_by'];
+
+    public function perfil(){
+        return $this->belongsTo('App\Models\Cfmaestra','perfil_id', 'id');
+    }
+
+    public function personas(){
+        return $this->belongsTo('App\Models\Personas','persona_id', 'id');
+    }
+
+    public function estado(){
+        return $this->belongsTo('App\Models\Cfmaestra','estado_id', 'id');
+    }
+    
+    public function sedes()
+    {
+        return $this->belongsToMany('App\Models\Cfsedes', 'cfsedesusers', 'usuario_id', 'sede_id')->withPivot('predeterminada','orden','created_by');
+    }
+
+    // Relación "A través de" (Has One Through) o simple acceso
+    public function comercio()
+    {
+        // Buscamos el comercio donde la persona_id sea la misma del usuario
+        return $this->hasOne(Comercios::class, 'persona_id', 'persona_id');
+    }
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    public static function findByTelefonoMovil($telefonomovil){
+        $data = User::select(['id', 'username','email'])
+        ->where('telefonomovil',$telefonomovil)
+        ->first();
+
+        if (!$data) {
+            return;
+        }
+
+        return $data->id;
+    }
+
+    public function check($route){
+        return 'true';
+
+        $sw = $this->getroute($route);
+        if($sw===1)
+            return true;
+        else
+            return false;
+    }
+
+    public function getroute($route){
+        $var = explode('.',$route);
+        //DB::enableQueryLog();
+        try {
+            $data = DB::table('cfmaestras AS v')
+            ->select(['v.codigo','p.estado'])
+            ->join('sgpermisos AS p', 'p.vista_id', '=', 'v.id')
+            ->join('sgrolesperfiles AS rp', 'rp.id', '=' ,'p.rolperfil_id')
+            ->join('cfmaestras AS pr', 'pr.id', '=', 'rp.perfil_id')
+            ->join('cfmaestras AS r', 'r.id', '=', 'rp.rol_id')
+            ->join('users AS u', 'pr.id', '=', 'u.perfil_id')
+            ->where('v.codigo', $var[1])
+            ->where('r.codigo', $var[0])
+            ->where('u.id', Auth::user()->id)
+            ->first();
+            //dd(DB::getQueryLog());
+            if($data->estado===1)
+                $msg = 1;
+            else
+                $msg = 0;
+        }catch (\Exception $e){
+            $msg = 0;
+        }
+        return $msg;
+    }
+
+    public function modulosmenu($modulos = 2){       
+        $defaultview = 'index';        
+        $list = DB::table('cfmaestras AS m')
+        ->select(['m.id', 'm.nombre', 'm.observacion AS icon'])
+        ->join('cfmaestras AS r', 'r.jerarquia', '=', 'm.id')
+        ->join('cfmaestras AS v', 'v.jerarquia', '=', 'r.id')
+        ->join('sgpermisos AS pe', 'pe.vista_id', '=', 'v.id')
+        ->join('sgrolesperfiles AS rp',  'rp.id', '=', 'pe.rolperfil_id')
+        ->join('cfmaestras AS pr', 'pr.id', '=', 'rp.perfil_id')
+        ->join('users AS u', 'pr.id', '=', 'u.perfil_id')
+        ->where('m.padre', $modulos)
+        ->where('m.visible', 1)
+        ->where('v.codigo', $defaultview)
+        ->where('pe.estado', 1)
+        ->where('u.id', Auth::user()->id)
+        ->orderBy('m.orden', 'ASC')
+        ->groupBy(['m.id','m.nombre', 'icon'])
+        
+        ->get();
+        return($list);
+    }
+
+    public function getModulosAttribute(){
+        return $this->modulosmenu();
+    }
+
+    public function getNombreCompletoAttribute()
+    {
+        return "{$this->personas->personasnaturales->nombre}";
+    }
+
+    public function getroles($modulo,$roles = 3){ 
+        $defaultview = 'index';        
+        $list = DB::table('cfmaestras AS r')
+        ->select(['r.id', 'r.codigo', 'r.nombre', 'v.codigo AS index', 'r.observacion AS icon'])
+        ->join('cfmaestras AS v', 'v.jerarquia', '=', 'r.id')
+        ->join('sgpermisos AS pe', 'pe.vista_id', '=', 'v.id')
+        ->join('sgrolesperfiles AS rp',  'rp.id', '=', 'pe.rolperfil_id')
+        ->join('cfmaestras AS pr', 'pr.id', '=', 'rp.perfil_id')
+        ->join('users AS u', 'pr.id', '=', 'u.perfil_id')
+        ->where('r.padre', $roles)
+        ->where('r.jerarquia', $modulo)
+        ->where('r.visible', 1)
+        ->where('v.codigo', $defaultview)
+        ->where('pe.estado', 1)
+        ->where('u.id', Auth::user()->id)
+        ->orderBy('r.orden', 'ASC')
+        ->groupBy(['r.id', 'r.codigo', 'r.nombre', 'index', 'icon'])        
+        ->get();
+        return($list);    
+    }
+}

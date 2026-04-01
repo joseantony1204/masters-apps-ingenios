@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * Class Comercios
+ *
+ * @property $id
+ * @property $nombre
+ * @property $objetocomercial
+ * @property $persona_id
+ * @property $observaciones
+ * @property $created_at
+ * @property $created_by
+ * @property $updated_at
+ * @property $updated_by
+ * @property $deleted_at
+ * @property $deleted_by
+ *
+ * @property Persona $persona
+ * @property Cfsede[] $cfsedes
+ * @package App
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ */
+class Comercios extends Model
+{
+    use SoftDeletes;
+
+    protected $perPage = 20;
+    static $rules = [
+			'nombre' => 'required',
+			'persona_id' => 'required',
+			'created_by' => 'required',];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = ['nombre', 'objetocomercial', 'persona_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
+
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function persona()
+    {
+        return $this->belongsTo(\App\Models\Personas::class, 'persona_id', 'id');
+    }
+    
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function sedes()
+    {
+        return $this->hasMany(\App\Models\Cfsedes::class, 'comercio_id')->where('estado', 1);
+    }
+    
+}

@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class PersonasRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+			'nombre' => 'required',
+			'apellido' => 'required',
+			'fechanacimiento' => 'required',
+			'sexo_id' => 'required',
+			
+        ];
+    }
+
+    public function messages(){
+        return [
+            'nombre.required' => 'El campo nombre obligatorio',
+            'apellido.required' => 'El campo apellido es obligatorio',
+            'fechanacimiento.required' => 'El campo fecha nacimiento es obligatorio',
+            'sexo_id.required' => 'El campo sexo es obligatorio',
+           
+        ];
+    }
+}
