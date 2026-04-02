@@ -46,81 +46,104 @@ export default function Index({ ftfacturas }: Props) {
        
         {/* --- MINI DASHBOARD STATS --- */}
         <div className="row g-3 mb-4">
-            <div className="col-xxl-8">
+            <div className="col-xxl-9">
                 <div className="row g-3">
-                    {/* Tarjeta: Total */}
-                    <div className="col-md-6 col-lg-4">
-                        <div className="card shadow-none border mb-0">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center justify-content-between mb-3">
-                                    <h6 className="mb-0">Ventas Totales</h6>
-                                    <div className="avtar avtar-s bg-light-primary text-primary">
-                                        <i className="ti ti-files fs-5"></i>
+                    {/* Tarjeta: Ventas Totales */}
+                    <div className="col-md-4">
+                        <div className="card border-0 shadow-sm border-start border-primary  h-100 position-relative overflow-hidden">
+                            <div className="card-body p-3">
+                                <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                                    Ventas Totales
+                                </small>
+                                <h3 className="fw-bold mb-0 text-dark mt-1">
+                                    {formatCurrency(montoTotal)}
+                                </h3>
+                                <p className="text-muted mb-0 mt-1 small">
+                                    <span className="fw-bold text-primary">{totalFacturas}</span> facturas generadas
+                                </p>
+                                {/* Icono posicionado para que no desplace el texto */}
+                                <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+                                    <div className="bg-light-primary text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px', opacity: '0.8' }}>
+                                        <i className="ti ti-files fs-3"></i>
                                     </div>
                                 </div>
-                                <h4 className="mb-1">{formatCurrency(montoTotal)}</h4>
-                                <p className="text-muted mb-0 small"><span className="fw-bold text-primary">{totalFacturas}</span> facturas generadas</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Tarjeta: Pagadas */}
-                    <div className="col-md-6 col-lg-4">
-                        <div className="card shadow-none border mb-0">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center justify-content-between mb-3">
-                                    <h6 className="mb-0">Pagadas</h6>
-                                    <div className="avtar avtar-s bg-light-success text-success">
-                                        <i className="ti ti-check fs-5"></i>
+                    <div className="col-md-4">
+                        <div className="card border-0 shadow-sm border-start border-success h-100 position-relative overflow-hidden">
+                            <div className="card-body p-3">
+                                <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                                    Pagadas
+                                </small>
+                                <h3 className="fw-bold mb-0 text-dark mt-1">
+                                    {formatCurrency(montoPagado)}
+                                </h3>
+                                <p className="text-muted mb-0 mt-1 small">
+                                    <span className="fw-bold text-success">{pagadas.length}</span> cobradas exitosamente
+                                </p>
+                                <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+                                    <div className="bg-light-success text-success rounded-circle d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px', opacity: '0.8' }}>
+                                        <i className="ti ti-circle-check fs-3"></i>
                                     </div>
                                 </div>
-                                <h4 className="mb-1">{formatCurrency(montoPagado)}</h4>
-                                <p className="text-muted mb-0 small"><span className="fw-bold text-success">{pagadas.length}</span> cobradas exitosamente</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Tarjeta: Pendientes/Vencidas */}
-                    <div className="col-md-12 col-lg-4">
-                        <div className="card shadow-none border mb-0">
-                            <div className="card-body">
-                                <div className="d-flex align-items-center justify-content-between mb-3">
-                                    <h6 className="mb-0">Pendientes</h6>
-                                    <div className="avtar avtar-s bg-light-danger text-danger">
-                                        <i className="ti ti-clock fs-5"></i>
+                    {/* Tarjeta: Pendientes */}
+                    <div className="col-md-4">
+                        <div className="card border-0 shadow-sm border-start border-danger h-100 position-relative overflow-hidden">
+                            <div className="card-body p-3">
+                                <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                                    Pendientes
+                                </small>
+                                <h3 className="fw-bold mb-0 text-dark mt-1">
+                                    {formatCurrency(montoVencido)}
+                                </h3>
+                                <p className="text-muted mb-0 mt-1 small">
+                                    <span className="fw-bold text-danger">{vencidas.length}</span> por recaudar
+                                </p>
+                                <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+                                    <div className="bg-light-danger text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px', opacity: '0.8' }}>
+                                        <i className="ti ti-clock fs-3"></i>
                                     </div>
                                 </div>
-                                <h4 className="mb-1">{formatCurrency(montoVencido)}</h4>
-                                <p className="text-muted mb-0 small"><span className="fw-bold text-danger">{vencidas.length}</span> por recaudar</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Tarjeta lateral: Resumen de Cartera */}
-            <div className="col-xxl-4">
-                <div className="card bg-primary text-white mb-0 h-100">
-                    <div className="card-body d-flex flex-column justify-content-between">
-                        <div>
-                            <div className="d-flex align-items-center gap-2 mb-3">
-                                <div className="avtar avtar-s bg-white bg-opacity-10">
-                                    <i className="ti ti-wallet text-white fs-5"></i>
-                                </div>
-                                <p className="mb-0">Total recaudable</p>
+            {/* Tarjeta lateral: Resumen de Cartera (Optimizada) */}
+            <div className="col-xxl-3">
+                <div className="card bg-primary text-white border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div className="card-body p-3">
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                            <div className="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '44px', height: '44px' }}>
+                                <i className="ti ti-wallet text-white fs-5"></i>
                             </div>
-                            <h3 className="text-white mb-3">{formatCurrency(montoTotal)}</h3>
-                            
-                            <div className="d-flex justify-content-between small mb-1">
-                                <span>Progreso de cobro</span>
-                                <span>{montoTotal > 0 ? Math.round((montoPagado / montoTotal) * 100) : 0}%</span>
-                            </div>
-                            <div className="progress bg-white bg-opacity-20" style={{ height: '8px' }}>
-                                <div 
-                                    className="progress-bar bg-warning" 
-                                    style={{ width: `${montoTotal > 0 ? (montoPagado / montoTotal) * 100 : 0}%` }}
-                                ></div>
-                            </div>
+                            <small className="text-white text-opacity-75 text-uppercase fw-bold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                                Total recaudable
+                            </small>
+                        </div>
+                        
+                        <h3 className="text-white fw-bold mb-3">
+                            {formatCurrency(montoTotal)}
+                        </h3>
+                        
+                        <div className="d-flex justify-content-between mb-1" style={{ fontSize: '11px' }}>
+                            <span className="text-white text-opacity-75">Progreso de cobro</span>
+                            <span className="fw-bold">{montoTotal > 0 ? Math.round((montoPagado / montoTotal) * 100) : 0}%</span>
+                        </div>
+                        
+                        <div className="progress bg-white bg-opacity-20" style={{ height: '6px' }}>
+                            <div 
+                                className="progress-bar bg-warning" 
+                                style={{ width: `${montoTotal > 0 ? (montoPagado / montoTotal) * 100 : 0}%` }}
+                            ></div>
                         </div>
                     </div>
                 </div>

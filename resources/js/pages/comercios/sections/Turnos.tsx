@@ -9,7 +9,7 @@ interface TurnoProps {
     observaciones: string;
     baseinicial: number;
     fecha: string; 
-    fechaapertura: string; 
+    fechanaapertura: string; 
     fechanacierre?: string;
     terminal_id: string | number; 
     estado_id: number; 
@@ -40,7 +40,7 @@ export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
         observaciones: '',
         baseinicial: 0,
         fecha: new Date().toISOString().split('T')[0],
-        fechaapertura: '', 
+        fechanaapertura: '', 
         terminal_id: '',
         estado_id: 924, 
     });

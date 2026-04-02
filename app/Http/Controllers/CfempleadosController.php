@@ -171,7 +171,7 @@ class CfempleadosController extends Controller
         // 3. Consultar productos disponibles en esas sedes que NO estén asignados ya
         $serviciosDisponibles = Productos::with('sede')
         ->whereIn('sede_id', $sedesIds)
-        ->where('tipo_id', 855) // Solo servicios
+        ->where('tipo_id', '<>' ,854) // Solo servicios y combos
         ->whereNotIn('id', $serviciosActualesIds)
         ->where('estado_id', 858) // Opcional: solo activos
         ->get(['id', 'nombre', 'preciosalida', 'duracion','sede_id']); // Traer solo lo necesario para la modal

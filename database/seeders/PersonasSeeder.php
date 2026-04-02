@@ -29,7 +29,15 @@ class PersonasSeeder extends Seeder
         ];
 
         $dataSedes = [
-            ['nombre' => 'SEDE 1', 'direccion' => 'CALLE 1', 'comercio_id' =>1],
+            ['nombre' => 'SEDE 1', 'ciudad'=>'RCH', 'direccion' => 'CALLE 1', 'comercio_id' =>1],
+        ];
+
+        $dataResoluciones = [
+            ['numero' => '123456789', 'fecha'=>Carbon::create('2000/01/01'), 'prefijo' => 'SETT', 'desde' => '1', 'hasta' => '500', 'advertirescacez'=>'1', 'created_by' => 1, 'comercio_id' =>1],
+        ];
+
+        $dataTerminales = [
+            ['nombre' => 'Caja 1', 'sede_id' => 1, 'resolucion_id' => 1, 'created_by' => 1],
         ];
 
         foreach ($dataPersonas as $persona) {
@@ -63,6 +71,14 @@ class PersonasSeeder extends Seeder
 
         foreach ($dataSedesUsers as $sedeuser) {
             DB::table('cfsedesusers')->insert($sedeuser);
+        };
+
+        foreach ($dataResoluciones as $resolucion) {
+            DB::table('ftresoluciones')->insert($resolucion);
+        };
+
+        foreach ($dataTerminales as $terminal) {
+            DB::table('ftterminales')->insert($terminal);
         };
     }
 }

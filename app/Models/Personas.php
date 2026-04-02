@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property $deleted_by
  *
  * @property Personasjuridica[] $personasjuridicas
- * @property Personasnaturale[] $personasnaturales
+ * @property Personasnaturales[] $personasnaturales
  * @property User $user
  * @package App
  * @mixin \Illuminate\Database\Eloquent\Builder

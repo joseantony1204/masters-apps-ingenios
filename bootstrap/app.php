@@ -23,6 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // Añade esto para que las rutas API reconozcan la sesión del usuario logueado en la web
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+        ]);
+
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);

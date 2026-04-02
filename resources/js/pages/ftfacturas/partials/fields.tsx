@@ -2,6 +2,8 @@ import { Ftfacturas } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
+import Modal from '@/components/ui/Modal';
+import * as bootstrap from 'bootstrap';
 
 interface Props {
     data: any;
@@ -16,8 +18,7 @@ interface Props {
     turnosList: any[];
 }
 
-
-export default function Fields({ data, setData, errors, cita, comercio, turnoActivo, turnosList, estadosList, metodospagosList }: Props) {
+export default function Fields({ data, setData, errors, cita, comercio, sedePredeterminada, turnoActivo, turnosList, estadosList, metodospagosList }: Props) {
     // Al inicio de tu componente o donde manejes el modal
     const inputBusquedaRef = React.useRef<HTMLInputElement>(null);
     // Al cargar, si hay un turno activo y el form no tiene ID, lo asignamos
@@ -272,11 +273,123 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
         }
     };
 
+    // ... dentro de tu función Index o Create ...
+    const [showTurnoModal, setShowTurnoModal] = useState(false);
+    // Hook para el Turno (NUEVO - con nombres únicos)
+    const { 
+        data: turnoData, 
+        setData: setTurnoData, 
+        post: postTurno, 
+        processing: processingTurno, 
+        errors: turnoErrors, 
+        reset: resetTurno 
+    } = useForm({
+        codigo: 'TRN-001',
+        baseinicial: '',
+        descripcion: '',
+        terminal_id: '', 
+    });
+
+    const handleAbrirTurno = (e?: React.MouseEvent | React.FormEvent) => {
+        // Prevenimos que el click afecte al formulario de la factura de fondo
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    
+        // Validación básica antes de enviar
+        if (!turnoData.terminal_id || !turnoData.baseinicial) {
+            alert("Por favor, selecciona una terminal e ingresa la base inicial.");
+            return;
+        }
+    
+        postTurno(route('ftturnos.store'), {
+            onSuccess: () => {
+                setShowTurnoModal(false);
+                resetTurno('codigo', 'baseinicial', 'descripcion', 'terminal_id');
+                // Aquí podrías disparar un mensaje de éxito con Toastr o Swal
+            },
+            onError: (errors) => {
+                console.log("Errores recibidos del servidor:", errors);
+            },
+            preserveScroll: true,
+        });
+    };
+
+    // Nuevo formulario para creación rápida de clientes
+    const { 
+        data: nuevoClienteData, 
+        setData: setNuevoClienteData, 
+        post: postNuevoCliente, 
+        processing: processingNuevoCliente, 
+        errors: nuevoClienteErrors, 
+        reset: resetNuevoCliente,
+        setError
+    } = useForm({
+        nombre: '',
+        apellido: '',
+        fechanacimiento: '1990-01-01',
+        sexo_id: 48,
+        tipoidentificacion_id: 10,
+        identificacion: '',
+        email: '',
+        telefonomovil: '',
+    });
+
+    // Estado para alternar entre búsqueda y registro
+    const [modoRegistro, setModoRegistro] = useState(false);
+    const handleCrearCliente = async (e: React.FormEvent) => {
+        if (e) e.preventDefault();
+        
+        // Usamos axios para tener control total del JSON de respuesta
+        try {
+            const response = await axios.post(route('api.personas.store'), nuevoClienteData);
+            
+            if (response.data.data_created) {
+                const cliente = response.data.data_created;
+                
+                // 1. Seleccionamos al cliente en la factura
+                handleSelectCliente(cliente, 922);
+                
+                // 2. Limpieza de interfaz
+                setModoRegistro(false);
+                setTermino('');
+                resetNuevoCliente();
+                
+                // 3. Cerrar modal
+                const modalElement = document.getElementById('modalSeleccionarCliente');
+                if (modalElement) {
+                    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
+                    bootstrapModal?.hide();
+                }
+                
+                // Opcional: Notificación de éxito
+                //alert("Cliente creado y seleccionado");
+            }
+        } catch (error: any) {
+            if (error.response && error.response.status === 422) {
+                const serverErrors = error.response.data.errors;
+                
+                // Limpiar errores previos (opcional pero recomendado)
+                // clearErrors(); // Si también lo desestructuras de useForm
+        
+                Object.keys(serverErrors).forEach(key => {
+                    // setError(campo, mensaje)
+                    // Usamos [0] porque Laravel devuelve un array de mensajes por campo
+                    setError(key as any, serverErrors[key][0]); 
+                });
+            } else {
+                console.error("Error inesperado:", error);
+            }
+        }    
+        
+    };
+
+    
+
     return (
     <>
-        <div className="row">
-            
-                       
+        <div className="row">  
             <div className="col-md-3">
                 <div className="form-group">
                     <label htmlFor="numero">Numero</label>
@@ -324,23 +437,19 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                     {errors.fechanavencimiento && <div className="invalid-feedback" role="alert"><strong>{errors.fechanavencimiento}</strong></div>}
                 </div>
             </div>  
-
             <div className="col-md-3">
                 <label className="fw-bold small text-muted mb-1">Turno de caja</label>
                 {turnoActivo ? (
-                    <div className="input-group">
-                        <span className="input-group-text bg-light border-0">
-                            <i className="ti ti-device-floppy text-primary"></i>
+                    <div className="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span className="input-group-text bg-white border-0">
+                            <i className="ti ti-device-floppy text-primary fs-4"></i>
                         </span>
                         <select 
-                            className={`form-select shadow-none fw-bold border-0 bg-light ${errors.turno_id ? 'is-invalid' : ''}`}
+                            className={`form-select border-0 fw-bold bg-white ${errors.turno_id ? 'is-invalid' : ''}`}
                             value={data.turno_id}
                             onChange={e => setData('turno_id', e.target.value)}
-                            style={{ borderRadius: '0 10px 10px 0' }}
+                            style={{ fontSize: '13px' }}
                         >
-                            {/* IMPORTANTE: turnosList ahora es un Array de objetos enviado desde el Controller.
-                            Accedemos a t.id para el valor y t.codigo para la etiqueta.
-                            */}
                             {Array.isArray(turnosList) ? (
                                 turnosList.map((t: any) => (
                                     <option key={t.id} value={t.id}>
@@ -348,18 +457,29 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                                     </option>
                                 ))
                             ) : (
-                                // Fallback por si llega el objeto único
                                 <option value={turnoActivo.id}>{turnoActivo.codigo}</option>
                             )}
                         </select>
-                        {errors.turno_id && <div className="invalid-feedback d-block">{errors.turno_id}</div>}
                     </div>
                 ) : (
-                    <div className="form-control border-0 bg-light-danger text-danger fw-bolder py-2 rounded-3 d-flex align-items-center">
-                        <i className="ti ti-circle-x-filled me-2 fs-4"></i>
-                        SIN TURNO EN ESTA SEDE
+                    <div className="d-flex flex-column gap-2">
+                        {/* Botón de acción principal con estilo dashed */}
+                        <button 
+                            type="button"
+                            className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm"
+                            onClick={() => setShowTurnoModal(true)}
+                            style={{ 
+                                borderStyle: 'dashed', 
+                                borderWidth: '2px',
+                                backgroundColor: '#fff5f5' 
+                            }}
+                        >
+                            <i className="ti ti-plus fs-4"></i>
+                            <span className="fw-bold small">SIN TURNOS, ABRE UNO AQUÍ</span>
+                        </button>
                     </div>
                 )}
+                {errors.turno_id && <div className="text-danger small mt-1 fw-bold">{errors.turno_id}</div>}
             </div>
 
             {/* --- SECCIÓN 2: ORIGEN Y DESTINO (POLIMÓRFICO) --- */}
@@ -610,7 +730,6 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                                 required
                             >
                             <option value="">Elige...</option>
-                            <option value="937">Abierta</option>
                             {Object.entries(estadosList).map(([key, label]) => (
                                 <option key={key} value={key}>{label}</option>
                             ))}
@@ -627,7 +746,6 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                                 required
                             >
                             <option value="">Elige...</option>
-                            <option value="929">Efectivo</option>
                             {Object.entries(metodospagosList).map(([key, label]) => (
                                 <option key={key} value={key}>{label}</option>
                             ))}
@@ -671,86 +789,186 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header bg-primary text-white">
                         <h5 className="modal-title fw-bold text-white">
-                            <i className="ti ti-user-search me-2"></i>Busqueda de clientes
+                            <i className={modoRegistro ? "ti ti-user-plus me-2" : "ti ti-user-search me-2"}></i>
+                            {modoRegistro ? 'Registrar Cliente Nuevo' : 'Búsqueda de clientes'}
                         </h5>
-                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" onClick={() => setModoRegistro(false)}></button>
                     </div>
                     
                     <div className="modal-body p-4">
-                        <div className="form-group mb-4">
-                            <label className="form-label fw-bold small text-muted">Parametros aceptados (nombres, apellidos, documento, email, telefono)</label>
-                            <div className="input-group input-group-merge shadow-sm">
-                                <span className="input-group-text bg-light border-0">
-                                    {buscando ? (
-                                        <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
-                                    ) : (
-                                        <i className="ti ti-search text-muted"></i>
-                                    )}
-                                </span>
-                                <input 
-                                    ref={inputBusquedaRef}
-                                    type="text" 
-                                    className="form-control border-0 bg-light" 
-                                    placeholder="Escribe al menos 3 caracteres..." 
-                                    value={termino}
-                                    onChange={(e) => buscarClientes(e.target.value)}
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-
-                        {/* Lista de Resultados */}
-                        <div className="results-container" style={{ minHeight: '200px', maxHeight: '400px', overflowY: 'auto' }}>
-                            {mostrarSugerencias && resultadosClientes.length > 0 ? (
-                                <div className="list-group list-group-flush border rounded-1">
-                                    {resultadosClientes.map((cliente) => (
-                                        <button 
-                                            key={cliente.id}
-                                            type="button" 
-                                            className="list-group-item list-group-item-action py-3 d-flex align-items-center"
-                                            onClick={() => {
-                                                handleSelectCliente(cliente, 922);
-                                                setMostrarSugerencias(false);
-                                                setTermino('');
-                                            }}
-                                            data-bs-dismiss="modal"
-                                        >
-                                            <div className="avatar avatar-sm bg-light-primary text-primary rounded-circle me-3">
-                                                {cliente.round.toUpperCase()}
-                                            </div>
-                                            <div className="flex-grow-1">
-                                                <h6 className="mb-0 fw-bold">{cliente.nombres} {cliente.apellidos}</h6>
-                                                <small className="text-muted">
-                                                    <i className="ti ti-id me-1"></i>{cliente.identificacion} 
-                                                    <span className="mx-2">|</span>
-                                                    <i className="ti ti-mail me-1"></i>{cliente.email || 'Sin correo'}
-                                                    <span className="mx-2">|</span>
-                                                    <i className="ti ti-phone me-1"></i>{cliente.telefonomovil || 'Sin telefono'}
-                                                </small>
-                                            </div>
-                                            <i className="ti ti-chevron-right text-muted"></i>
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                !buscando && termino.length >= 3 && (
-                                    <div className="text-center py-5">
-                                        <i className="ti ti- moods-off fs-1 text-muted mb-2"></i>
-                                        <p className="text-muted">No se encontraron personas con "{termino}"</p>
-                                        <button className="btn btn-sm btn-primary rounded-pill px-4">
-                                            <i className="ti ti-plus me-1"></i> Crear nuevo
-                                        </button>
+                        {!modoRegistro ? (
+                            <>
+                                {/* --- VISTA DE BÚSQUEDA --- */}
+                                <div className="form-group mb-4">
+                                    <label className="form-label fw-bold small text-muted">Parámetros aceptados (nombres, documento, etc.)</label>
+                                    <div className="input-group input-group-merge shadow-sm">
+                                        <span className="input-group-text bg-light border-0">
+                                            {buscando ? <div className="spinner-border spinner-border-sm text-primary" role="status"></div> : <i className="ti ti-search text-muted"></i>}
+                                        </span>
+                                        <input 
+                                            ref={inputBusquedaRef}
+                                            type="text" 
+                                            className="form-control border-0 bg-light" 
+                                            placeholder="Escribe al menos 3 caracteres..." 
+                                            value={termino}
+                                            onChange={(e) => buscarClientes(e.target.value)}
+                                        />
                                     </div>
-                                )
-                            )}
-                            
-                            {termino.length < 3 && (
-                                <div className="text-center py-5 opacity-50">
-                                    <i className="ti ti-keyboard fs-1 mb-2"></i>
-                                    <p className="mb-0">Empieza a escribir para buscar...</p>
                                 </div>
-                            )}
-                        </div>
+
+                                <div className="results-container" style={{ minHeight: '200px', maxHeight: '400px', overflowY: 'auto' }}>
+                                {mostrarSugerencias && resultadosClientes.length > 0 ? (
+                                        <div className="list-group list-group-flush border rounded-1">
+                                            {resultadosClientes.map((cliente) => (
+                                                <button 
+                                                    key={cliente.id}
+                                                    type="button" 
+                                                    className="list-group-item list-group-item-action py-3 d-flex align-items-center"
+                                                    onClick={() => {
+                                                        handleSelectCliente(cliente, 922);
+                                                        setMostrarSugerencias(false);
+                                                        setTermino('');
+                                                    }}
+                                                    data-bs-dismiss="modal"
+                                                >
+                                                    <div className="avatar avatar-sm bg-light-primary text-primary rounded-circle me-3">
+                                                        {cliente.round.toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-grow-1">
+                                                        <h6 className="mb-0 fw-bold">{cliente.nombres} {cliente.apellidos}</h6>
+                                                        <small className="text-muted">
+                                                            <i className="ti ti-id me-1"></i>{cliente.identificacion} 
+                                                            <span className="mx-2">|</span>
+                                                            <i className="ti ti-mail me-1"></i>{cliente.email || 'Sin correo'}
+                                                            <span className="mx-2">|</span>
+                                                            <i className="ti ti-phone me-1"></i>{cliente.telefonomovil || 'Sin telefono'}
+                                                        </small>
+                                                    </div>
+                                                    <i className="ti ti-chevron-right text-muted"></i>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        !buscando && termino.length >= 3 && (
+                                            <div className="text-center py-5">
+                                                <i className="ti ti-mood-empty fs-1 text-muted mb-2"></i>
+                                                <p className="text-muted">No se encontraron resultados para "{termino}"</p>
+                                                <button 
+                                                    type="button"
+                                                    className="btn btn-primary rounded-pill px-4 shadow-sm"
+                                                    onClick={() => {
+                                                        setModoRegistro(true);
+                                                        setNuevoClienteData('nombre', termino); // Pre-llenamos el nombre
+                                                    }}
+                                                >
+                                                    <i className="ti ti-plus me-1"></i> Crear nuevo cliente
+                                                </button>
+                                            </div>
+                                        )
+                                    )}
+
+                                    {termino.length < 3 && (
+                                        <div className="text-center py-5 opacity-50">
+                                            <i className="ti ti-keyboard fs-1 mb-2"></i>
+                                            <p className="mb-0">Empieza a escribir para buscar...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            /* --- FORMULARIO DE REGISTRO RÁPIDO --- */
+                            <div className="animate__animated animate__fadeIn">
+                                <div className="row g-3">
+                                    
+
+                                    {/* Identificación */}
+                                    <div className="col-6">
+                                        <label className="form-label small fw-bold">Identificación *</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control bg-light border-0 ${nuevoClienteErrors.identificacion ? 'is-invalid' : ''}`}
+                                            value={nuevoClienteData.identificacion}
+                                            onChange={e => setNuevoClienteData('identificacion', e.target.value)}
+                                            placeholder="Documento de identidad"
+                                        />
+                                        {nuevoClienteErrors.identificacion && <div className="invalid-feedback">{nuevoClienteErrors.identificacion}</div>}
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <div className="form-group">
+                                            <label className="form-label small fw-bold">Fecha de nacimiento*</label>
+                                            <input 
+                                                type="date" 
+                                                className={`form-control bg-light border-0 ${nuevoClienteErrors.fechanacimiento ? 'is-invalid' : ''}`}
+                                                value={nuevoClienteData.fechanacimiento || ''}
+                                                onChange={e => setNuevoClienteData('fechanacimiento', e.target.value)}
+                                            />
+                                            {nuevoClienteErrors.fechanacimiento && <div className="invalid-feedback">{nuevoClienteErrors.fechanacimiento}</div>}
+                                        </div>
+                                    </div>
+                                    <div className="col-6">
+                                        <label className="form-label small fw-bold">Nombre *</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control bg-light border-0 ${nuevoClienteErrors.nombre ? 'is-invalid' : ''}`}
+                                            value={nuevoClienteData.nombre}
+                                            onChange={e => setNuevoClienteData('nombre', e.target.value)}
+                                        />
+                                        {nuevoClienteErrors.nombre && <div className="invalid-feedback">{nuevoClienteErrors.nombre}</div>}
+                                    </div>
+                                    <div className="col-6">
+                                        <label className="form-label small fw-bold">Apellido *</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control bg-light border-0 ${nuevoClienteErrors.apellido ? 'is-invalid' : ''}`}
+                                            value={nuevoClienteData.apellido}
+                                            onChange={e => setNuevoClienteData('apellido', e.target.value)}
+                                        />
+                                        {nuevoClienteErrors.apellido && <div className="invalid-feedback">{nuevoClienteErrors.apellido}</div>}
+                                    </div>
+                                    <div className="col-6">
+                                        <label className="form-label small fw-bold">Teléfono móvil*</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control bg-light border-0 ${nuevoClienteErrors.telefonomovil ? 'is-invalid' : ''}`}
+                                            value={nuevoClienteData.telefonomovil}
+                                            onChange={e => setNuevoClienteData('telefonomovil', e.target.value)}
+                                        />
+                                        {nuevoClienteErrors.telefonomovil && <div className="invalid-feedback">{nuevoClienteErrors.telefonomovil}</div>}
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="form-group">
+                                            <label className="form-label small fw-bold">Correo electrónico</label>
+                                            <input 
+                                                type="email" 
+                                                className={`form-control bg-light border-0 ${nuevoClienteErrors.email ? 'is-invalid' : ''}`}
+                                                value={nuevoClienteData.email || ''}
+                                                onChange={e => setNuevoClienteData('email', e.target.value)}
+                                            />
+                                            {nuevoClienteErrors.email && <div className="invalid-feedback">{nuevoClienteErrors.email}</div>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="d-grid gap-2 mt-4">
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-primary btn-lg shadow" 
+                                        onClick={handleCrearCliente}
+                                        disabled={processingNuevoCliente}
+                                    >
+                                        {processingNuevoCliente ? 'Guardando...' : 'Guardar y Seleccionar'}
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-link text-muted" 
+                                        onClick={() => setModoRegistro(false)}
+                                    >
+                                        <i className="ti ti-arrow-back me-1"></i> Volver a buscar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -789,6 +1007,119 @@ export default function Fields({ data, setData, errors, cita, comercio, turnoAct
                 </div>
             </div>
         </div>
+
+        {/* Modal para Abrir Turno */}
+        <Modal show={showTurnoModal} onClose={() => setShowTurnoModal(false)} maxWidth="md">
+            <div className="overflow-hidden rounded-3">
+                <div className="bg-primary p-4 text-white">
+                    <h4 className="mb-0 text-white d-flex align-items-center gap-2">
+                        <i className="ti ti-device-floppy fs-2"></i>
+                        Apertura de Caja
+                    </h4>
+                </div>
+                
+                <div className="p-4">
+                    <div className="alert alert-info border-0 shadow-none mb-4">
+                        <p className="mb-0 small">
+                            Registra el saldo inicial para <strong>{comercio?.nombre}</strong>.
+                        </p>
+                    </div>
+
+                    <div className="modal-body-wrapper">
+                        {/* Código Interno */}
+                        <div className="mb-3">
+                            <label className="form-label fw-bold">Código Interno</label>
+                            <input 
+                                type="text" 
+                                className={`form-control border-0 bg-light ${turnoErrors.codigo ? 'is-invalid' : ''}`}
+                                value={turnoData.codigo} 
+                                onChange={e => setTurnoData('codigo', e.target.value)} 
+                                placeholder="Ej: TRN-001" 
+                            />
+                            {turnoErrors.codigo && <div className="invalid-feedback">{turnoErrors.codigo}</div>}
+                        </div>
+
+                        {/* Terminal con Tipado Corregido */}
+                        <div className="mb-3">
+                            <label className="form-label fw-bold text-primary">Terminal (Caja POS)</label>
+                            <select 
+                                className={`form-select border-0 bg-light ${turnoErrors.terminal_id ? 'is-invalid' : ''}`}
+                                value={turnoData.terminal_id} 
+                                onChange={e => setTurnoData('terminal_id', e.target.value)}
+                                required
+                            >
+                                <option value="">Seleccione Terminal...</option>
+                                {sedePredeterminada?.terminal?.map((ter: any) => ( // Cambia any por tu interfaz Terminal si la tienes
+                                    <option key={ter.id} value={ter.id}>{ter.nombre}</option>
+                                ))}
+                            </select>
+                            {turnoErrors.terminal_id && <div className="invalid-feedback d-block">{turnoErrors.terminal_id}</div>}
+                        </div>
+
+                        {/* Base Inicial */}
+                        
+                        <div className="mb-3">
+                            <label className="form-label fw-bold">Base inicial (Efectivo)</label>
+                            <div className="input-group">
+                                <span className="input-group-text bg-light">$</span>
+                                <input 
+                                    type="number" 
+                                    className={`form-control form-control-lg ${turnoErrors.baseinicial ? 'is-invalid' : ''}`}
+                                    value={turnoData.baseinicial}
+                                    onChange={e => setTurnoData('baseinicial', e.target.value)}
+                                    required
+                                />
+                            </div>
+                            {turnoErrors.baseinicial && <div className="text-danger small mt-1">{turnoErrors.baseinicial}</div>}
+                        </div>
+
+                        {/* Observaciones */}
+                        <div className="mb-4">
+                            <label className="form-label fw-bold">Observaciones de apertura</label>
+                            <textarea 
+                                className="form-control border-0 bg-light" 
+                                rows={2}
+                                value={turnoData.descripcion}
+                                onChange={e => setTurnoData('descripcion', e.target.value)}
+                                placeholder="Ej: Turno mañana..."
+                            ></textarea>
+                        </div>
+
+                        <div className="d-grid gap-2">
+                            <button 
+                                type="button" // Cambiado de submit a button para evitar conflictos
+                                className="btn btn-primary btn-lg shadow-sm d-flex align-items-center justify-content-center gap-2" 
+                                disabled={processingTurno}
+                                onClick={handleAbrirTurno} // Llamada manual
+                            >
+                                {processingTurno ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        <span>Guardando turno...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="ti ti-device-floppy fs-4"></i>
+                                        <span>Confirmar y Abrir Turno</span>
+                                    </>
+                                )}
+                            </button>
+                            
+                            <button 
+                                type="button" 
+                                className="btn btn-link text-muted fw-bold" 
+                                onClick={() => setShowTurnoModal(false)}
+                                disabled={processingTurno}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+
+        
     </>
   );
 }

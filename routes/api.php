@@ -11,3 +11,4 @@ Route::get('/clientes/buscar', [AdclientesController::class, 'buscar'])->name('a
 Route::get('/servicios/buscar', [DisponibilidadController::class, 'servicios'])->name('api.servicios.buscar');
 Route::get('/productos/buscar', [ProductosController::class, 'buscar'])->name('api.productos.buscar');
 Route::get('/personas/buscar', [PersonasController::class, 'buscar'])->name('api.personas.buscar');
+Route::post('/personas/store', [PersonasController::class, 'store'])->name('api.personas.store');

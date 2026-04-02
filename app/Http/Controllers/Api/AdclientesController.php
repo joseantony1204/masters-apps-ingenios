@@ -13,11 +13,11 @@ class AdclientesController extends Controller
     {
         $term = $request->get('term');
         $user = Auth::user();
-    /*
+    
         // Si aún así da error, es porque el middleware no está actuando
         if (!$user) {
             return response()->json(['error' => 'Usuario no autenticado'], 401);
-        }*/
+        }
 
         $adclientes = Adclientes::
         join("personas AS p","p.id","=","adclientes.persona_id")

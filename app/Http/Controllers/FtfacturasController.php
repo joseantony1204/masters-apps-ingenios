@@ -93,6 +93,7 @@ class FtfacturasController extends Controller
         // 1. Obtenemos la sede predeterminada del usuario
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
+        ->with(['terminal'])
         ->wherePivot('predeterminada', 1)
         ->first();
 
@@ -116,7 +117,7 @@ class FtfacturasController extends Controller
         ->get();
 
         // 4. Definir el turno activo por defecto (el primero de la lista)
-        $turnoActivo = $turnosAbiertos->first();
+       $turnoActivo = $turnosAbiertos->first();
 
         //5. --- LÓGICA PARA CARGAR LA CITA ---
         $cita = null;
@@ -145,23 +146,6 @@ class FtfacturasController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function stores(Request $request)
-    {
-        dd($request->all() );
-
-        request()->validate(Ftfacturas::$rules);
-        try {    
-            $audt = ['created_by' => Auth::user()->id, 'created_at' => now()];    
-            $ftfacturas = Ftfacturas::create($request->all() + $audt);
-            return redirect()->route('ftfacturas.index')->with('success', 'Elemento creado correctamente.');
-
-        }catch (\Exception $e){
-            return response()->json(['message' => $e->getMessage()]);
-        }
-    }
-
-  
-
     public function store(Request $request)
     {
         //dd($request->all() );

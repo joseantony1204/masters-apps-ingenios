@@ -12,15 +12,15 @@ class ProductosController extends Controller
     public function buscar(Request $request)
     {
         $term = $request->get('q');
-        /*$user = Auth::user();
+        $user = Auth::user();
     
         // Si aún así da error, es porque el middleware no está actuando
         if (!$user) {
             return response()->json(['error' => 'Usuario no autenticado'], 401);
-        }*/
+        }
 
         $user = Auth::user();
-        $comercio = Comercios::with('sedes')->where('persona_id', 1)->first();
+        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
 
         $sedesIds = $comercio->sedes()
         ->pluck('cfsedes.id')

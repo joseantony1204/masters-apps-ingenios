@@ -94,7 +94,7 @@ class DisponibilidadController extends Controller
                     ];
                 }
                 
-                $cursor->addMinutes(5); 
+                $cursor->addMinutes(15); 
             }
 
             if (!empty($turnosDelDia)) {
