@@ -27,6 +27,7 @@ class AdcitasController extends Controller
         $timezone = 'America/Bogota';
         $ahora = Carbon::now($timezone);
         //if(!$request->fecha) $request['fecha'] = $ahora;
+        //return Auth::user()->comercio->id;
 
         // Obtenemos el comercio del usuario autenticado (dueño/admin)
         $user = User::where('persona_id',Auth::user()->persona_id)->first();

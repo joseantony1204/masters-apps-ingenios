@@ -34,7 +34,7 @@ class Comercios extends Model
 			'nombre' => 'required',
 			'persona_id' => 'required',
 			'created_by' => 'required',];
-
+            
     /**
      * The attributes that are mass assignable.
      *
@@ -57,6 +57,12 @@ class Comercios extends Model
     public function sedes()
     {
         return $this->hasMany(\App\Models\Cfsedes::class, 'comercio_id')->where('estado', 1);
+    }
+
+    // En el modelo Comercios.php
+    public function soportes()
+    {
+        return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 923); // 923 es el identificador de tabla padre para Comercios
     }
     
 }

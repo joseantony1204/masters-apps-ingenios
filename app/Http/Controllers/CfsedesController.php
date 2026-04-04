@@ -42,6 +42,18 @@ class CfsedesController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'nombre' => 'required',
+            'ciudad' => 'required',
+            'direccion' => 'required',
+            'telefono' => 'required',
+        ],[
+            'nombre.required' => 'El nombre es requerido',
+            'ciudad.required' => 'La ciudad de factura es requerido',
+            'direccion.required' => 'La direccion de factura es requerido',
+            'telefono.required' => 'El telefono de factura es requerido',
+        ]);
+
         $user = Auth::user();
         $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
         $request['comercio_id'] = $comercio->id;
@@ -80,6 +92,18 @@ class CfsedesController extends Controller
      */
     public function update(CfsedesRequest $request, $cfsedes)
     {
+        $validated = $request->validate([
+            'nombre' => 'required',
+            'ciudad' => 'required',
+            'direccion' => 'required',
+            'telefono' => 'required',
+        ],[
+            'nombre.required' => 'El nombre es requerido',
+            'ciudad.required' => 'La ciudad de factura es requerido',
+            'direccion.required' => 'La direccion de factura es requerido',
+            'telefono.required' => 'El telefono de factura es requerido',
+        ]);
+        
         try {                        
             $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
             $cfsedes = Cfsedes::findOrFail($cfsedes);

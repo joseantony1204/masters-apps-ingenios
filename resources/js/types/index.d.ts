@@ -66,6 +66,18 @@ export interface Cfmaestra {
     jerarquia: string;
 }
 
+export interface Sgrolesperfiles {
+    id: number;
+    perfil_id: string;
+    rol_id: string;
+    estado: string;
+    created_at: string;
+    observacion: string;
+    created_by: string;
+    updated_by: string;
+    deleted_by: string;
+}
+
 export interface Productos {
     id: number;
     codigo: string;            
@@ -117,6 +129,7 @@ export interface Personas {
     updated_by: string;
     deleted_by: string;
     personanatural:Personanaturales;
+    comercio:Comercios;
     empleado:Cfempleados;
 }
 

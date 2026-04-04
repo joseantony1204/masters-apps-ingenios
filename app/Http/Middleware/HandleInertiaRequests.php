@@ -49,7 +49,7 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $user,
-                'comercio_id' => $comercioId, // Ya lo tienes global en el frontend
+                'comercio' => $comercioId, // Ya lo tienes global en el frontend
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

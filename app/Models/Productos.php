@@ -52,8 +52,6 @@ class Productos extends Model
 			'precioingreso' => 'required',
 			'preciosalida' => 'required',
 			'tipo_id' => 'required',
-			'unidad_id' => 'required',
-			'impuesto_id' => 'required',
 			'estado_id' => 'required',
 			'sede_id' => 'required',];
 
@@ -68,15 +66,23 @@ class Productos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function Estado()
+    public function estado()
     {
         return $this->belongsTo(\App\Models\Cfmaestra::class, 'estado_id', 'id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function categoria()
+    {
+        return $this->belongsTo(\App\Models\Cfmaestra::class, 'categoria_id', 'id');
     }
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function Impuesto()
+    public function impuesto()
     {
         //return $this->belongsTo(\App\Models\Cfimpuesto::class, 'impuesto_id', 'id');
     }
@@ -92,7 +98,7 @@ class Productos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function Unidad()
+    public function unidad()
     {
         return $this->belongsTo(\App\Models\Cfmaestra::class, 'unidad_id', 'id');
     }

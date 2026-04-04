@@ -8,7 +8,11 @@ interface Props {
 // Usamos forwardRef para permitir que el padre acceda a funciones internas
 const FormComercio = forwardRef(({ comercio }: Props, ref) => {
     
-    
+    // 1. Buscamos el objeto de soporte dentro del array de soportes que ahora sí viene cargado
+    const logoSoporte = comercio?.soportes[0];
+    // Extraemos solo la ruta
+    const rutaLogo = logoSoporte ? logoSoporte.ruta : null;
+
     const { data, setData, post, processing, errors } = useForm({
         id: comercio?.id || '',
         persona_id: comercio?.persona_id || '',
@@ -20,6 +24,7 @@ const FormComercio = forwardRef(({ comercio }: Props, ref) => {
         direccion: comercio?.persona?.direccion || '',
         observaciones: comercio?.observaciones || '',
         logo: null as File | null,
+        current_logo_path: rutaLogo || null, 
     });
 
     const submit = (e?: React.FormEvent) => {
@@ -45,7 +50,9 @@ const FormComercio = forwardRef(({ comercio }: Props, ref) => {
                     <div className="position-relative">
                         <div className="avatar avatar-xl bg-white shadow-sm rounded-circle d-flex align-items-center justify-content-center border" style={{ width: '100px', height: '100px' }}>
                             {data.logo ? (
-                                <img src={URL.createObjectURL(data.logo as any)} className="rounded-circle w-100 h-100 object-fit-cover" alt="Logo" />
+                                <img src={URL.createObjectURL(data.logo as any)} className="rounded-circle w-100 h-100 object-fit-cover" alt="Previsualización" />
+                            ) : data.current_logo_path ? (
+                                <img src={`storage/${data.current_logo_path}`} className="rounded-circle w-100 h-100 object-fit-cover" alt="Logo Actual" />
                             ) : (
                                 <i className="ti ti-photo fs-1 text-muted"></i>
                             )}
@@ -86,10 +93,11 @@ const FormComercio = forwardRef(({ comercio }: Props, ref) => {
                     <label className="form-label fw-semibold small text-muted">NIT / RUT</label>
                     <input 
                         type="text" 
-                        className="form-control border-0 bg-light shadow-none py-2"
+                        className={`form-control border-0 bg-light ${errors.nit ? 'is-invalid' : ''}`}
                         value={data.nit}
                         onChange={e => setData('nit', e.target.value)}
                     />
+                    {errors.nit && <div className="invalid-feedback">{errors.nit}</div>}
                 </div>
 
                 <div className="col-md-12">
@@ -114,10 +122,11 @@ const FormComercio = forwardRef(({ comercio }: Props, ref) => {
                     <label className="form-label fw-semibold small text-muted">Email Corporativo</label>
                     <input 
                         type="email" 
-                        className="form-control border-0 bg-light shadow-none py-2"
+                        className={`form-control border-0 bg-light ${errors.email ? 'is-invalid' : ''}`}
                         value={data.email}
                         onChange={e => setData('email', e.target.value)}
                     />
+                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                 </div>
 
                 <div className="col-md-4">
@@ -134,10 +143,11 @@ const FormComercio = forwardRef(({ comercio }: Props, ref) => {
                     <label className="form-label fw-semibold small text-muted">WhatsApp / Teléfono</label>
                     <input 
                         type="text" 
-                        className="form-control border-0 bg-light shadow-none py-2"
+                        className={`form-control border-0 bg-light ${errors.telefonomovil ? 'is-invalid' : ''}`}
                         value={data.telefonomovil}
                         onChange={e => setData('telefonomovil', e.target.value)}
                     />
+                    {errors.telefonomovil && <div className="invalid-feedback">{errors.telefonomovil}</div>}
                 </div>
             </div>
 

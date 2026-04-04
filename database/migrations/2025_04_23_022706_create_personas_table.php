@@ -115,6 +115,7 @@ return new class extends Migration
             $table->string('nombre')->comment('Nombre');
             $table->string('ciudad',20)->comment('Ciudad');
             $table->string('direccion',80)->comment('Direccion');
+            $table->string('telefono',80)->comment('telefono');
             $table->string('email',80)->comment('Email')->nullable();
             $table->unsignedBigInteger('comercio_id')->comment('Código del comercio');
             $table->boolean('estado')->default(1);

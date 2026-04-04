@@ -29,7 +29,7 @@ class PersonasSeeder extends Seeder
         ];
 
         $dataSedes = [
-            ['nombre' => 'SEDE 1', 'ciudad'=>'RCH', 'direccion' => 'CALLE 1', 'comercio_id' =>1],
+            ['nombre' => 'SEDE 1', 'ciudad'=>'RCH', 'telefono'=>'000 000 0000', 'direccion' => 'CALLE 1', 'comercio_id' =>1],
         ];
 
         $dataResoluciones = [

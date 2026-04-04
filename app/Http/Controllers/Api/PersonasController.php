@@ -95,7 +95,7 @@ class PersonasController extends Controller
                 ] + $audt);
 
                 // 4. Crear Usuario para el cliente (opcional, según tu lógica de negocio)
-                $persona->user()->create([
+                $nuevoUsuario = $persona->user()->create([
                     'username'    => trim($persona->identificacion),
                     'password'    => Hash::make($persona->identificacion),
                     'email'       => $persona->email,
@@ -105,7 +105,25 @@ class PersonasController extends Controller
                     'persona_id'  => $persona->id,
                 ] + $audt);
 
-                // 5. Estructurar la respuesta para el Frontend
+                // 5. Asociar a sedes (cfsedesusers)
+                $sedesIds = $comercio->sedes->pluck('id')->toArray();
+
+                if (!empty($sedesIds)) {
+                    // Sincronizamos todas las sedes con estado activo (858)
+                    $nuevoUsuario->sedes()->syncWithPivotValues($sedesIds, [
+                        'predeterminada' => false,
+                        'estado_id'      => 858,
+                        'created_by'     => Auth::user()->id,
+                        'created_at'     => now()
+                    ]);
+
+                    // Marcamos la primera sede como predeterminada
+                    $nuevoUsuario->sedes()->updateExistingPivot($sedesIds[0], [
+                        'predeterminada' => true
+                    ]);
+                }
+
+                // 6. Estructurar la respuesta para el Frontend
                 // Este objeto debe tener los mismos campos que espera tu buscador de clientes
                 $resultado = [
                     'id' => $persona->id,

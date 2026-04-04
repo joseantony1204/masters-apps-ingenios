@@ -189,27 +189,30 @@ export default function Resoluciones({ resolucionesInitial = [] }: Props) {
 
                     <div className="col-md-8">
                         <label className="form-label small fw-bold">Número de Resolución</label>
-                        <input type="text" className="form-control border-0 bg-light shadow-none" 
+                        <input type="text" className={`form-control border-0 bg-light ${errors.numero ? 'is-invalid' : ''}`}
                                value={data.numero} onChange={e => setData('numero', e.target.value)} placeholder="Ej: 187600000..." />
                         {errors.numero && <small className="text-danger">{errors.numero}</small>}
                     </div>
 
                     <div className="col-md-4">
                         <label className="form-label small fw-bold">Prefijo</label>
-                        <input type="text" className="form-control border-0 bg-light shadow-none text-uppercase" 
+                        <input type="text" className={`form-control border-0 bg-light ${errors.prefijo ? 'is-invalid' : ''}`}
                                value={data.prefijo} onChange={e => setData('prefijo', e.target.value)} placeholder="Ej: SETT" />
+                            {errors.prefijo && <small className="text-danger">{errors.prefijo}</small>}
                     </div>
 
                     <div className="col-md-4">
                         <label className="form-label small fw-bold">Número Inicial (Desde)</label>
-                        <input type="number" className="form-control border-0 bg-light shadow-none" 
+                        <input type="number" className={`form-control border-0 bg-light ${errors.desde ? 'is-invalid' : ''}`}
                                value={data.desde} onChange={e => setData('desde', Number(e.target.value))} />
+                            {errors.desde && <small className="text-danger">{errors.desde}</small>}
                     </div>
 
                     <div className="col-md-4">
                         <label className="form-label small fw-bold">Número Final (Hasta)</label>
-                        <input type="number" className="form-control border-0 bg-light shadow-none" 
+                        <input type="number" className={`form-control border-0 bg-light ${errors.hasta ? 'is-invalid' : ''}`}
                                value={data.hasta} onChange={e => setData('hasta', Number(e.target.value))} />
+                            {errors.hasta && <small className="text-danger">{errors.hasta}</small>}
                     </div>
 
                     <div className="col-md-4">
@@ -220,8 +223,9 @@ export default function Resoluciones({ resolucionesInitial = [] }: Props) {
 
                     <div className="col-md-4">
                         <label className="form-label small fw-bold">Fecha de Expedición</label>
-                        <input type="date" className="form-control border-0 bg-light shadow-none" 
+                        <input type="date" className={`form-control border-0 bg-light ${errors.fecha ? 'is-invalid' : ''}`}
                                value={data.fecha} onChange={e => setData('fecha', e.target.value)} />
+                        {errors.fecha && <small className="text-danger">{errors.fecha}</small>}
                     </div>
 
                     <div className="col-md-4">

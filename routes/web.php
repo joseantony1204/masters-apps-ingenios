@@ -17,6 +17,8 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- MÓDULO: CONFIGURACIÓN Y MAESTRAS ---

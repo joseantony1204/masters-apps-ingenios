@@ -27,7 +27,6 @@ class FtresolucionesRequest extends FormRequest
 			'prefijo' => 'required',
 			'desde' => 'required',
 			'hasta' => 'required',
-			'actual' => 'required',
 			'comercio_id' => 'required',
         ];
     }

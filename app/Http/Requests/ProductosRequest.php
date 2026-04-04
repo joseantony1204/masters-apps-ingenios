@@ -26,8 +26,6 @@ class ProductosRequest extends FormRequest
 			'precioingreso' => 'required',
 			'preciosalida' => 'required',
 			'tipo_id' => 'required',
-			'unidad_id' => 'required',
-			'impuesto_id' => 'required',
 			'estado_id' => 'required',
 			'sede_id' => 'required',
         ];

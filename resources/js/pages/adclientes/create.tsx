@@ -53,7 +53,7 @@ export default function Create({ personas, personasnaturales, clientes, tpidenti
                 <div className="col-md-12">
                         <ul className="breadcrumb">
                             <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
-                            <li className="breadcrumb-item"><a href={route('adclientes.index')}>clientes</a></li>
+                            <li className="breadcrumb-item"><a href={route('adclientes.index')}>Clientes</a></li>
                             <li className="breadcrumb-item" aria-current="page">Crear</li>
                         </ul>
                     </div>

@@ -22,8 +22,24 @@ class ProductosController extends Controller
      */
     public function index(Request $request)
     {
+        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
+
+        $query = Productos::with([
+            'categoria:id,nombre',
+            'unidad:id,nombre',
+            'estado:id,nombre',
+            'tipo:id,nombre',
+            'sede'
+        ]);
+
+        $query->whereHas('sede', function ($q) use ($comercio) {
+            $q->where('comercio_id', $comercio->id);
+        });
+
+        $productos = $query->whereNull('deleted_at')->get();
+
         return Inertia::render('productos/index', [
-            'productos' => Productos::whereNull('deleted_at')->get() 
+            'productos' => $productos
         ]);
     }
 
@@ -37,42 +53,17 @@ class ProductosController extends Controller
         $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
         // Obtenemos las sedes vinculadas a ese comercio
         $sedes = $comercio->sedes()->pluck('nombre', 'id');
-        $padre = Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_UNIDADES'))->first();
-       
-        $items = Cfmaestra::where('padre', $padre->id)
-            ->orderBy('codigo') // este campo debe indicar la categoría, como "Unidades", "Volúmenes"
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo']); // usa el nombre real del campo de agrupación
-        
-        $unidadesList = $items->groupBy('codigo')->map(function ($grupo) {
-            return $grupo->pluck('nombre', 'id');
-        })->toArray();
-            //return Cfmaestra::where('padre','=',$padre->id)->get()->sortBy('nombre')->pluck('codigo','id')->prepend('', '');
-
-        
-
+      
         return Inertia::render('productos/create', [
             'productos' => new Productos(),
-            'categoriasList' => Cfmaestra::getlistatipos('LIS_CATEGORIAS'),
-            'unidadesList' => Cfmaestra::where('padre','=',$padre->id)->get()->sortBy('nombre')->pluck('nombre', 'id','codigo')->prepend('', ''),
-             /*'unidadesList' => Cfmaestra::where('padre','=',$padre->id)->get(['id', 'nombre', 'codigo'])
-            //->groupBy('codigo')
-            
-            ->map(function ($items) {
-                return $items->pluck('nombre', 'id');
-            })->toArray(),*/
-            //'unidadesList' => $unidadesList,
+            'categoriasList' => Cfmaestra::getlistatipos('LIS_CATEGORIASPRODUCTOS'),
+            'unidadesList' => Cfmaestra::unidades(),
             'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOSPRODUCTOS'),
             'tiposList' => Cfmaestra::getlistatipos('LIS_TIPOSPRODUCTOS'),
             'marcasList' => Cfmaestra::getlistatipos('LIS_MARCAS'),
             'ubicacionesList' => Cfmaestra::getlistatipos('LIS_UBICACIONES'),
             'impuestosList' => Cfimpuestos::all()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
-            'sedesList' => $sedes,
-          
-            //$Unidades=Unidades::find()->andWhere(['IS NOT', 'UNID_FROMID',NULL])->all();
-            //$listData=ArrayHelper::map($Unidades,'UNID_ID','UNID_NOMBRE','UNID_DESCRIPCION');
-            //echo $form->field($model, 'PROD_UNIDADES')->dropDownList($listData, ['class' => 'custom-select form-control'])->label('Unidad de medida*');
-								
+            'sedesList' => $sedes,			
         ]);
     }
 
@@ -107,15 +98,21 @@ class ProductosController extends Controller
      */
     public function edit($id)
     {
+        // Obtenemos el comercio del usuario autenticado
+        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
+        // Obtenemos las sedes vinculadas a ese comercio
+        $sedes = $comercio->sedes()->pluck('nombre', 'id');
+
         return Inertia::render('productos/edit', [
             'productos' => Productos::findOrFail($id),
-            'categoriasList' => Cfmaestra::getlistatipos('LIS_CATEGORIAS'),
-            'unidadesList' => Cfmaestra::getlistatipos('LIS_UNIDADES'),
+            'categoriasList' => Cfmaestra::getlistatipos('LIS_CATEGORIASPRODUCTOS'),
+            'unidadesList' => Cfmaestra::unidades(),
             'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOSPRODUCTOS'),
             'tiposList' => Cfmaestra::getlistatipos('LIS_TIPOSPRODUCTOS'),
             'marcasList' => Cfmaestra::getlistatipos('LIS_MARCAS'),
             'ubicacionesList' => Cfmaestra::getlistatipos('LIS_UBICACIONES'),
             'impuestosList' => Cfimpuestos::all()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
+            'sedesList' => $sedes,
         ]);
     }
 

@@ -158,7 +158,15 @@ class User extends Authenticatable
 
     public function getNombreCompletoAttribute()
     {
-        return "{$this->personas->personasnaturales->nombre}";
+        $persona = $this->personas;
+
+        if (!$persona) {
+            return "Usuario Sistema";
+        }
+
+        return optional($persona->personasnaturales)->nombreCompleto
+            ?? optional($persona->comercios)->nombre 
+            ?? "Nombre no definido";
     }
 
     public function getroles($modulo,$roles = 3){ 

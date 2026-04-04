@@ -4,44 +4,56 @@ import Fields from './partials/fields';
 import { Ftfacturas } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    ftfacturas: Ftfacturas;
+    ftfactura: any;
+    cita : any;
+    turnoActivo : any;
+    sedePredeterminada : any;
+    turnosList: any[];
+    estadosList: any[];
+    comercio: any;
+    metodospagosList: any[];
 }
 
-export default function Edit({ ftfacturas}: Props) {
+export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo, comercio, turnosList, estadosList, metodospagosList }: Props) {
     const { data, setData, put, delete: destroy, processing, errors } = useForm({
-        id: ftfacturas.id || '',
-        
-        codigoseguridad: ftfacturas.codigoseguridad || '',
+        // Datos de cabecera
+        id: ftfactura.id || '',
+        numero: ftfactura.numero || '',
+        fecha: ftfactura.fecha || new Date().toISOString().slice(0, 16),
+        fechanavencimiento: ftfactura.fechanavencimiento || new Date().toISOString().slice(0, 16),
+        observaciones: ftfactura.observaciones || '',
+
+        // Lógica Polimórfica (Cliente)
+        model_type: ftfactura.model_type || 0,
+        model_type_id: ftfactura.model_type_id || cita?.cliente?.persona?.id || '',
+        cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || '', // Para mostrar el nombre en la UI sin recargar
+        cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || '',
+        cliente_direccion_aux: cita?.cliente?.persona?.direccion || '',
+        cliente_telefonomovil_aux: cita?.cliente?.persona?.telefonomovil || '',
+        cliente_email_aux: cita?.cliente?.persona?.email || '',
+
+        // Datos del Emisor (Sede)
+        origen_id: sedePredeterminada?.id || '',
+        emisor_nombre: comercio?.nombre || 'Mi Comercio',
+        emisor_sede: sedePredeterminada?.nombre || '',
+        emisor_direccion: sedePredeterminada?.direccion || 'Sin direccion',
+        emisor_telefono: sedePredeterminada?.telefono || 'Sin telefono',
+        emisor_email: sedePredeterminada?.email || 'Sin email',
                              
-        numero: ftfacturas.numero || '',
-                             
-        fecha: ftfacturas.fecha || '',
-                             
-        fechanavencimiento: ftfacturas.fechanavencimiento || '',
-                             
-        observaciones: ftfacturas.observaciones || '',
-                             
-        tabla_id: ftfacturas.tabla_id || '',
-                             
-        referencia_id: ftfacturas.referencia_id || '',
-                             
-        origen_id: ftfacturas.origen_id || '',
-                             
-        destino_id: ftfacturas.destino_id || '',
-                             
-        tipo_id: ftfacturas.tipo_id || '',
-                             
-        turno_id: ftfacturas.turno_id || '',
-                             
-        estado_id: ftfacturas.estado_id || '',
-                             
-        comercio_id: ftfacturas.comercio_id || '',
-                             
-        created_by: ftfacturas.created_by || '',
-                             
-        updated_by: ftfacturas.updated_by || '',
-                             
-        deleted_by: ftfacturas.deleted_by || '',
+        // Detalle e Impuestos
+        items: [] as any[], // Aquí se guardarán los productos/servicios
+        subtotal: 0,
+        discount_percent: 0,
+        discount_amount: 0,
+        tax_percent: 0,
+        tax_amount: 0,
+        total: 0,
+
+        // Otros
+        metodo_id: '',
+        estado_id: '',
+        turno_id: turnoActivo?.id || '',
+        comercio_id: comercio?.id || '',
                              
 
       });
@@ -67,7 +79,7 @@ export default function Edit({ ftfacturas}: Props) {
                 <div className="col-md-12">
                         <ul className="breadcrumb">
                             <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
-                            <li className="breadcrumb-item"><a href={route('ftfacturas.index')}>Ftfacturas</a></li>
+                            <li className="breadcrumb-item"><a href={route('ftfacturas.index')}>Factura</a></li>
                             <li className="breadcrumb-item" aria-current="page">Actualizar</li>
                         </ul>
                     </div>
@@ -84,7 +96,18 @@ export default function Edit({ ftfacturas}: Props) {
                 <div className="card">
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
-                            <Fields data={data} setData={setData} errors={errors}/>
+                            <Fields 
+                                data={data} 
+                                setData={setData} 
+                                errors={errors} 
+                                comercio={comercio} 
+                                cita={cita} 
+                                turnoActivo={turnoActivo} 
+                                sedePredeterminada={sedePredeterminada} 
+                                turnosList={turnosList}
+                                metodospagosList={metodospagosList}
+                                estadosList={estadosList}
+                            />
                             <div className="col-12">
                                 <div className="row align-items-end justify-content-between g-3">
                                     <div className="col-sm-auto">

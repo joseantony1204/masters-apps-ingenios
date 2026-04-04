@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Personas, Comercios, Cfsedes, Ftresoluciones, Ftterminales, Ftturnos};
+use App\Models\{Personas, User,Comercios, Cfsedes, Ftresoluciones, Ftterminales, Ftturnos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
+use App\Helpers\StorageHelper;
 
 class ComerciosController extends Controller
 {
@@ -21,10 +22,15 @@ class ComerciosController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        
         // 1. Obtenemos el comercio del usuario con su persona
-        $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
+        $comercio = Comercios::with([
+            'persona', 
+            'soportes' => function($q) {
+                $q->where('tipo_id', 1)->where('predeterminado', 1);
+            }
+        ])
+        ->where('persona_id', Auth::user()->persona_id)
+        ->first();
 
         if (!$comercio) {
             abort(403, 'Usuario no vinculado a un comercio.');
@@ -120,24 +126,35 @@ class ComerciosController extends Controller
 
     public function update(Request $request)
     {
+        $comercio = Comercios::findOrFail($request->id);
+
+        // Obtenemos el ID de la persona para las excepciones de unique
+        $personaId = $comercio->persona_id;
+
         $request->validate([
+            'id' => 'required|exists:comercios,id',
             'nombre' => 'required|string|max:255',
-            'nit' => 'required',
-            'email' => 'required',
-            'telefonomovil' => 'required',
-            'logo' => 'nullable|image|max:2048', // 2MB Max
+            // Cambiamos 'nit' por 'required' y corregimos el unique
+            'nit' => 'required|unique:personas,identificacion,' . $personaId,
+            // En unique, el tercer parámetro es el ID de la fila que quieres ignorar
+            'email' => 'required|email|unique:personas,email,' . $personaId,
+            'telefonomovil' => 'required|string|unique:personas,telefonomovil,' . $personaId,
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', 
             'persona_id' => 'required|exists:personas,id',
+        ], [
+            'nombre.required' => 'El campo razón social es requerido',
+            'nit.required' => 'El campo NIT es requerido',
+            'nit.unique' => 'Este NIT ya está registrado',
+            'email.required' => 'El campo email es requerido',
+            'email.unique' => 'Este email ya está en uso',
+            'nit.unique' => 'Este nit ya está en uso',
+            'telefonomovil.required' => 'El campo teléfono es requerido',
+            'telefonomovil.unique' => 'Este teléfono ya está en uso',
         ]);
 
         try {
-            return DB::transaction(function () use ($request) {
-                $comercio = Comercios::findOrFail($request->id);
-                $data = $request->except('logo');
-                if ($request->hasFile('logo')) {
-                    // Lógica para guardar imagen y obtener ruta
-                    $data['logo_path'] = $request->file('logo')->store('logos', 'public');
-                    $comercio->update($data);
-                }
+            return DB::transaction(function () use ($request,$comercio) {
+                // 1. Actualizar datos de Persona
                 $comercio->persona->update([
                     'identificacion' => $request->nit,
                     'direccion' => $request->direccion,
@@ -145,19 +162,30 @@ class ComerciosController extends Controller
                     'telefonomovil' => $request->telefonomovil,
                 ]);
 
+                // 2. Actualizar datos de Comercio
                 $comercio->update([
                     'nombre' => $request->nombre,
                     'objetocomercial' => $request->objetocomercial,
-                    'direccion' => $request->direccion,
-                    'updated_by' => Auth::user()->id,
-                    'updated_at' => now(),
+                    'updated_by' => Auth::id(),
                 ]);
-                return redirect()->back()->with('success', 'Comercio actualizado correctamente');
 
-          });
+                // 3. Lógica Polimórfica para el Soporte (Logo)
+                // USAR EL HELPER PARA EL LOGO
+                if ($request->hasFile('logo')) {
+                    StorageHelper::save(
+                        $request->file('logo'), 
+                        'comercios/logos', 
+                        923, // model_type
+                        $comercio->id, // model_type_id
+                        1 // Referencia a cfmaestras (Tipo Soporte)
+                    );
+                }
+
+                return redirect()->back()->with('success', 'Comercio actualizado correctamente');
+            });
 
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Error al actualizar: ' . $e->getMessage()]);
         }
     }
 

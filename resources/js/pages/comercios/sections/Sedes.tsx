@@ -182,10 +182,11 @@ export default function Sedes({ sedes = [] }: Props) {
                         <label className="form-label small fw-bold">Ciudad</label>
                         <input 
                             type="text" 
-                            className="form-control border-0 bg-light shadow-none" 
+                            className={`form-control border-0 bg-light ${errors.ciudad ? 'is-invalid' : ''}`}
                             value={data.ciudad} 
                             onChange={e => setData('ciudad', e.target.value)} 
                         />
+                        {errors.ciudad && <div className="invalid-feedback">{errors.ciudad}</div>}
                     </div>
 
                     <div className="col-12">
@@ -203,10 +204,11 @@ export default function Sedes({ sedes = [] }: Props) {
                         <label className="form-label small fw-bold">Teléfono</label>
                         <input 
                             type="text" 
-                            className="form-control border-0 bg-light shadow-none" 
+                            className={`form-control border-0 bg-light ${errors.telefono ? 'is-invalid' : ''}`}
                             value={data.telefono} 
                             onChange={e => setData('telefono', e.target.value)} 
                         />
+                        {errors.telefono && <div className="invalid-feedback">{errors.telefono}</div>}
                     </div>
 
                     <div className="col-md-6">

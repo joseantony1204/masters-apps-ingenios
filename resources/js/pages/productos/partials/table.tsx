@@ -1,105 +1,104 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Productos  } from '@/types';
-import { useForm } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
-import avatar1 from '/public/assets/images/user/avatar-1.jpg';
+import { Productos } from '@/types';
+import { useForm, router } from '@inertiajs/react';
+
 interface Props {
-    productos: Productos[];
+    productos: any[];
 }
 
 export default function Table({ productos }: Props) {
     const tableRef = useRef<HTMLTableElement>(null);
+
     useEffect(() => {
         if (tableRef.current) {
-          initDataTable(tableRef.current);
+            initDataTable(tableRef.current);
         }
-    }, []);
-    const { delete: destroy } = useForm();
+    }, [productos]);
 
-    const handleDelete = (id: number) => {
-        if (confirm('¿Seguro que quiere eliminar este elemento?')) {
-            destroy(route('productos.destroy', id));
-        }
-    };
-    
-    const handleEdit = (id: number) => {
-        router.visit(route('productos.edit', id));
+    const handleEdit = (id: number) => router.visit(route('productos.edit', id));
+
+    // Formateador de moneda
+    const formatCurrency = (value: string | number) => {
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0
+        }).format(Number(value));
     };
 
-    const handleView = (id: number) => {
-        router.visit(route('productos.show', id));
+    // Badge de color según el tipo
+    const getTipoBadge = (tipo: string) => {
+        const colors: Record<string, string> = {
+            'SERVICIO': 'bg-light-info text-info',
+            'PRODUCTO': 'bg-light-primary text-primary',
+            'COMBO': 'bg-light-warning text-warning'
+        };
+        return colors[tipo] || 'bg-light-secondary';
     };
-    
 
     return (
-        <>
-            <table ref={tableRef} className="table table-hover">
-                <thead>
+        <div className="table-responsive">
+            <table ref={tableRef} className="table table-hover align-middle shadow-sm">
+                <thead className="table-light">
                     <tr>
-                        <th className="text-center" style={{ width: '1%' }}>Editar</th>
-                        <th className="text-center" style={{ width: '2%' }}>Item</th>
-                        <th >Codigo</th>
-                        <th className="text-left" style={{ width: '10%' }}>Nombre</th>
-                        <th >Precio</th>
-                        <th >Cantidad</th>
-                        <th >Min. Stock</th>
-                        <th >Estado</th>
+                        <th className="text-center" style={{ width: '80px' }}>Acciones</th>
+                        <th className="text-center">#</th>
+                        <th>Información del Item</th>
+                        <th>Tipo</th>
+                        <th className="text-end">Precio Venta</th>
+                        <th className="text-center">Stock Min.</th>
+                        <th className="text-center">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
-                {productos.map((productos, index) => (
-                    <tr key={productos.id}>
-                        <td className="text-center">
-                        <ul className="list-inline mb-0">
-                            {/*
-                            <li className="list-inline-item">
+                    {productos.map((item, index) => (
+                        <tr key={item.id}>
+                            <td className="text-center">
                                 <button
-                                    onClick={() => handleView(productos.id)}
-                                    className="avtar avtar-s btn-link-info btn-pc-default">
-                                    <i className="ti ti-eye f-20"></i>
+                                    onClick={() => handleEdit(item.id)}
+                                    className="btn btn-icon btn-link-success avtar-s"
+                                    title="Editar"
+                                >
+                                    <i className="ti ti-edit fs-4"></i>
                                 </button>
-                            </li>
-                            */}
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleEdit(productos.id)}
-                                    className="avtar avtar-s btn-link-success btn-pc-default">
-                                    <i className="ti ti-edit f-20"></i>
-                                </button>
-                            </li>
-                            {/*
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleDelete(productos.id)}
-                                    className="avtar avtar-s btn-link-danger btn-pc-default">
-                                    <i className="ti ti-trash f-20"></i>
-                                </button>
-                            </li>
-                            */}
-                        </ul>
-                        </td>
-                        <td className="text-center">{index + 1}</td>
-                        <td >{ productos.codigo }</td>
-                        <td className="text-left">
-                            <div className="row">
-                                <div className="col-auto pe-0">
-                                    <img src={avatar1} alt="user-image" className="wid-40 rounded-circle"></img>
+                            </td>
+                            <td className="text-center text-muted">{index + 1}</td>
+                            <td>
+                                <div className="d-flex align-items-center">
+                                    <div className="avtar avtar-info avtar-s rounded-circle me-3">
+                                        <i className={`ti ${item.tipo?.nombre === 'SERVICIO' ? 'ti-scissors' : 'ti-package'} fs-4`}></i>
+                                    </div>
+                                    <div>
+                                        <h6 className="mb-0 fw-bold">{item.nombre}</h6>
+                                        <small className="text-muted">
+                                            {item.codigo || 'S/C'} | {item.unidad?.nombre}
+                                        </small>
+                                    </div>
                                 </div>
-                                <div className="col">
-                                    <h6 className="mb-1">{ productos.nombre }</h6>
-                                    <p className="text-muted f-12 mb-0">{ productos.descripcion }</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td >{ productos.preciosalida }</td>
-                        <td >{ productos.minimostock }</td>
-                        <td >{ productos.minimostock }</td>
-                        <td >{ productos.estado_id }</td>
-                    </tr>
+                            </td>
+                            <td>
+                                <span className={`badge ${getTipoBadge(item.tipo?.nombre || '')}`}>
+                                    {item.tipo?.nombre}
+                                </span>
+                            </td>
+                            <td className="text-end fw-bold text-dark">
+                                {formatCurrency(item.preciosalida)}
+                            </td>
+                            <td className="text-center">
+                                <span className="badge bg-light-secondary text-dark border">
+                                    {item.minimostock || 0}
+                                </span>
+                            </td>
+                            <td className="text-center">
+                                <span className={`badge ${item.estado?.nombre === 'ACTIVO' ? 'bg-success' : 'bg-danger'}`}>
+                                    {item.estado?.nombre}
+                                </span>
+                            </td>
+                        </tr>
                     ))}
                 </tbody>
             </table>
-        </> 
+        </div>
     );
-  }
+}

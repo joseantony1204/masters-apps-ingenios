@@ -195,10 +195,10 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 935, 'codigo' => 'CR', 'nombre' => 'Compra ahora, paga después (pagos a plazos)', 'padre' => 928, 'jerarquia' => NULL, 'observacion' => NULL],
             
             [ 'id' => 936, 'codigo' => 'LIS_ESTADOSFACTURAS', 'nombre' => 'ESTADOS DE FACTURA', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 937, 'codigo' => NULL, 'nombre' => 'Abierta', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 938, 'codigo' => NULL, 'nombre' => 'Pagada', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 939, 'codigo' => NULL, 'nombre' => 'Anulada', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 940, 'codigo' => NULL, 'nombre' => 'Credito', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 937, 'codigo' => NULL, 'nombre' => 'Abierta', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => 'info'],
+            [ 'id' => 938, 'codigo' => NULL, 'nombre' => 'Pagada', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => 'success'],
+            [ 'id' => 939, 'codigo' => NULL, 'nombre' => 'Anulada', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => 'danger'],
+            [ 'id' => 940, 'codigo' => NULL, 'nombre' => 'Credito', 'padre' => 936, 'jerarquia' => NULL, 'observacion' => 'primary'],
 
             [ 'id' => 941, 'codigo' => 'LIS_TIPOSFACTURAS', 'nombre' => 'TIPOS DE FACTURA', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 942, 'codigo' => NULL, 'nombre' => 'Compra', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],

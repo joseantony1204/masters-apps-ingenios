@@ -15,11 +15,11 @@ export default function Index({ ftfacturas }: Props) {
     
     // Filtrado por estados (asumiendo IDs de tu base de datos)
     // Estado 937 = ADCITAS (Pendientes/Borradores según tu JSON previo)
-    // Estado 11 = PAGADA (Ejemplo)
-    const pagadas = ftfacturas.filter(f => f.estado_id === 11);
+    // Estado 938 = PAGADA (Ejemplo)
+    const pagadas = ftfacturas.filter(f => f.estado_id === 938);
     const montoPagado = pagadas.reduce((acc, curr) => acc + Number(curr.grand_total || 0), 0);
     
-    const vencidas = ftfacturas.filter(f => f.estado_id === 937); // Ajustar según tu lógica de "Vencida"
+    const vencidas = ftfacturas.filter(f => f.estado_id === 937 || f.estado_id === 940); // Ajustar según tu lógica de "Vencida"
     const montoVencido = vencidas.reduce((acc, curr) => acc + Number(curr.grand_total || 0), 0);
 
     const formatCurrency = (value: number) => 
@@ -33,7 +33,7 @@ export default function Index({ ftfacturas }: Props) {
                     <div className="col-md-12">
                         <ul className="breadcrumb">
                             <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
-                            <li className="breadcrumb-item"><a href={route('ftfacturas.index')}> Ftfacturas</a></li>
+                            <li className="breadcrumb-item"><a href={route('ftfacturas.index')}> Facturas</a></li>
                             <li className="breadcrumb-item" aria-current="page">Listado</li>
                         </ul>
                     </div>

@@ -140,7 +140,7 @@ export default function Terminales({ terminalesInitial = [], sedes, resoluciones
 
                     <div className="col-md-6">
                         <label className="form-label small fw-bold">Nombre de la Caja/Equipo</label>
-                        <input type="text" className="form-control border-0 bg-light shadow-none py-2" 
+                        <input type="text" className={`form-control border-0 bg-light ${errors.nombre ? 'is-invalid' : ''}`}
                                value={data.nombre} onChange={e => setData('nombre', e.target.value)} placeholder="Ej: Caja Principal 01" />
                         {errors.nombre && <small className="text-danger">{errors.nombre}</small>}
                     </div>
@@ -153,20 +153,22 @@ export default function Terminales({ terminalesInitial = [], sedes, resoluciones
 
                     <div className="col-md-6">
                         <label className="form-label small fw-bold">Sede donde se ubica</label>
-                        <select className="form-select border-0 bg-light shadow-none py-2" 
+                        <select className={`form-control border-0 bg-light ${errors.sede_id ? 'is-invalid' : ''}`}
                                 value={data.sede_id} onChange={e => setData('sede_id', e.target.value)}>
                             <option value="">Seleccione una sede...</option>
                             {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                         </select>
+                        {errors.sede_id && <small className="text-danger">{errors.sede_id}</small>}
                     </div>
 
                     <div className="col-md-6">
                         <label className="form-label small fw-bold">Resolución a utilizar</label>
-                        <select className="form-select border-0 bg-light shadow-none py-2" 
+                        <select className={`form-control border-0 bg-light ${errors.resolucion_id ? 'is-invalid' : ''}`}
                                 value={data.resolucion_id} onChange={e => setData('resolucion_id', e.target.value)}>
                             <option value="">Seleccione una resolución...</option>
                             {resoluciones.map(r => <option key={r.id} value={r.id}>{r.prefijo} - {r.numero}</option>)}
                         </select>
+                        {errors.resolucion_id && <small className="text-danger">{errors.resolucion_id}</small>}
                     </div>
 
                     <div className="col-12 pt-3 d-flex gap-2">

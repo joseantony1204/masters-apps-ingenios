@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link} from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
@@ -41,7 +41,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="d-flex justify-content-between align-items-end mb-4">
-                    <h3 className="mb-0"><b>Inicio de sessión</b></h3>
+                    <h3 className="mb-0"><b>Login</b></h3>
+                    <Link href={route('register')} className="ml-auto text-sm" tabIndex={5}>
+                        ¿No tienes una cuenta?, crea tu negocio aquí.
+                    </Link>
                 </div>
                 
                 <div className="form-group mb-3">

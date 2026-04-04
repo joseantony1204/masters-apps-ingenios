@@ -82,12 +82,10 @@ export default function Table({ ftfacturas }: Props) {
 
                             {/* Estado con Badge Dinámico */}
                             <td>
-                                <span className={`badge rounded-pill ${
-                                    item.estado_id === 937 ? 'bg-light-warning text-warning' : 
-                                    item.estado_id === 11 ? 'bg-light-success text-success' : 'bg-light-secondary'
-                                }`}>
-                                    <i className={`${item.estado?.observacion || 'ti ti-circle'} me-1`}></i>
-                                    {item.estado?.nombre || 'Desconocido'}
+                                <span 
+                                    className={`badge bg-light-${item.estado.observacion} text-${item.estado.observacion}`} 
+                                    style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
+                                    {item.estado?.nombre}
                                 </span>
                             </td>
 

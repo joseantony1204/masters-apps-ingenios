@@ -42,6 +42,20 @@ class FtresolucionesController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'numero' => 'required',
+            'fecha' => 'required',
+            'prefijo' => 'required',
+            'desde' => 'required',
+            'hasta' => 'required',
+        ],[
+            'numero.required' => 'El campo numero es requerido',
+            'fecha.required' => 'El campo fecha es requerido',
+            'prefijo.required' => 'El campo prefijo es requerido',
+            'desde.required' => 'El campo desde es requerido',
+            'hasta.required' => 'El campo hasta es requerido',
+        ]);
+
         $user = Auth::user();
         $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
         $request['comercio_id'] = $comercio->id;
@@ -81,6 +95,7 @@ class FtresolucionesController extends Controller
      */
     public function update(FtresolucionesRequest $request, $ftresoluciones)
     {
+
         try {                        
             $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
             $ftresoluciones = Ftresoluciones::findOrFail($ftresoluciones);

@@ -232,8 +232,68 @@ class FtfacturasController extends Controller
      */
     public function edit($id)
     {
+        // 0. Obtenemos la sede de la sesión (asumiendo que la guardas al hacer login)
+        $user = User::with('sedes')->where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Comercios::with('sedes', 'persona')->where('persona_id', $user->persona_id)->first();
+
+        // 1. Obtenemos la sede predeterminada del usuario
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminada = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->first();
+
+        // 2. Si no hay sede predeterminada, manejamos el error o asignamos vacío
+        if (!$sedePredeterminada) {
+            return back()->with('error', 'El usuario no tiene una sede predeterminada asignada.');
+        }
+    
+        // 3. Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminada) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminada->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+
+        // 4. Definir el turno activo por defecto (el primero de la lista)
+        $turnoActivo = $turnosAbiertos->first();
+
+        //5. --- LÓGICA PARA CARGAR LA FACTURA ---
+        return $ftfactura = Ftfacturas::findOrFail($id)->load([
+            'turnos.terminal.sede',
+            'estado',
+            'tipo',
+            'detalles.producto',
+        ]);
+
+        //6. --- LÓGICA PARA CARGAR LA CITA ---
+        $cita = null;
+        if($ftfactura->model_type===921) {
+            // Cargamos la cita con la persona (cliente) y sus servicios asociados
+            $cita = Adcitas::with([
+                'cliente.persona.personasnaturales',
+                'detalle_con_empleadoservicio.empleadoservicio.servicio',
+                'detalle_con_producto.producto',
+            ])
+            ->find($ftfactura->model_type_id);
+        }
+        
         return Inertia::render('ftfacturas/edit', [
-            'ftfacturas' => Ftfacturas::findOrFail($id),
+            'comercio' => $comercio,
+            'ftfactura' => $ftfactura,
+            'turnoActivo' => $turnoActivo,
+            'sedePredeterminada' => $sedePredeterminada,
+            'turnosList'  => $turnosAbiertos, // Por si tiene más de uno
+            'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOSFACTURAS'),
+            'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
+            'cita' => $cita, // Pasamos la cita encontrada (o null)
         ]);
     }
 

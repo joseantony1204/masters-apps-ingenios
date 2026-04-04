@@ -57,4 +57,24 @@ class Cfmaestra extends Model
         ->prepend('', '');
         return $list;
     }
+
+    public static function unidades()
+    {
+        $nombresCategorias = Cfmaestra::where('padre', 860)
+            ->whereNull('jerarquia')
+            ->pluck('nombre', 'id');
+
+        $unidades = Cfmaestra::where('padre', 860)
+            ->whereNotNull('jerarquia')
+            ->select('id', 'nombre', 'jerarquia') // <--- SOLO ESTOS CAMPOS
+            ->orderBy('nombre')
+            ->get();
+
+        $unidadesAgrupadas = $unidades->groupBy(function($item) use ($nombresCategorias) {
+            return $nombresCategorias[$item->jerarquia] ?? 'Otros';
+        });
+
+        // Convertimos a array y nos aseguramos de que sea un formato JSON puro
+        return $unidadesAgrupadas->toArray();
+    }
 }

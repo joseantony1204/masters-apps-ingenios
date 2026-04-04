@@ -43,11 +43,8 @@ class Ftresoluciones extends Model
 			'prefijo' => 'required',
 			'desde' => 'required',
 			'hasta' => 'required',
-			'actual' => 'required',
-			'advertirescacez' => 'required',
 			'comercio_id' => 'required',
-			'estado' => 'required',
-			'created_by' => 'required',];
+        ];
 
     /**
      * The attributes that are mass assignable.

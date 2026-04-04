@@ -41,6 +41,15 @@ class FtterminalesController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'nombre' => 'required',
+            'sede_id' => 'required',
+            'resolucion_id' => 'required',
+        ],[
+            'nombre.required' => 'El campo nombre es requerido',
+            'sede_id.required' => 'El campo sede es requerido',
+            'resolucion_id.required' => 'El campo resolucion es requerido',
+        ]);
         $user = Auth::user();
         $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
         $request['comercio_id'] = $comercio->id;
@@ -80,7 +89,15 @@ class FtterminalesController extends Controller
      */
     public function update(Request $request, $ftterminales)
     {
-        request()->validate(Ftterminales::$rules);
+        $validated = $request->validate([
+            'nombre' => 'required',
+            'sede_id' => 'required',
+            'resolucion_id' => 'required',
+        ],[
+            'nombre.required' => 'El campo nombre es requerido',
+            'sede_id.required' => 'El campo sede es requerido',
+            'resolucion_id.required' => 'El campo resolucion es requerido',
+        ]);
         try {                        
             $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
             $ftterminales = Ftterminales::findOrFail($ftterminales);
