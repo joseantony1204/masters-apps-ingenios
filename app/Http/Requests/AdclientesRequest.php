@@ -24,7 +24,7 @@ class AdclientesRequest extends FormRequest
         return [
             // Reglas para la tabla PERSONAS
             'tipoidentificacion_id' => 'required',
-            'identificacion' => 'required|string|max:20|unique:personas,identificacion',
+            'identificacion' => 'required|string|max:20',
             'telefonomovil' => 'required',
             'email' => 'required',
 
@@ -44,7 +44,7 @@ class AdclientesRequest extends FormRequest
         return [
             'tipoidentificacion_id.required' => 'El campo tipo identificación es requerido.',
             'identificacion.required' => 'El campo identificación es requerido.',
-            'identificacion.unique' => 'Esta identificación ya está registrada en el sistema.',
+            //'identificacion.unique' => 'Esta identificación ya está registrada en el sistema.',
             'email.required' => 'El correo electrónico es obligatorio para el empleado.',
             'fechanacimiento.required' => 'El campo fecha de nacimiento es requerido.',
             'nombre.required' => 'El campo nombre es requerido.',

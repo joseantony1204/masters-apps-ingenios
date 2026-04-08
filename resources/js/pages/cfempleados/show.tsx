@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppMainLayout from '@/layouts/app-main-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage} from '@inertiajs/react';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg';
 import { router } from '@inertiajs/react';
@@ -23,8 +23,12 @@ export default function Show({
     motivosList,
     flash
 }: any) {
+    const { auth } = usePage().props as any;
+    const user = auth.user;
+
     const [activeTab, setActiveTab] = useState('perfil');
-    
+    const [jornadaActiva, setJornadaActiva] = useState('Mañana');
+
     // 1. Estados adicionales para visibilidad (puedes usar un objeto para manejar varios)
     const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
 
@@ -394,7 +398,11 @@ export default function Show({
     const obtenerDisponibilidad = async (servicioId = '') => {
         setCargandoTurnos(true);
         try {
-            const url = route('api.disponibilidad.turnos', { empleado: empleado.id, servicio: servicioId });
+            const url = route('api.disponibilidad.turnos', { 
+                token: user.personas.comercios.token,
+                empleado: empleado.id, 
+                servicio: servicioId 
+            });
             const response = await axios.get(url);
             
             setTurnosDisponibles(response.data);
@@ -477,6 +485,7 @@ export default function Show({
     // Al lado de los otros useForm (formPass, formBloqueo, etc.)
     const formReserva = useForm({
         cliente_id: '',
+        cliente_identificacion: '',
         cliente_nombre: '',
         cliente_telefono: '',
         cliente_email: '',
@@ -505,6 +514,12 @@ export default function Show({
 
     const submitReserva = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validación básica antes de enviar
+        if (!formReserva.data.cliente_nombre) {
+            alert("Por favor, selecciona un cliente o crea uno.");
+            return;
+        }
     
         formReserva.post(route('adcitas.store'), {
             onSuccess: () => {
@@ -867,9 +882,9 @@ export default function Show({
                                                 {cargandoTurnos ? (
                                                     <span className="spinner-border spinner-border-sm me-2"></span>
                                                 ) : (
-                                                    <i className="ti ti-clock me-2 fs-4"></i>
+                                                    <i className="ti ti-plus me-2 fs-4"></i>
                                                 )}
-                                                Ver disponibilidad
+                                                Nueva cita
                                             </button>
                                         </div>
 
@@ -1519,7 +1534,7 @@ export default function Show({
                     </div>
                 </div>
             )}
-            
+
             <div className="offcanvas offcanvas-end border-0 shadow" style={{ width: '460px' }} tabIndex={-1} id="offcanvasDisponibilidad">
                 <div className="offcanvas-header bg-primary text-white py-4">
                     <div>
@@ -1562,51 +1577,73 @@ export default function Show({
                                 </div>
                             </div>
 
-                            {/* LISTADO DE TURNOS */}
+                            {/* NAVEGACIÓN DE JORNADAS (TABS) */}
+                            <div className="bg-white border-bottom px-3 py-2">
+                                <ul className="nav nav-pills nav-fill gap-2">
+                                    {['Mañana', 'Tarde', 'Noche'].map((j) => (
+                                        <li className="nav-item" key={j}>
+                                            <button 
+                                                className={`nav-link py-2 border-0 small fw-bold ${jornadaActiva === j ? 'active bg-primary' : 'bg-light text-muted'}`}
+                                                onClick={() => setJornadaActiva(j)}
+                                            >
+                                                {j === 'Mañana' && <i className="fa fa-sun me-1"></i>}
+                                                {j === 'Tarde' && <i className="ti ti-sun me-1"></i>}
+                                                {j === 'Noche' && <i className="ti ti-moon me-1"></i>}
+                                                {j}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* LISTADO DE TURNOS FILTRADOS */}
                             <div className="p-3 overflow-y-auto flex-grow-1">
-                                {['Mañana', 'Tarde'].map((jornada) => {
-                                    const turnosJornada = turnosDisponibles[fechaSeleccionada]?.filter((t: any) => {
-                                        const hora = parseInt(t.hora.split(':')[0]);
-                                        return jornada === 'Mañana' ? hora < 12 : hora >= 12;
+                                {(() => {
+                                    const turnosFiltrados = turnosDisponibles[fechaSeleccionada]?.filter((t: any) => {
+                                        const [h, m] = t.hora.split(':').map(Number);
+                                        const totalMinutos = h * 60 + m;
+
+                                        if (jornadaActiva === 'Mañana') return totalMinutos < 720; // Antes 12:00 PM
+                                        if (jornadaActiva === 'Tarde') return totalMinutos >= 720 && totalMinutos < 1080; // 12:00 PM - 5:59 PM
+                                        return totalMinutos >= 1080; // 6:00 PM en adelante
                                     });
 
-                                    if (!turnosJornada?.length) return null;
+                                    if (!turnosFiltrados?.length) {
+                                        return (
+                                            <div className="text-center py-5 opacity-50">
+                                                <i className={`ti ti-${jornadaActiva === 'Noche' ? 'moon' : 'sun'} fs-1`}></i>
+                                                <p className="mt-2 small">No hay turnos para la <strong>{jornadaActiva.toLowerCase()}</strong>.</p>
+                                            </div>
+                                        );
+                                    }
 
                                     return (
-                                        <div key={jornada} className="mb-4">
-                                            <div className="d-flex align-items-center mb-3">
-                                                <h6 className="mb-0 fw-bold text-uppercase small text-muted tracking-wider">{jornada}</h6>
-                                                <div className="flex-grow-1 border-bottom ms-3 opacity-25"></div>
-                                            </div>
-
-                                            <div className="row g-2">
-                                                {turnosJornada.map((bloque: any, bIdx: number) => (
-                                                    <div key={bIdx} className="col-12">
-                                                        <div className="card border-0 shadow-sm mb-1 hover-shadow-md">
-                                                            <div className="card-body p-2 d-flex align-items-center gap-3">
-                                                                <div className="bg-light rounded-2 px-3 py-2 fw-bold text-primary border border-primary-subtle">
-                                                                    {bloque.hora}
-                                                                </div>
-                                                                <div className="d-flex flex-wrap gap-1">
-                                                                    {bloque.servicios_que_caben.map((serv: any, sIdx: number) => (
-                                                                        <button 
-                                                                            key={sIdx}
-                                                                            onClick={() => handleSeleccionarCita(fechaSeleccionada, bloque.hora, serv)}
-                                                                            className="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium"
-                                                                        >
-                                                                            <i className="ti ti-plus me-1"></i>{serv.nombre}
-                                                                            
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
+                                        <div className="row g-2">
+                                            {turnosFiltrados.map((bloque: any, bIdx: number) => (
+                                                <div key={bIdx} className="col-12">
+                                                    <div className="card border shadow-none mb-1 hover-border-primary transition-all">
+                                                        <div className="card-body p-2 d-flex align-items-center gap-3">
+                                                            <div className="bg-light-primary rounded-2 px-3 py-2 fw-bold text-primary border border-primary-subtle">
+                                                                {bloque.hora}
+                                                            </div>
+                                                            <div className="d-flex flex-wrap gap-1 flex-grow-1">
+                                                                {bloque.servicios_que_caben.map((serv: any, sIdx: number) => (
+                                                                    <button 
+                                                                        key={sIdx}
+                                                                        onClick={() => handleSeleccionarCita(fechaSeleccionada, bloque.hora, serv)}
+                                                                        className="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium"
+                                                                    >
+                                                                        <i className="ti ti-plus me-1"></i>{serv.nombre}
+                                                                    </button>
+                                                                ))}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                ))}
-                                            </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     );
-                                })}
+                                })()}
                             </div>
                         </>
                     ) : (
@@ -1669,32 +1706,43 @@ export default function Show({
 
                             {/* 2. Formulario de Cita */}
                             <form id="formConfirmarCita" onSubmit={submitReserva}>
-                                {/* Cliente con buscador */}
+                                {/* Buscador de Cliente con Opción de "Nuevo" */}
                                 <div className="mb-3 position-relative">
                                     <label className="form-label fw-semibold small text-muted text-uppercase">Cliente</label>
                                     <div className="input-group">
-                                        <span className="input-group-text bg-light border-end-0"><i className="ti ti-user"></i></span>
+                                        <span className="input-group-text bg-light"><i className="ti ti-user"></i></span>
                                         <input 
                                             type="text" 
-                                            className="form-control border-start-0" 
+                                            className={`form-control ${!formReserva.data.cliente_id && formReserva.data.cliente_nombre ? 'border-warning' : ''}`}
                                             value={formReserva.data.cliente_nombre}
                                             onChange={(e) => {
-                                                formReserva.setData('cliente_nombre', e.target.value);
+                                                formReserva.setData({
+                                                    ...formReserva.data,
+                                                    cliente_nombre: e.target.value,
+                                                    cliente_id: '' // Limpiamos el ID si el usuario escribe, para marcarlo como "Nuevo"
+                                                });
                                                 buscarCliente(e.target.value);
                                             }}
-                                            placeholder="Escribe para buscar..."
+                                            placeholder="Buscar cliente por nombre o cédula..."
                                             autoComplete="off"
                                         />
-                                        {buscando && <span className="input-group-text bg-white"><div className="spinner-border spinner-border-sm text-primary"></div></span>}
                                     </div>
+                                    
+                                    {/* Indicador de Nuevo Cliente */}
+                                    {!formReserva.data.cliente_id && formReserva.data.cliente_nombre.length > 2 && !buscando && (
+                                        <div className="form-text text-warning fw-bold">
+                                            <i className="ti ti-alert-circle me-1"></i> Se creará como cliente nuevo
+                                        </div>
+                                    )}
 
                                     {/* Lista de sugerencias */}
-                                    {mostrarSugerencias && resultadosClientes.length > 0 && (
-                                        <ul className="list-group position-absolute w-100 shadow-lg z-3" style={{ top: '100%' }}>
+                                    {mostrarSugerencias && (
+                                        <ul className="list-group position-absolute w-100 shadow-lg z-3 mt-1" style={{ top: '100%' }}>
+                                            {/* Resultados de la DB */}
                                             {resultadosClientes.map((c: any) => (
                                                 <li 
                                                     key={c.id} 
-                                                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2"
                                                     onClick={() => seleccionarCliente(c)}
                                                     style={{ cursor: 'pointer' }}
                                                 >
@@ -1702,14 +1750,44 @@ export default function Show({
                                                         <div className="fw-bold">{c.nombres} {c.apellidos}</div>
                                                         <small className="text-muted">{c.telefonomovil || 'Sin teléfono'}</small>
                                                     </div>
-                                                    <span className="badge bg-light text-primary border">Seleccionar</span>
+                                                    <i className="ti ti-chevron-right text-muted"></i>
                                                 </li>
                                             ))}
+                                            
+                                            {/* Opción: Crear Nuevo (si no hay resultados exactos) */}
+                                            {formReserva.data.cliente_nombre.length > 2 && (
+                                                <li 
+                                                    className="list-group-item list-group-item-action list-group-item-primary d-flex align-items-center py-2"
+                                                    onClick={() => setMostrarSugerencias(false)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <i className="ti ti-user-plus me-2 fs-5"></i>
+                                                    <div>
+                                                        <div className="fw-bold">Usar "{formReserva.data.cliente_nombre}"</div>
+                                                        <small>Registrar como cliente nuevo</small>
+                                                    </div>
+                                                </li>
+                                            )}
                                         </ul>
                                     )}
                                 </div>
 
-                                <div className="row g-3 mb-3">
+                                <div className="row g-3">
+                                    {/* Identificación (Nueva para cliente nuevo) */}
+                                    {!formReserva.data.cliente_id && formReserva.data.cliente_nombre && (
+                                        <div className="col-12">
+                                            <label className="form-label fw-semibold small text-muted text-uppercase">N° Identificación</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-control bg-light-warning border-warning-subtle" 
+                                                placeholder="Identificación del nuevo cliente"
+                                                value={formReserva.data.cliente_identificacion || ''}
+                                                onChange={e => formReserva.setData('cliente_identificacion', e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="col-md-6">
                                         <label className="form-label fw-semibold small text-muted text-uppercase">Teléfono</label>
                                         <input 
@@ -1718,6 +1796,7 @@ export default function Show({
                                             value={formReserva.data.cliente_telefono}
                                             onChange={e => formReserva.setData('cliente_telefono', e.target.value)}
                                             placeholder="Ej: 3001234567"
+                                            required={!formReserva.data.cliente_id} // Requerido si es nuevo
                                         />
                                     </div>
                                     <div className="col-md-6">
@@ -1730,17 +1809,13 @@ export default function Show({
                                             placeholder="ejemplo@correo.com"
                                         />
                                     </div>
-
-                                    {/* Notas adicionales */}
-                                    <div className="mb-0">
-                                        <label htmlFor="notas" className="form-label fw-semibold small text-muted text-uppercase">Notas Opcionales</label>
+                                    <div className="col-12">
+                                        <label className="form-label fw-semibold small text-muted text-uppercase">Notas Opcionales</label>
                                         <textarea 
                                             className="form-control" 
-                                            id="observaciones" 
-                                            name="observaciones" 
                                             rows={2}
                                             value={formReserva.data.observaciones}
-                                            onChange={(e) => formReserva.setData('observaciones', e.target.value)} // <--- Captura el cambio
+                                            onChange={(e) => formReserva.setData('observaciones', e.target.value)}
                                             placeholder="Alguna observación importante..."
                                         ></textarea>
                                     </div>
@@ -1748,24 +1823,23 @@ export default function Show({
                             </form>
                         </div>
 
+
                         <div className="modal-footer border-top bg-light p-3">
-                            <button type="button" className="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
-                                Cancelar
-                            </button>
-                            
-                            {/* En el Footer del Modal */}
+                            <button type="button" className="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
                             <button 
                                 type="submit" 
                                 form="formConfirmarCita" 
-                                className="btn btn-primary shadow-sm"
-                                disabled={formReserva.processing} // Desactiva el botón mientras envía
+                                className={`btn ${formReserva.data.cliente_id ? 'btn-primary' : 'btn-warning'} shadow-sm`}
+                                disabled={formReserva.processing}
                             >
                                 {formReserva.processing ? (
                                     <span className="spinner-border spinner-border-sm me-2"></span>
                                 ) : (
-                                    <i className="ti ti-device-floppy me-2"></i>
+                                    <>
+                                        <i className={`ti ${formReserva.data.cliente_id ? 'ti-device-floppy' : 'ti-user-plus'} me-2`}></i>
+                                        {formReserva.data.cliente_id ? 'Confirmar cita' : 'Registrar y Agendar'}
+                                    </>
                                 )}
-                                Confirmar y Agendar
                             </button>
                         </div>
                     </div>

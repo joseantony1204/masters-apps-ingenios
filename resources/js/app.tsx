@@ -4,6 +4,11 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
+import { Toaster } from 'react-hot-toast'; // 1. Importa el Toaster
+
+// 1. Importamos el proveedor de la modal global
+// Asegúrate de que la ruta coincida con donde creaste el archivo
+import { ClienteModalProvider } from './hooks/use-cliente-context';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -13,21 +18,19 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        // 2. Envolvemos el componente <App /> con el Provider.
+        // Esto permite que todas las páginas de Inertia compartan el mismo estado de la modal.
+        root.render(
+            <ClienteModalProvider>
+                <App {...props} />
+                <Toaster position="top-right" reverseOrder={false} /> {/* 2. Añádelo aquí */}
+            </ClienteModalProvider>
+        );
     },
     progress: {
-        color: '#4B5563',
+        color: '#1890ff', // Cambiado al azul de Vantify para coherencia
     },
 });
 
-// This will set light / dark mode on load...
+// Inicializa el modo claro/oscuro
 initializeTheme();
-
-//COMANDS//
-//composer run dev
-//php artisan make:crud productos
-//php artisan migrate:fresh
-//php artisan migrate
-//php artisan db:seed
-//php artisan migrate: --seed
-//php artisan migrate:rollback

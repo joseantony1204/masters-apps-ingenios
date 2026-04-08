@@ -30,10 +30,7 @@ export default function Create({ personas, personasnaturales, empleados, tpident
         ocupacion_id: personasnaturales.ocupacion_id || '',
         fechaingreso: empleados.fechaingreso || today,                           
         estado_id: empleados.estado_id || '',                 
-        observaciones: empleados.observaciones || '',                 
-        created_by: empleados.created_by || '',                 
-        updated_by: empleados.updated_by || '',                
-        deleted_by: empleados.deleted_by || '',
+        observaciones: empleados.observaciones || '',  
     });
     
     const handleSubmit = (e: React.FormEvent) => {

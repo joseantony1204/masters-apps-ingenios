@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import AuthMainLayout from '@/layouts/auth-main-layout';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     const { data, setData, post, processing, errors } = useForm<Required<{ email: string }>>({
@@ -22,7 +23,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
     };
 
     return (
-        <AuthLayout title="Forgot password" description="Enter your email to receive a password reset link">
+        <AuthMainLayout title="Forgot password" description="Enter your email to receive a password reset link">
             <Head title="Forgot password" />
 
             {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
@@ -30,7 +31,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
             <div className="space-y-6">
                 <form onSubmit={submit}>
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
+                        <Label htmlFor="email">Correo electrónico</Label>
                         <Input
                             id="email"
                             type="email"
@@ -45,19 +46,23 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         <InputError message={errors.email} />
                     </div>
 
-                    <div className="my-6 flex items-center justify-start">
-                        <Button className="w-full" disabled={processing}>
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                            Email password reset link
-                        </Button>
+                    <div className="d-grid mt-4">
+                        <button 
+                        type="submit" 
+                        className="btn btn-primary"
+                        disabled={processing}
+                        >
+                            {processing && <span className="spinner-border spinner-border-sm me-2"></span>}
+                            Obtener enlace de restablecimiento de contraseña
+                        </button>
                     </div>
                 </form>
 
                 <div className="text-muted-foreground space-x-1 text-center text-sm">
-                    <span>Or, return to</span>
-                    <TextLink href={route('login')}>log in</TextLink>
+                    <span>o regresar a</span>
+                    <TextLink href={route('login')}>Login</TextLink>
                 </div>
             </div>
-        </AuthLayout>
+        </AuthMainLayout>
     );
 }

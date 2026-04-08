@@ -35,12 +35,9 @@ class Adclientes extends Model
 
     protected $perPage = 20;
     static $rules = [
-			'fechaingreso' => 'required',
 			'persona_id' => 'required',
-			'referido_id' => 'required',
 			'estado_id' => 'required',
-			'comercio_id' => 'required',
-			'created_by' => 'required',];
+			'comercio_id' => 'required',];
 
     /**
      * The attributes that are mass assignable.

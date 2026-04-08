@@ -57,56 +57,81 @@ class AdclientesController extends Controller
                 $comercio = Comercios::with('sedes')->where('persona_id', $userAuth->persona_id)->first();
 
                 $audt = ['created_by' => Auth::user()->id, 'created_at' => now()]; 
-                
-                // 1. Crear Persona
-                $persona = Personas::create($request->only([
-                    'tipoidentificacion_id', 'identificacion', 'telefonomovil', 'email'
-                ]) + $audt);
+
+                // 1. Buscamos o creamos la persona
+                $persona = Personas::updateOrCreate(
+                    ['identificacion' => $request->identificacion], // Condición de búsqueda
+                    [
+                        'telefonomovil' => $request->telefonomovil,
+                        'email' => $request->email,
+                        'tipoidentificacion_id' => $request->tipoidentificacion_id,
+                    ] + $audt
+                );
 
                 // 2. Crear Persona Natural
-                $persona->personasnaturales()->create($request->only([
-                    'nombre', 'segundonombre', 'apellido', 'segundoapellido', 
-                    'fechanacimiento', 'sexo_id', 'ocupacion_id'
-                ]) + $audt);
+                $persona->personasnaturales()->updateOrCreate(
+                    ['persona_id' => $persona->id], // Condición de búsqueda
+                    [
+                        'nombre' => $request->nombre,
+                        'segundonombre' => $request->segundonombre,
+                        'apellido' => $request->apellido,
+                        'segundoapellido' => $request->segundoapellido,
+                        'fechanacimiento' => $request->fechanacimiento,
+                        'sexo_id' => $request->sexo_id,
+                        'ocupacion_id' => $request->ocupacion_id,
+                    ] + $audt
+                );
 
-                // 3. Crear Cliente
-                $persona->clientes()->create($request->only([
-                    'fechaingreso', 'estado_id', 'referido_id'
-                ]) + 
-                [
-                    'comercio_id' => $comercio->id, 
-                ] + $audt);
+                // 3. Crear Cliente vinculado al comercio
+                $persona->clientes()->updateOrCreate(
+                    ['persona_id' => $persona->id], // Condición de búsqueda
+                    [
+                        'fechaingreso' => now(),
+                        'estado_id' => 850, // Activo
+                        'comercio_id' => $comercio->id,
+                    ] + $audt
+                );
+            
+                // 4. Obtener o crear el usuario de forma segura
+                // Buscamos por persona_id para evitar duplicados si la identificación cambió
+                $nuevoUsuario = $persona->user ?: User::updateOrCreate(
+                    ['persona_id' => $persona->id],
+                    [
+                        'username'      => trim($persona->identificacion),
+                        'password'      => Hash::make($persona->identificacion),
+                        'email'         => $persona->email,
+                        'telefonomovil' => $persona->telefonomovil,
+                        'perfil_id'     => 911, // Perfil Cliente
+                        'estado_id'     => 850, // Activo
+                        'created_by'    => Auth::id(),
+                    ]
+                );
 
-                // 4. Crear el Usuario para el Empleado
-                // Usamos una variable distinta ($nuevoUsuario) para no confundir con el de sesión
-                $nuevoUsuario = $persona->user()->create([
-                    'username'    => trim($persona->identificacion),
-                    'password'    => Hash::make($persona->identificacion),
-                    'email'       => $persona->email,
-                    'telefonomovil' => $persona->telefonomovil,
-                    'perfil_id'   => 910, // Perfil Empleado
-                    'estado_id'   => 850, // Activo
-                    'persona_id'  => $persona->id,
-                    'created_by'  => Auth::user()->id,
-                    'created_at'  => now()
-                ]);
+                // 5. Asociar a sedes (Optimizado en una sola consulta)
+                $sedesIds = $comercio->sedes->pluck('id');
 
-                // 5. Asociar a sedes (cfsedesusers)
-                $sedesIds = $comercio->sedes->pluck('id')->toArray();
+                if ($sedesIds->isNotEmpty()) {
+                    $authId = Auth::id();
+                    $timestamp = now();
 
-                if (!empty($sedesIds)) {
-                    // Sincronizamos todas las sedes con estado activo (858)
-                    $nuevoUsuario->sedes()->syncWithPivotValues($sedesIds, [
-                        'predeterminada' => false,
-                        'estado_id'      => 858,
-                        'created_by'     => Auth::user()->id,
-                        'created_at'     => now()
-                    ]);
+                    // Preparamos el array para el sync: [id_sede => [datos_pivote]]
+                    $dataSedes = $sedesIds->mapWithKeys(function ($id, $index) use ($authId, $timestamp) {
+                        return [$id => [
+                            'predeterminada' => $index === 0, // La primera será true, las demás false
+                            'estado_id'      => 858,          // Activo
+                            'created_by'     => $authId,
+                            'created_at'     => $timestamp
+                        ]];
+                    })->toArray();
 
-                    // Marcamos la primera sede como predeterminada
-                    $nuevoUsuario->sedes()->updateExistingPivot($sedesIds[0], [
-                        'predeterminada' => true
-                    ]);
+                    // Sincroniza todo de golpe (inserta nuevos, actualiza existentes, elimina no presentes)
+                    //$nuevoUsuario->sedes()->sync($dataSedes);
+                    /**
+                     * IMPORTANTE: syncWithoutDetaching
+                     * Esto agrega las nuevas sedes o actualiza las existentes en este comercio,
+                     * pero NO toca los registros de sedes de otros comercios.
+                     */
+                    $nuevoUsuario->sedes()->syncWithoutDetaching($dataSedes);
                 }
 
                 return redirect()->route('adclientes.index')
@@ -138,7 +163,11 @@ class AdclientesController extends Controller
             'citas.estado',
             'citas.detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
             'citas.detalle_con_empleadoservicio.empleadoservicio.servicio',
-            'citas.detalle_con_producto.producto',
+            // Aplicamos la restricción a producto y a su relación tipo
+            'citas.detalle_con_producto.producto.tipo' => function($query) {
+                // Seleccionamos id, nombre y la FK tipo_id para poder cargar la siguiente relación
+                $query->select('id', 'nombre'); 
+            },
             'citas.detalle_con_empleadoservicio.estado',
         ])->findOrFail($id);
 
@@ -150,6 +179,7 @@ class AdclientesController extends Controller
 
         // ID de la sede predeterminada actual
         $sedePredeterminada = $cliente->persona->user->sedes()
+        ->where('comercio_id', $comercio->id) // Aseguramos que sea del mismo comercio
         ->wherePivot('predeterminada', 1)
         ->first()?->id;
 

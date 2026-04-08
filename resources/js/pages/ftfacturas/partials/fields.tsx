@@ -62,8 +62,8 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                         name: det.empleadoservicio?.servicio?.nombre || 'Servicio',
                         description: `Servicio de cita #${cita.codigo} - ${det.empleadoservicio?.servicio?.nombre}`,
                         qty: det.cantidad || 1,
-                        price: det.preciofinal || 0,
-                        total: (det.cantidad || 1) * (det.preciofinal || 0),
+                        price: det.preciounitario || 0,
+                        total: (det.cantidad || 1) * (det.preciounitario || 0),
                         is_from_appointment: true
                     });
                 });
@@ -79,8 +79,8 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                         name: productoInfo?.nombre || 'Producto',
                         description: `Producto de cita #${cita.codigo}`,
                         qty: det.cantidad || 1,
-                        price: det.preciofinal || 0,
-                        total: (det.cantidad || 1) * (det.preciofinal || 0),
+                        price: det.preciounitario || 0,
+                        total: (det.cantidad || 1) * (det.preciounitario || 0),
                         is_from_appointment: true
                     });
                 });
@@ -167,9 +167,25 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
 
     const handleItemChange = (index: number, field: string, value: any) => {
         const nuevosItems = [...data.items];
+        
+        // Si el usuario cambia el nombre manualmente, reseteamos el ID del producto
+        if (field === 'name') {
+            nuevosItems[index].id = null; 
+            nuevosItems[index].es_nuevo = true;
+        }
+    
         nuevosItems[index][field] = value;
-        nuevosItems[index].total = nuevosItems[index].qty * nuevosItems[index].price;
+    
+        // Recalcular total de la fila
+        if (field === 'qty' || field === 'price') {
+            const qty = field === 'qty' ? parseFloat(value) : nuevosItems[index].qty;
+            const price = field === 'price' ? parseFloat(value) : nuevosItems[index].price;
+            nuevosItems[index].total = (qty || 0) * (price || 0);
+        }
+    
+        setData('items', nuevosItems);
         calcularTotales(nuevosItems);
+
     };
 
     const [buscandoProducto, setBuscandoProducto] = useState(false);
@@ -206,7 +222,8 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
             name: producto.nombre,
             description: producto.tipo || '',
             price: producto.precio || 0,
-            total: (nuevosItems[index].qty || 1) * (producto.precio || 0)
+            total: (nuevosItems[index].qty || 1) * (producto.precio || 0),
+            es_nuevo: false // Este ya existe en DB
         };
         
         setResultadosProductos([]);
@@ -222,7 +239,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
             model_type_id: cliente.id,
 
             // Setteamos los datos en las variables auxiliares
-            cliente_nombre_aux: `${cliente.nombres} ${cliente.apellidos}`,
+            cliente_nombre_aux: `${cliente.nombre} ${cliente.apellido}`,
             cliente_identificacion_aux: cliente.identificacion,
             cliente_email_aux: cliente.email,
             cliente_direccion_aux: cliente.direccion,
@@ -611,7 +628,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                             
                                             {/* Dropdown de sugerencias */}
                                             {filaActiva === index && resultadosProductos.length > 0 && (
-                                                <div className="list-group shadow-lg position-absolute w-100 z-index-3" 
+                                                <div className="list-group shadow-lg position-absolute w-100" 
                                                     style={{ top: '100%', zIndex: 1050 }}>
                                                     {resultadosProductos.map((p) => (
                                                         <button 
@@ -789,10 +806,10 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header bg-primary text-white">
                         <h5 className="modal-title fw-bold text-white">
-                            <i className={modoRegistro ? "ti ti-user-plus me-2" : "ti ti-user-search me-2"}></i>
+                            <i className={modoRegistro ? "ti ti-user-plus me-2" : "ti ti-users me-2"}></i>
                             {modoRegistro ? 'Registrar Cliente Nuevo' : 'Búsqueda de clientes'}
                         </h5>
-                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" onClick={() => setModoRegistro(false)}></button>
+                        <button type="button" className="btn-close" data-bs-dismiss="modal" onClick={() => setModoRegistro(false)}>X</button>
                     </div>
                     
                     <div className="modal-body p-4">
@@ -835,7 +852,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                                         {cliente.round.toUpperCase()}
                                                     </div>
                                                     <div className="flex-grow-1">
-                                                        <h6 className="mb-0 fw-bold">{cliente.nombres} {cliente.apellidos}</h6>
+                                                        <h6 className="mb-0 fw-bold">{cliente.nombre} {cliente.apellido}</h6>
                                                         <small className="text-muted">
                                                             <i className="ti ti-id me-1"></i>{cliente.identificacion} 
                                                             <span className="mx-2">|</span>

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Adcitas, Addetallescitas, Adclientes, User, Comercios, Cfmaestra, Productos, Cfempleados};
+use App\Models\{Personas, Adcitas, Addetallescitas, Adclientes, User, Comercios, Cfmaestra, Productos, Cfempleados};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\{Auth,DB};
+use Illuminate\Support\Facades\{Auth,DB,Hash};
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -44,7 +44,11 @@ class AdcitasController extends Controller
         ->with([
             'detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
             'detalle_con_empleadoservicio.empleadoservicio.servicio',
-            'detalle_con_producto.producto',
+            // Aplicamos la restricción a producto y a su relación tipo
+            'detalle_con_producto.producto.tipo' => function($query) {
+                // Seleccionamos id, nombre y la FK tipo_id para poder cargar la siguiente relación
+                $query->select('id', 'nombre'); 
+            },
             'detalle_con_empleadoservicio.estado',
         ])
         ->select([
@@ -145,6 +149,7 @@ class AdcitasController extends Controller
         ->pluck('nombre_completo', 'id'); // Pluck sobre la colección es más seguro con alias
 
         return Inertia::render('adcitas/index', [
+            'comercio' => $comercio,
             'citas' => $citas,
             'estadosList' => Cfmaestra::where('padre','=',$padre->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
             'serviciosList' => $serviciosDisponibles,
@@ -176,21 +181,86 @@ class AdcitasController extends Controller
             'horainicio' => 'required',
             'horafinal' => 'required',
             'precio' => 'required',
-            'cliente_id' => 'required|exists:adclientes,id',
+            'cliente_nombre' => 'required|string', // Para el nombre del nuevo o actual
+            'cliente_id' => 'nullable', // Puede venir vacío si es nuevo
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-                $audt = ['created_by' => Auth::user()->id, 'created_at' => now()]; 
-                $cliente = Adclientes::findOrFail($request->cliente_id);
-                $cliente->persona->update([
-                    'email' => $request->cliente_email,
-                    'telefonomovil'       => $request->cliente_telefono,
-                ]);
+                $userAuth = Auth::user();
+                $audt = ['created_by' => $userAuth->id, 'created_at' => now()]; 
+                
+                // --- LÓGICA DE CLIENTE ---
+                $clienteId = $request->cliente_id;
+                if (!$clienteId) {
+                    // 1. Obtener Comercio y Sedes del Admin actual
+                    $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
 
+                    // 2. Crear o actualizar Persona
+                    $persona = Personas::updateOrCreate(
+                        ['identificacion' => $request->cliente_identificacion],
+                        [
+                            'telefonomovil' => $request->cliente_telefono,
+                            'email' => $request->cliente_email,
+                            'tipoidentificacion_id' => 1, // Por defecto cédula o el que manejes
+                        ] + $audt
+                    );
+
+                    // 3. Crear Persona Natural (Dividimos el nombre si viene completo)
+                    $nombres = explode(' ', $request->cliente_nombre, 2);
+                    $persona->personasnaturales()->updateOrCreate(
+                        ['persona_id' => $persona->id],
+                        [
+                            'nombre' => $nombres[0],
+                            'apellido' => $nombres[1] ?? '',
+                        ] + $audt
+                    );
+
+                    // 4. Crear el registro en Adclientes
+                    $nuevoCliente = Adclientes::updateOrCreate(
+                        ['persona_id' => $persona->id, 'comercio_id' => $comercio->id],
+                        ['fechaingreso' =>now(), 'estado_id' => 850] + $audt // Activo
+                    );
+
+                    // 5. Crear Usuario para que el cliente pueda entrar a la App
+                    $nuevoUsuario = $persona->user ?: User::updateOrCreate(
+                        ['persona_id' => $persona->id],
+                        [
+                            'username'      => $persona->identificacion,
+                            'password'      => Hash::make($persona->identificacion),
+                            'email'         => $persona->email,
+                            'telefonomovil' => $persona->telefonomovil,
+                            'perfil_id'     => 911, // Cliente
+                            'estado_id'     => 850,
+                        ] + $audt
+                    );
+
+                    // 6. Asociar a sedes del comercio
+                    $sedesIds = $comercio->sedes->pluck('id');
+                    if ($sedesIds->isNotEmpty()) {
+                        $dataSedes = $sedesIds->mapWithKeys(fn($id, $idx) => [$id => [
+                            'predeterminada' => $idx === 0,
+                            'estado_id' => 858,
+                        ] + $audt])->toArray();
+                        $nuevoUsuario->sedes()->syncWithoutDetaching($dataSedes);
+                    }
+
+                    $clienteId = $nuevoCliente->id;
+                }else{
+
+                    // EL CLIENTE YA EXISTE: Solo actualizamos datos de contacto
+                    $cliente = Adclientes::findOrFail($clienteId);
+                    $cliente->persona->update([
+                        'email' => $request->cliente_email,
+                        'telefonomovil' => $request->cliente_telefono,
+                    ]);
+
+                }
+
+                // --- CREACIÓN DE LA CITA (Igual que antes) ---
                 $cita = Adcitas::create([
                     'codigo' => $this->generarCodigo(),
-                    'cliente_id' => $request->cliente_id,
+                    'cliente_id' => $clienteId,
                     'fecha' => $request->fecha,
                     'horainicio' => $request->horainicio,
                     'horafinal' => $request->horafinal,
@@ -202,6 +272,7 @@ class AdcitasController extends Controller
                 Addetallescitas::create([
                     'cantidad' => 1,
                     'descuento' => 0,
+                    'preciounitario' => $request->precio,
                     'preciofinal' => $request->precio,
                     'model_type' => 919, //TABLA empleadoservicios en maestras
                     'model_type_id' => $request->servicioasignado_id, //ID de empleadoservicios 
@@ -221,11 +292,11 @@ class AdcitasController extends Controller
 
     public function actualizardetallecita(Request $request, $id)
     {
-        // 1. Validar los datos recibidos
+        // 1. Validación mejorada
         $request->validate([
             'observaciones' => 'nullable|string',
             'items' => 'array',
-            'items.*.id' => 'required', // ID del producto/servicio buscado
+            'items.*.nombre' => 'required_if:items.*.es_nuevo,true|string',
             'items.*.cantidad' => 'required|numeric|min:1',
             'items.*.precio' => 'required|numeric',
             'items.*.descuento' => 'nullable|numeric|min:0|max:100',
@@ -233,51 +304,78 @@ class AdcitasController extends Controller
         ]);
 
         try {
-            // Iniciamos una transacción para asegurar que se guarde todo o nada
-            DB::beginTransaction();
-            $cita = Adcitas::findOrFail($id);
+            return DB::transaction(function () use ($request, $id) {
+                $userAuth = User::where('persona_id', Auth::user()->persona_id)->first();
+                $now = now();
+                
+                // 1. Cargar la cita y el comercio de una sola vez
+                $cita = Adcitas::findOrFail($id);
 
-            // 2. Actualizar observaciones de la cita principal
-            $cita->update([
-                'descripcion' => $request->observaciones,
-                'updated_by' => Auth::user()->id,
-                'updated_at' => now()
-                // 'total' => $request->total, // Si tienes esta columna en la tabla citas
-            ]);
+                //2. Obtenemos la sede predeterminada del usuario
+                $sedePredeterminada = $userAuth->sedes()
+                    ->wherePivot('predeterminada', 1)
+                    ->value('cfsedes.id');
 
-            // 3. Procesar los nuevos ítems adicionales
-            if (!empty($request->items)) {
-                foreach ($request->items as $item) {
+                // 3. Actualizar la cita principal
+                $cita->update([
+                    'descripcion' => $request->observaciones,
+                    'updated_by'  => $userAuth->id,
+                    'updated_at'  => $now
+                ]);
+
+                // 4. Procesar ítems adicionales
+                if ($request->has('items') && is_array($request->items)) {
                     
-                    // Calculamos el precio final restando el descuento
-                    $precioOriginal = $item['precio'] * $item['cantidad'];
-                    $montoDescuento = $precioOriginal * ($item['descuento'] / 100);
-                    $precioFinal = $precioOriginal - $montoDescuento;
+                    foreach ($request->items as $item) {
+                        $productoId = $item['producto_id'] ?? null;
 
-                    Addetallescitas::updateOrCreate([
-                        'cantidad' => $item['cantidad'],
-                        'descuento' => $item['descuento'] ?? 0,
-                        'preciofinal' => $precioFinal,
-                        'model_type' => 920, //TABLA productos en maestras
-                        'model_type_id' => $item['producto_id'], //ID de productos 
-                        'cita_id' => $cita->id,
-                        'observaciones' => NULL,
-                        'estado_id' => 913,
-                        'created_by' => Auth::user()->id,
-                        'created_at' => now()
-                    ]);
+                        // Si el item es marcado como nuevo, creamos el producto "al vuelo"
+                        if (!empty($item['es_nuevo']) && is_null($productoId)) {
+                            $nuevoProducto = Productos::create([
+                                'nombre'        => $item['nombre'],
+                                'precioingreso' => $item['precio'],
+                                'preciosalida'  => $item['precio'],
+                                'descripcion'   => 'ADICIONAL_RAPIDO',
+                                'estado_id'     => 858, // Activo
+                                'unidad_id'     => 863, // Unidad
+                                'categoria_id'   => 955, // Producto
+                                'impuesto_id'   => 1, // Excluido
+                                'tipo_id'       => 854, // Tipo producto
+                                'sede_id'       => $sedePredeterminada,
+                                'created_by'    => $userAuth->id,
+                                'created_at'    => $now,
+                            ]);
+                            $productoId = $nuevoProducto->id;
+                        }
+
+                        // 5. Lógica de Precios (Cálculo corregido)
+                        // Precio Final = (Precio Unitario * Cantidad) - Descuento
+                        $descuentoFactor = 1 - (($item['descuento'] ?? 0) / 100);
+                        $precioFinal = ($item['precio'] * $item['cantidad']) * $descuentoFactor;
+
+                        // 6. Registro del detalle
+                        // Usamos create en lugar de updateOrCreate si queremos permitir 
+                        // agregar el mismo producto varias veces como filas distintas
+                        Addetallescitas::create([
+                            'cita_id'       => $cita->id,
+                            'cantidad'      => $item['cantidad'],
+                            'descuento'     => $item['descuento'] ?? 0,
+                            'preciounitario'   => $item['precio'],
+                            'preciofinal'   => $precioFinal,
+                            'model_type'    => 920, // Productos
+                            'model_type_id' => $productoId,
+                            'estado_id'     => 913,
+                            'created_by'    => $userAuth->id,
+                            'created_at'    => $now
+                        ]);
+                    }
                 }
-            }
 
-            DB::commit();
-            return back()->with('success', 'La cita fue actualizada con exitosamente.');
+                return back()->with('success', 'La cuenta de la cita ha sido actualizada.');
+            });
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Error al procesar la actualización',
-                'error' => $e->getMessage()
-            ], 500);
+            return back()->withErrors(['error' => 'Error al actualizar: ' . $e->getMessage()]);
         }
     }
 

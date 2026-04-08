@@ -22,6 +22,7 @@ return new class extends Migration
             
             $table->string('telefono',50)->comment('Telefono fijo')->nullable();
             $table->string('telefonomovil',50)->comment('Telefono movil')->nullable();
+            $table->string('codigo_sms',50)->comment('Codigo movil')->nullable();
             $table->boolean('sendsms')->default(false)->comment('Enviar sms')->nullable();
             $table->string('email',50)->comment('Email')->nullable();
             $table->boolean('sendemail')->default(false)->comment('Enviar email')->nullable();
@@ -90,6 +91,7 @@ return new class extends Migration
         Schema::create('comercios', function (Blueprint $table) {
             $table->id();
 
+            $table->string('token', 64)->unique()->nullable()->index();
             $table->string('nombre',50)->comment('nombre');
             $table->string('objetocomercial',50)->nullable()->comment('objeto comercial');
             

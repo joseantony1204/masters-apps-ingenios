@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AppMainLayout from '@/layouts/app-main-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage} from '@inertiajs/react';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg';  
 import { router } from '@inertiajs/react';
@@ -10,6 +10,8 @@ import axios from 'axios';
 import * as bootstrap from 'bootstrap';
 
 export default function Show({ cliente, sedesComercio, perfilesList, sedesAsignadasIds, sedePredeterminadaId, }: any) {
+    const { auth } = usePage().props as any;
+    const user = auth.user;
     const persona = cliente.persona;
     const nombreCompleto = `${persona.personasnaturales.nombres} ${persona.personasnaturales.apellidos}`;
     const icons = {
@@ -18,6 +20,7 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
         seguridad: 'ti ti-shield-lock'
     };
     const [activeTab, setActiveTab] = useState('perfil');
+    const [jornadaActiva, setJornadaActiva] = useState('Mañana');
     // 1. Estados adicionales para visibilidad (puedes usar un objeto para manejar varios)
     const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
 
@@ -216,6 +219,7 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
         try {
             // Usamos el empleado_id que viene en la asignación del JSON
             const url = route('api.disponibilidad.turnos', { 
+                token: user.personas.comercios.token,
                 empleado: especialista.empleado_id, 
                 servicio: servicioSeleccionado.id 
             });
@@ -437,7 +441,29 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
         });
         actualizarTotalesFormulario(nuevosItems);
     };
+
+    const abrirModalRapidoProducto = (nombre : any) => {
+        // Pedimos el precio rápidamente (puedes cambiar esto por un mini-modal si prefieres)
+        const precioSugerido = window.prompt(`Introduce el precio para "${nombre}":`, "0");
+        
+        if (precioSugerido !== null) {
+            const nuevoItem = {
+                id: Date.now(), // ID temporal
+                producto_id: null,     // El backend sabrá que es nuevo porque no tiene ID
+                nombre: nombre.toUpperCase(),
+                tipo: 'PRODUCTO',
+                cantidad: 1,
+                precio: parseFloat(precioSugerido),
+                descuento: 0,
+                total_item: parseFloat(precioSugerido),
+                es_nuevo: true         // Flag para el backend
+            };
     
+            formPostCita.setData('items', [...formPostCita.data.items, nuevoItem]);
+            setFiltroBusqueda('');
+            setResultadosBusqueda([]);
+        }
+    };
 
     return (  
     <AppMainLayout>
@@ -1122,85 +1148,111 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
                 )}
                 {/* PASO 3: CALENDARIO DE TURNOS (Ya lo tienes implementado, solo asegúrate de mostrarlo cuando haya especialista seleccionado) */}
                 {especialistaSeleccionado && turnosDisponibles && (
-                    <div className="animated fadeIn">
-                        <button className="btn btn-link btn-sm mx-4 mt-3 p-0 text-decoration-none" onClick={() => {setEspecialistaSeleccionado(null); setTurnosDisponibles(null);}}>
-                            <i className="ti ti-arrow-left"></i> Cambiar especialista
-                        </button>
-                        {/* Aquí va tu código actual del Selector de Días y Listado de Turnos */}
-                        {turnosDisponibles && Object.keys(turnosDisponibles).length > 0 ? (
-                            <>
-                                {/* SELECTOR DE DÍAS HORIZONTAL */}
-                                <div className="bg-white border-bottom p-2 sticky-top">
-                                    <div className="d-flex gap-2 overflow-x-auto pb-2 custom-scrollbar px-2">
-                                        {Object.keys(turnosDisponibles).map((fecha) => (
-                                            <button
-                                                key={fecha}
-                                                onClick={() => setFechaSeleccionada(fecha)}
-                                                className={`btn btn-sm px-3 flex-shrink-0 transition-all ${fechaSeleccionada === fecha ? 'btn-primary shadow' : 'btn-outline-light text-dark border'}`}
-                                                style={{ minWidth: '70px' }}
-                                            >
-                                                <div className="small text-uppercase opacity-75" style={{ fontSize: '0.6rem' }}>
-                                                    {new Date(fecha + 'T00:00:00').toLocaleDateString('es', { weekday: 'short' })}
-                                                </div>
-                                                <div className="fw-bold fs-5">{new Date(fecha + 'T00:00:00').getDate()}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-        
-                                {/* LISTADO DE TURNOS */}
-                                <div className="p-3 overflow-y-auto flex-grow-1">
-                                    {['Mañana', 'Tarde'].map((jornada) => {
-                                        const turnosJornada = turnosDisponibles[fechaSeleccionada]?.filter((t: any) => {
-                                            const hora = parseInt(t.hora.split(':')[0]);
-                                            return jornada === 'Mañana' ? hora < 12 : hora >= 12;
-                                        });
-        
-                                        if (!turnosJornada?.length) return null;
-        
-                                        return (
-                                            <div key={jornada} className="mb-4">
-                                                <div className="d-flex align-items-center mb-3">
-                                                    <h6 className="mb-0 fw-bold text-uppercase small text-muted tracking-wider">{jornada}</h6>
-                                                    <div className="flex-grow-1 border-bottom ms-3 opacity-25"></div>
-                                                </div>
-        
-                                                <div className="row g-2">
-                                                    {turnosJornada.map((bloque: any, bIdx: number) => (
-                                                        <div key={bIdx} className="col-12">
-                                                            <div className="card border-0 shadow-sm mb-1 hover-shadow-md">
-                                                                <div className="card-body p-2 d-flex align-items-center gap-3">
-                                                                    <div className="bg-light rounded-2 px-3 py-2 fw-bold text-primary border border-primary-subtle">
-                                                                        {bloque.hora}
-                                                                    </div>
-                                                                    <div className="d-flex flex-wrap gap-1">
-                                                                        {bloque.servicios_que_caben.map((serv: any, sIdx: number) => (
-                                                                            <button 
-                                                                                key={sIdx}
-                                                                                onClick={() => handleSeleccionarCita(fechaSeleccionada, bloque.hora, serv)}
-                                                                                className="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium"
-                                                                            >
-                                                                                <i className="ti ti-plus me-1"></i>{serv.nombre}
-                                                                                
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
+                    <div className="animated fadeIn d-flex flex-column h-100">
+                        <div className="px-4 pt-3 pb-2 border-bottom bg-white">
+                            <button className="btn btn-link btn-sm p-0 text-decoration-none mb-3" onClick={() => {setEspecialistaSeleccionado(null); setTurnosDisponibles(null);}}>
+                                <i className="ti ti-arrow-left me-1"></i> Cambiar especialista
+                            </button>
+                            
+                            {/* SELECTOR DE DÍAS HORIZONTAL */}
+                            <div className="d-flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                {Object.keys(turnosDisponibles).map((fecha) => (
+                                    <button
+                                        key={fecha}
+                                        onClick={() => setFechaSeleccionada(fecha)}
+                                        className={`btn btn-sm px-3 flex-shrink-0 transition-all ${fechaSeleccionada === fecha ? 'btn-primary shadow' : 'btn-outline-light text-dark border'}`}
+                                        style={{ minWidth: '70px' }}
+                                    >
+                                        <div className="small text-uppercase opacity-75" style={{ fontSize: '0.6rem' }}>
+                                            {new Date(fecha + 'T00:00:00').toLocaleDateString('es', { weekday: 'short' })}
+                                        </div>
+                                        <div className="fw-bold fs-5">{new Date(fecha + 'T00:00:00').getDate()}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* NAVEGACIÓN DE JORNADAS (TABS HORIZONTALES) */}
+                        <div className="bg-white border-bottom px-4">
+                            <ul className="nav nav-pills nav-fill py-2 gap-2">
+                                {['Mañana', 'Tarde', 'Noche'].map((j) => (
+                                    <li className="nav-item" key={j}>
+                                        <button 
+                                            className={`nav-link py-2 border-0 small fw-bold ${jornadaActiva === j ? 'active bg-primary' : 'bg-light text-muted'}`}
+                                            onClick={() => setJornadaActiva(j)}
+                                        >
+                                            {j === 'Mañana' && <i className="fa fa-sun me-1"></i>}
+                                            {j === 'Tarde' && <i className="ti ti-sun me-1"></i>}
+                                            {j === 'Noche' && <i className="ti ti-moon me-1"></i>}
+                                            {j}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* LISTADO DE TURNOS FILTRADOS POR JORNADA */}
+                        <div className="p-4 overflow-y-auto flex-grow-1">
+                            {(() => {
+                                const turnosFiltrados = turnosDisponibles[fechaSeleccionada]?.filter((t: any) => {
+                                    const horaInt = parseInt(t.hora.split(':')[0]);
+                                    const minutosInt = parseInt(t.hora.split(':')[1]);
+                                    const tiempoTotal = horaInt * 60 + minutosInt;
+
+                                    if (jornadaActiva === 'Mañana') {
+                                        // 00:00 a 11:59 (0 a 719 minutos)
+                                        return tiempoTotal < 720;
+                                    } else if (jornadaActiva === 'Tarde') {
+                                        // 12:00 a 17:59 (720 a 1079 minutos)
+                                        return tiempoTotal >= 720 && tiempoTotal < 1080;
+                                    } else {
+                                        // 18:00 a 23:59 (1080 a 1439 minutos)
+                                        return tiempoTotal >= 1080;
+                                    }
+                                });
+
+                                if (!turnosFiltrados || turnosFiltrados.length === 0) {
+                                    return (
+                                        <div className="text-center py-5 opacity-50">
+                                            <i className={`ti ti-${jornadaActiva === 'Noche' ? 'moon' : 'sun'} fs-1`}></i>
+                                            <p className="mt-2 small">No hay turnos disponibles para la <strong>{jornadaActiva.toLowerCase()}</strong>.</p>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="row g-3">
+                                        {turnosFiltrados.map((bloque: any, bIdx: number) => (
+                                            <div key={bIdx} className="col-12">
+                                                <div className="card border shadow-sm mb-0 hover-border-primary transition-all">
+                                                    <div className="card-body p-3 d-flex align-items-center justify-content-between">
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="bg-light-primary text-primary fw-bold rounded px-3 py-2 border border-primary-subtle me-3">
+                                                                {bloque.hora}
+                                                            </div>
+                                                            <div className="text-muted small">
+                                                                <i className="ti ti-user-check me-1"></i> Disponible
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                        <div className="d-flex flex-wrap gap-1 justify-content-end">
+                                                            {bloque.servicios_que_caben.map((serv: any, sIdx: number) => (
+                                                                <button 
+                                                                    key={sIdx}
+                                                                    onClick={() => handleSeleccionarCita(fechaSeleccionada, bloque.hora, serv)}
+                                                                    className="btn btn-sm btn-primary rounded-pill px-3 fw-medium"
+                                                                >
+                                                                    <i className="ti ti-plus me-1"></i> Reservar
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="text-center py-5">
-                                <i className="ti ti-calendar-off fs-1 text-muted opacity-25"></i>
-                                <p className="mt-2 text-muted">No hay disponibilidad para los criterios seleccionados.</p>
-                            </div>
-                        )}
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     </div>
                 )}
 
@@ -1353,7 +1405,7 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
                                                     <div className="fw-bold text-dark">{detalle.empleadoservicio?.servicio?.nombre}</div>
                                                     <small className="text-primary" style={{fontSize: '11px'}}>
                                                         <i className="ti ti-user me-1"></i>
-                                                        {detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombres}
+                                                        {detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombrecompleto}
                                                     </small>
                                                 </div>
                                                 <div className="col-2 text-center">1</div>
@@ -1370,7 +1422,7 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
                                                     {detalle.producto?.map((p: any) => ( 
                                                         <div key={p.id}>
                                                             <div className="fw-bold text-dark">{p.nombre}</div>
-                                                            <span className="badge bg-light-secondary text-secondary f-10 text-uppercase" style={{fontSize:'9px'}}>{p.tipo}</span>
+                                                            <span className={`badge bg-light-${p?.tipo?.id===854 ? 'success' : 'info'} text-${p?.tipo?.id===855 ? 'success' : 'info'} f-10 text-uppercase`} style={{fontSize:'9px'}}>{p?.tipo?.nombre}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1431,18 +1483,44 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
                                             />
                                         </div>
                                         {/* Resultados Buscador (Lista flotante) */}
-                                        {resultadosBusqueda.length > 0 && (
-                                            <div className="position-absolute w-50 shadow-lg z-3 mt-1">
-                                                <ul className="list-group rounded-3 overflow-hidden">
-                                                    {resultadosBusqueda.map((res: any) => (
-                                                        <li key={res.id} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer" onClick={() => agregarItemACita(res)}>
-                                                            <div><strong>{res.nombre}</strong> <small className="text-muted ms-2">${Number(res.precio).toLocaleString()}</small></div>
-                                                            <i className="ti ti-plus text-primary"></i>
+                                        {(resultadosBusqueda.length > 0 || filtroBusqueda.length > 2) && (
+                                                <div className="position-absolute w-100 shadow-lg z-3 mt-1" style={{ maxWidth: '500px' }}>
+                                                    <ul className="list-group rounded-3 overflow-hidden">
+                                                        {/* A. Resultados de la base de datos */}
+                                                        {resultadosBusqueda.map((res: any) => (
+                                                            <li 
+                                                                key={res.id} 
+                                                                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer py-3" 
+                                                                onClick={() => agregarItemACita(res)}
+                                                            >
+                                                                <div>
+                                                                    <strong className="text-dark">{res.nombre}</strong> 
+                                                                    <span className="badge bg-light-secondary text-muted ms-2 f-10">{res.tipo}</span>
+                                                                    <div className="text-primary fw-bold small">${Number(res.precio).toLocaleString()}</div>
+                                                                </div>
+                                                                <i className="ti ti-plus fs-4 text-primary"></i>
+                                                            </li>
+                                                        ))}
+
+                                                        {/* B. OPCIÓN PARA CREAR NUEVO PRODUCTO */}
+                                                        <li 
+                                                            className="list-group-item list-group-item-action list-group-item-warning d-flex justify-content-between align-items-center cursor-pointer py-3 border-dashed"
+                                                            onClick={() => abrirModalRapidoProducto(filtroBusqueda)}
+                                                        >
+                                                            <div className="d-flex align-items-center">
+                                                                <div className="bg-warning text-white rounded-circle p-2 me-3">
+                                                                    <i className="ti ti-package-plus fs-4"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <strong className="text-dark">¿No encuentras "{filtroBusqueda}"?</strong>
+                                                                    <div className="small text-muted">Haz clic para crearlo y agregarlo ahora</div>
+                                                                </div>
+                                                            </div>
+                                                            <span className="badge bg-warning text-dark fw-bold">NUEVO</span>
                                                         </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
+                                                    </ul>
+                                                </div>
+                                            )}
                                     </div>
                                 </div>
                             </div>

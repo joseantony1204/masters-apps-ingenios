@@ -48,7 +48,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
                 
                 <div className="form-group mb-3">
-                        <Label htmlFor="email" className="form-label">Email</Label>
+                        <Label htmlFor="email" className="form-label">Correo electrónico</Label>
                         <Input
                             id="email"
                             type="email"
@@ -82,14 +82,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="current-password"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
+                            placeholder="Contraseña"
                         />
                         <InputError message={errors.password} />
                     </div>
 
                     <div className="d-grid mt-4">
                         <Button type="submit" className="btn btn-primary" tabIndex={4} disabled={processing}>
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                            {processing && <span className="spinner-border spinner-border-sm me-2"></span>}
                             Iniciar sessión
                         </Button>
                     </div>

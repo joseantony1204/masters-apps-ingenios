@@ -146,15 +146,24 @@ export default function Fields({
                     <div className="card-body">
                         <div className="row g-3">
                             <div className="col-md-4">
-                                <label className="form-label fw-bold small text-muted">Categoría</label>
-                                <select className="form-select border-0 bg-light" value={data.categoria_id} onChange={e => setData('categoria_id', e.target.value)}>
-                                    <option value="">-- Sin Categoría --</option>
+                                <label className="form-label fw-bold small text-muted">Categoría<span className="text-danger">*</span></label>
+                                <select 
+                                    className={`form-select border-0 bg-light ${errors.categoria_id ? 'is-invalid' : ''}`} 
+                                    value={data.categoria_id} 
+                                    onChange={e => setData('categoria_id', e.target.value)}
+                                    required
+                                    >
+                                    <option value="">-- Elige --</option>
                                     {Object.entries(categoriasList).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                 </select>
+                                {errors.categoria_id && <div className="invalid-feedback">{errors.categoria_id}</div>}
                             </div>
                             <div className="col-md-4">
                                 <label className="form-label fw-bold small text-muted">Marca</label>
-                                <select className="form-select border-0 bg-light" value={data.marca_id} onChange={e => setData('marca_id', e.target.value)}>
+                                <select 
+                                    className="form-select border-0 bg-light" 
+                                    value={data.marca_id} 
+                                    onChange={e => setData('marca_id', e.target.value)}>
                                     <option value="">-- Sin Marca --</option>
                                     {Object.entries(marcasList).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                 </select>

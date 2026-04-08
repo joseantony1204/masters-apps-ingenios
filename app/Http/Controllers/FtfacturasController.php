@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Ftfacturas, User, Ftturnos, Cfmaestra, Comercios, Adcitas};
+use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -170,6 +170,11 @@ class FtfacturasController extends Controller
         
         try {
             return DB::transaction(function () use ($request) {
+                $userAuth = User::where('persona_id', Auth::user()->persona_id)->first();
+                $sedePredeterminada = $userAuth->sedes()
+                    ->wherePivot('predeterminada', 1)
+                    ->value('cfsedes.id');
+
                 $estado = $request->estado_id == 938 ? 'Factura finalizada' : 'Factura guardada';
                 // 2. Crear la Cabecera de la Factura
                 $factura = Ftfacturas::create([
@@ -193,7 +198,28 @@ class FtfacturasController extends Controller
                 ]);
 
                 // 3. Guardar los Items (Detalle)
+                
                 foreach ($request->items as $item) {
+                    $productoId = $item['id'] ?? null;
+                    // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
+                    if (is_null($productoId) && !empty($item['name'])) {
+                        $nuevoProducto = Productos::create([
+                            'nombre'        => $item['name'],
+                            'precioingreso' => $item['price'],
+                            'preciosalida'  => $item['price'],
+                            'descripcion'   => 'ITEM_MANUAL_CITAS',
+                            'estado_id'     => 858, // Activo
+                            'unidad_id'     => 863, // Unidad
+                            'impuesto_id'   => 1, // Excluido
+                            'categoria_id'   => 955, // Producto
+                            'tipo_id'       => 854, // Tipo producto
+                            'sede_id'       => $sedePredeterminada,
+                            'created_by'    => $userAuth->id,
+                            'created_at'    => now(),
+                        ]);
+                        $productoId = $nuevoProducto->id;
+                    }
+
                     $factura->detalles()->create([
                         'numero' => 1,
                         'cantidad' => $item['qty'],
@@ -203,7 +229,7 @@ class FtfacturasController extends Controller
                         'totalapagar' => $item['total'],
                         'fecha' => now(),
                         'factura_id' => $factura->id,
-                        'producto_id' => $item['id'],
+                        'producto_id' => $productoId,
                         'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
                         'observaciones' => $item['description'],
                     ]);

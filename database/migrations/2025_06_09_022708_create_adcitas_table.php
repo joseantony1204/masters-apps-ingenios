@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::dropIfExists('adclientes');
         Schema::create('adclientes', function (Blueprint $table) {
             $table->id();
-            $table->date('fechaingreso')->comment('Fecha ingreso');
+            $table->date('fechaingreso', $precision = 0)->useCurrent()->comment('Fecha ingreso')->nullable();
 
             $table->unsignedBigInteger('persona_id');
             $table->foreign('persona_id')->references('id')
@@ -79,6 +79,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('cantidad')->default(1);
             $table->float('descuento', 10, 2)->comment('Descuento del servicio para el cliente, aplicando el cupon de la cita');
+            $table->float('preciounitario', 10, 2)->comment('Precio unitario del servicio para el cliente');
             $table->float('preciofinal', 10, 2)->comment('Precio final del servicio para el cliente');
             $table->timestamp('fechacreado', $precision = 0)->useCurrent();
 

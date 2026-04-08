@@ -69,5 +69,13 @@ class Cfsedes extends Model
     {
         return $this->hasMany(\App\Models\Ftterminales::class, 'sede_id');
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function servicios()
+    {
+        return $this->hasMany(\App\Models\Productos::class, 'sede_id');
+    }
     
 }

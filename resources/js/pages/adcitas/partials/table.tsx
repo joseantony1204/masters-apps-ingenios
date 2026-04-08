@@ -263,6 +263,29 @@ export default function Table({ citas, estadosList}: Props) {
         router.visit(route('ftfacturas.create',{ cita: id }));
     };
 
+    const abrirModalRapidoProducto = (nombre : any) => {
+        // Pedimos el precio rápidamente (puedes cambiar esto por un mini-modal si prefieres)
+        const precioSugerido = window.prompt(`Introduce el precio para "${nombre}":`, "0");
+        
+        if (precioSugerido !== null) {
+            const nuevoItem = {
+                id: Date.now(), // ID temporal
+                producto_id: null,     // El backend sabrá que es nuevo porque no tiene ID
+                nombre: nombre.toUpperCase(),
+                tipo: 'PRODUCTO',
+                cantidad: 1,
+                precio: parseFloat(precioSugerido),
+                descuento: 0,
+                total_item: parseFloat(precioSugerido),
+                es_nuevo: true         // Flag para el backend
+            };
+    
+            formPostCita.setData('items', [...formPostCita.data.items, nuevoItem]);
+            setFiltroBusqueda('');
+            setResultadosBusqueda([]);
+        }
+    };
+
     return (
         <>
             <div className="table-responsive" key={citas.length}> 
@@ -484,6 +507,7 @@ export default function Table({ citas, estadosList}: Props) {
                     
                 </table>
             </div>
+
             {/* --- MODAL DETALLE CITA / POS (FACTURADORA) --- */}
             <div className="modal fade" id="modalDetalleCitaPOS" tabIndex={-1} aria-hidden="true">
                 <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -536,7 +560,7 @@ export default function Table({ citas, estadosList}: Props) {
                                                         <div className="fw-bold text-dark">{detalle.empleadoservicio?.servicio?.nombre}</div>
                                                         <small className="text-primary" style={{fontSize: '11px'}}>
                                                             <i className="ti ti-user me-1"></i>
-                                                            {detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombres}
+                                                            {detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombrecompleto}
                                                         </small>
                                                     </div>
                                                     <div className="col-2 text-center">1</div>
@@ -548,18 +572,27 @@ export default function Table({ citas, estadosList}: Props) {
                                             {/* B. PRODUCTOS/ADICIONALES (Ya guardados en DB) */}
                                             {citaDetalle?.detalle_con_producto?.map((detalle: any, index: number) => (
                                                 <div key={`prod-db-${detalle.id}`} className="row g-0 align-items-center py-3 px-3 border-bottom border-light hover-bg-light">
-                                                    <div className="col-1 text-center text-muted small">{(citaDetalle?.detalle_con_empleadoservicio?.length || 0) + index + 1}</div>
+                                                    <div className="col-1 text-center text-muted small">
+                                                        {(citaDetalle?.detalle_con_empleadoservicio?.length || 0) + index + 1}
+                                                    </div>
                                                     <div className="col-5">
+                                                        {/* Nota: 'detalle.producto' parece ser una relación de uno a muchos 
+                                                            o una colección según tu JSON, por eso el .map 
+                                                        */}
                                                         {detalle.producto?.map((p: any) => ( 
                                                             <div key={p.id}>
                                                                 <div className="fw-bold text-dark">{p.nombre}</div>
-                                                                <span className="badge bg-light-secondary text-secondary f-10 text-uppercase" style={{fontSize:'9px'}}>{p.tipo}</span>
+                                                                <span className={`badge bg-light-${p?.tipo?.id===854 ? 'success' : 'info'} text-${p?.tipo?.id===855 ? 'success' : 'info'} f-10 text-uppercase`} style={{fontSize:'9px'}}>{p?.tipo?.nombre}</span>
                                                             </div>
                                                         ))}
                                                     </div>
                                                     <div className="col-2 text-center">{detalle.cantidad}</div>
-                                                    <div className="col-2 text-end fw-medium">${Number(detalle.preciofinal / detalle.cantidad).toLocaleString()}</div>
-                                                    <div className="col-2 text-end fw-bold text-dark">${Number(detalle.preciofinal).toLocaleString()}</div>
+                                                    <div className="col-2 text-end fw-medium">
+                                                        ${Number(detalle.preciofinal / (detalle.cantidad || 1)).toLocaleString()}
+                                                    </div>
+                                                    <div className="col-2 text-end fw-bold text-dark">
+                                                        ${Number(detalle.preciofinal).toLocaleString()}
+                                                    </div>
                                                 </div>
                                             ))}
 
@@ -614,15 +647,41 @@ export default function Table({ citas, estadosList}: Props) {
                                                 />
                                             </div>
                                             {/* Resultados Buscador (Lista flotante) */}
-                                            {resultadosBusqueda.length > 0 && (
-                                                <div className="position-absolute w-50 shadow-lg z-3 mt-1">
+                                            {(resultadosBusqueda.length > 0 || filtroBusqueda.length > 2) && (
+                                                <div className="position-absolute w-100 shadow-lg z-3 mt-1" style={{ maxWidth: '500px' }}>
                                                     <ul className="list-group rounded-3 overflow-hidden">
+                                                        {/* A. Resultados de la base de datos */}
                                                         {resultadosBusqueda.map((res: any) => (
-                                                            <li key={res.id} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer" onClick={() => agregarItemACita(res)}>
-                                                                <div><strong>{res.nombre}</strong> <small className="text-muted ms-2">${Number(res.precio).toLocaleString()}</small></div>
-                                                                <i className="ti ti-plus text-primary"></i>
+                                                            <li 
+                                                                key={res.id} 
+                                                                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center cursor-pointer py-3" 
+                                                                onClick={() => agregarItemACita(res)}
+                                                            >
+                                                                <div>
+                                                                    <strong className="text-dark">{res.nombre}</strong> 
+                                                                    <span className="badge bg-light-secondary text-muted ms-2 f-10">{res.tipo}</span>
+                                                                    <div className="text-primary fw-bold small">${Number(res.precio).toLocaleString()}</div>
+                                                                </div>
+                                                                <i className="ti ti-plus fs-4 text-primary"></i>
                                                             </li>
                                                         ))}
+
+                                                        {/* B. OPCIÓN PARA CREAR NUEVO PRODUCTO */}
+                                                        <li 
+                                                            className="list-group-item list-group-item-action list-group-item-warning d-flex justify-content-between align-items-center cursor-pointer py-3 border-dashed"
+                                                            onClick={() => abrirModalRapidoProducto(filtroBusqueda)}
+                                                        >
+                                                            <div className="d-flex align-items-center">
+                                                                <div className="bg-warning text-white rounded-circle p-2 me-3">
+                                                                    <i className="ti ti-package-plus fs-4"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <strong className="text-dark">¿No encuentras "{filtroBusqueda}"?</strong>
+                                                                    <div className="small text-muted">Haz clic para crearlo y agregarlo ahora</div>
+                                                                </div>
+                                                            </div>
+                                                            <span className="badge bg-warning text-dark fw-bold">NUEVO</span>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             )}

@@ -1,8 +1,10 @@
-import React from 'react';
+import axios from 'axios';
+import React, { useState } from 'react';
+import { toast } from 'react-hot-toast'; // Opcional para avisar al usuario
 
 interface Props {
     data: any;
-    setData: (key: string, value: any) => void;
+    setData: any;
     errors: Record<string, string>;
     tpidentificacionList: Record<string, string>;
     sexosList: Record<string, string>;
@@ -11,6 +13,51 @@ interface Props {
 }
 
 export default function Fields({ data, setData, errors, tpidentificacionList = {},  sexosList = {},  ocupacionesList = {},  estadosList = {}  }: Props) {
+    const [buscandoIdentificacion, setBuscandoIdentificacion] = useState(false);
+
+    // --- NUEVA FUNCIÓN: BUSCAR POR IDENTIFICACIÓN Y RELLENAR ---
+    const consultarPersona = async (identificacion: string) => {
+        if (identificacion.length < 5) return;
+
+        setBuscandoIdentificacion(true);
+        try {
+            // Usamos la ruta que definimos para la modal global
+            const response = await axios.get(route('api.personas.buscar'), {
+                params: { term: identificacion }
+            });
+            if (response.data) {
+                const p = response.data;
+                toast.success('Persona encontrada. Rellenando datos...');
+
+                // IMPORTANTE: Mapeamos los campos exactos que espera tu 'data'
+                const nuevosDatos = {
+                    tipoidentificacion_id: p[0].tipoidentificacion_id || data.tipoidentificacion_id,
+                    nombre: p[0].nombre || '',
+                    segundonombre: p[0].segundonombre || '',
+                    apellido: p[0].apellido || '',
+                    segundoapellido: p[0].segundoapellido || '',
+                    fechanacimiento: p[0].fechanacimiento || '',
+                    email: p[0].email || '',
+                    telefonomovil: p[0].telefonomovil || '',
+                    sexo_id: p[0].sexo_id || '',
+                    fechaingreso: data.fechaingreso || '',    
+                    ocupacion_id: p[0].ocupacion_id || '',
+                    estado_id: data.estado_id || '',                 
+                    observaciones: data.observaciones || '', 
+                };
+
+                // En Inertia, si pasas un objeto a setData, actualiza múltiples campos
+                setData((prev: any) => ({
+                    ...prev,
+                    ...nuevosDatos
+                }));
+            }
+        } catch (error) {
+            console.error("Error al consultar identificación", error);
+        } finally {
+            setBuscandoIdentificacion(false);
+        }
+    };
     return (
         <>
             <h5 className="mb-3">Información Personal</h5>
@@ -43,6 +90,7 @@ export default function Fields({ data, setData, errors, tpidentificacionList = {
                             value={data.identificacion || ''}
                             onChange={e => setData('identificacion', e.target.value)}
                             placeholder="Cédula / DNI" 
+                            onBlur={(e) => consultarPersona(e.target.value)} // <--- AQUÍ DISPARA LA BÚSQUEDA
                         />
                         {errors.identificacion && <div className="invalid-feedback">{errors.identificacion}</div>}
                     </div>

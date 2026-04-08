@@ -11,8 +11,19 @@ use Illuminate\Support\Facades\{Auth,DB};
 
 class DisponibilidadController extends Controller
 {
-    public function generarTurnos(Request $request)
+    public function generarTurnos($token, Request $request)
     {
+        
+        // 1. Validación obligatoria
+        if (!$token) {
+            abort(404, 'Token no proporcionado');
+        }
+        // 2. Tu lógica para buscar el comercio y los turnos
+        $comercio = Comercios::with(['sedes'])->where('token', $token)->firstOrFail();
+        if (!$comercio) {
+            abort(404, 'Comercio no encontrado');
+        }
+        
         $servicioFiltroId = $request->get('servicio');
         $empleadoFiltroId = $request->get('empleado');
         $fechaFiltro = $request->get('fecha', Carbon::now('America/Bogota')->format('Y-m-d'));
@@ -27,6 +38,7 @@ class DisponibilidadController extends Controller
         
         // Disponibilidad de UN empleado específico
         $empleado = Cfempleados::with(['horarios', 'bloqueos', 'detallescitas.cita', 'serviciosasignados'])
+            ->where('comercio_id', $comercio->id)
             ->findOrFail($empleadoFiltroId);
         
         // Filtramos los servicios que el empleado puede realizar
@@ -120,6 +132,15 @@ class DisponibilidadController extends Controller
         if ($empleado->detallescitas) {
             foreach ($empleado->detallescitas as $detalle) {
                 if ($detalle->cita && $detalle->cita->fecha == $fecha) {
+
+                    // --- AJUSTE AQUÍ ---
+                    // Solo consideramos que el tiempo está ocupado si la cita NO está cancelada (916) 
+                    // y NO está reprogramada (917).
+                    $estadoId = $detalle->cita->estado->id;
+                    if ($estadoId == 916 || $estadoId == 917) {
+                        continue; // Ignoramos esta cita y pasamos a la siguiente
+                    }
+
                     // Si el turno que queremos generar choca con cualquier parte de la cita existente
                     if ($this->hayTraslape($inicio, $fin, $detalle->cita->horainicio, $detalle->cita->horafinal, $timezone)) {
                         return true;
@@ -148,7 +169,7 @@ class DisponibilidadController extends Controller
     public function servicios(Request $request)
     {
         $user = Auth::user();
-        $comercio = Comercios::with('sedes')->where('persona_id', 1)->first();
+        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
 
         $sedesIds = $comercio->sedes()
         ->pluck('cfsedes.id')

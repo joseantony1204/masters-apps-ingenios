@@ -42,7 +42,7 @@ class RegisteredUserController extends Controller
             'last_name.required' => 'El campo apellido es requerido',
             'name.required' => 'El campo comercio es requerido',
             'email.required' => 'El campo email es requerido',
-            'email.unique' => 'El email ya esta en uso',
+            'email.unique' => 'El correo elestrónico ya esta en uso.',
         ]);
 
         try {
@@ -68,13 +68,14 @@ class RegisteredUserController extends Controller
 
                 // 3. Crear comercio
                $comercio = $persona->comercios()->create([
+                    //'token' => $this->generarToken(),
                     'nombre' => $request->name,
                 ] + $audt);
 
                 // 4. Crear Usuario para el cliente (opcional, según tu lógica de negocio)
                 $nuevoUsuario = $persona->user()->create([
                     'username'    => trim($persona->email),
-                    'password'    => Hash::make($persona->password),
+                    'password'    => Hash::make($request->password),
                     'email'       => $persona->email,
                     'telefonomovil' => $persona->telefonomovil,
                     'perfil_id'   => 7, // Perfil Cliente/Empleado
@@ -87,7 +88,7 @@ class RegisteredUserController extends Controller
                 // 4. Crear Sede por defecto
                 $sede = DB::table('cfsedes')->insertGetId([
                     'nombre' => 'SEDE PRINCIPAL',
-                    'ciudad' => 'CIU', // Según tu dataSedes
+                    'ciudad' => 'CIUDAD', // Según tu dataSedes
                     'telefono'=>'000 000 0000', 
                     'direccion' => 'CALLE 1',
                     'comercio_id' => $comercio->id,
@@ -131,7 +132,7 @@ class RegisteredUserController extends Controller
 
                 event(new Registered($nuevoUsuario));
                 Auth::login($nuevoUsuario);
-                return to_route('dashboard');
+                return redirect()->intended(route('dashboard'));
                 
             });
 
@@ -154,5 +155,20 @@ class RegisteredUserController extends Controller
             return $this->generarCodigoCita();
         }
         return strtoupper($identificacion); // Lo devolvemos en mayúsculas para que sea más legible
+    }
+
+    private function generarToken()
+    {
+        // Genera una cadena aleatoria de 10 caracteres
+        $token = Str::uuid()->toString() . Str::random(32);
+
+        // Opcional: Validar que el código no exista ya en la base de datos (recursión)
+        $existe = DB::table('comercios')->where('token', $token)->exists();
+        
+        if ($existe) {
+            return $this->generarToken();
+        }
+
+        return strtoupper($token); // Lo devolvemos en mayúsculas para que sea más legible
     }
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::dropIfExists('cfempleados');
         Schema::create('cfempleados', function (Blueprint $table) {
             $table->id();
-            $table->date('fechaingreso')->comment('Fecha ingreso');
+            $table->date('fechaingreso', $precision = 0)->useCurrent()->comment('Fecha ingreso')->nullable();
 
             $table->unsignedBigInteger('comercio_id');
             $table->unsignedBigInteger('persona_id');

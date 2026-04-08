@@ -89,7 +89,7 @@ export default function Register() {
                 </div>
 
                 <div className="mb-3">
-                    <label className="form-label text-muted small fw-bold">Correo Electrónico*</label>
+                    <label className="form-label text-muted small fw-bold">Correo electrónico*</label>
                     <input
                         type="email"
                         className={`form-control ${errors.email ? 'is-invalid' : ''}`}
@@ -138,14 +138,14 @@ export default function Register() {
                 </p>
 
                 <div className="d-grid mt-4">
-                    <Button 
-                        type="submit" 
-                        className="btn btn-primary py-2 fw-bold shadow-sm" 
-                        disabled={processing}
+                    <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={processing}
                     >
-                        {processing && <LoaderCircle className="me-2 h-4 w-4 animate-spin" />}
-                        Crear Cuenta
-                    </Button>
+                        {processing && <span className="spinner-border spinner-border-sm me-2"></span>}
+                        Crear cuenta
+                    </button>
                 </div>
             </form>
         </AuthMainLayout >

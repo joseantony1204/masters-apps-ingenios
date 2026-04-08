@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\{Cache,Log};
 
 /**
  * Class Personas
@@ -57,7 +58,7 @@ class Personas extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['identificacion', 'digitoverificacion', 'lugarexpedicion', 'fechaexpedicion', 'telefono', 'telefonomovil', 'sendsms', 'email', 'sendemail', 'foto', 'firma', 'direccion', 'pais_id', 'departamento_id', 'ciudad_id', 'barrio', 'tipoidentificacion_id', 'tiporegimen_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['identificacion', 'digitoverificacion', 'lugarexpedicion', 'fechaexpedicion', 'telefono', 'telefonomovil', 'codigo_sms', 'sendsms', 'email', 'sendemail', 'foto', 'firma', 'direccion', 'pais_id', 'departamento_id', 'ciudad_id', 'barrio', 'tipoidentificacion_id', 'tiporegimen_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
@@ -95,6 +96,85 @@ class Personas extends Model
     {
         //return $this->hasOne(\App\Models\User::class, 'id', 'persona_id');
         return $this->hasOne(\App\Models\User::class, 'persona_id', 'id');
+    }
+
+    public function generateAndSendOpt($identificacion,$telefono)
+    {
+
+        if (!$identificacion || !$telefono) {
+            return;
+        }
+        $persona = Personas::where('identificacion', $identificacion)->first();
+        // 1. Generar un código de 4 o 6 dígitos
+        $codigo = str_pad(rand(1,999999), 6, "0", STR_PAD_LEFT);
+        // 2. Guardar en caché usando el teléfono como llave (por 10 minutos)
+        // Guardamos el código para validarlo después
+        Cache::put('otp_' . $telefono, $codigo, now()->addMinutes(10));
+        $persona->update(['telefonomovil' => $telefono, 'codigo_sms' => $codigo]); // Guardamos el OTP en la base de datos (opcional)
+        // 3. ENVIAR SMS / WHATSAPP 
+        // Aquí conectarías con Twilio, con un proveedor de WhatsApp, o simplemente
+        // lo retornas en el JSON si estás en modo pruebas (Local).
+
+        $message = "Hola: $codigo, es tu codigo de verificacion para reservar la cita";
+
+        $auth_basic = base64_encode("marioquintero1130@gmail.com:qI4kR50UxOSDkDfcswCJNWBmwa0tO4S6");
+        $curl = curl_init();
+        $recipient = [['msisdn' => $telefono]];
+        $postfields = [
+            'message'   => $message,
+            'tpoa'      => 'Sender',
+            'recipient' => $recipient,
+        ];
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => "https://api.labsmobile.com/json/send",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($postfields),
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Basic " . $auth_basic,
+                "Cache-Control: no-cache",
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        Log::info('sendsms labsmobile response:', [
+            'http_code' => $httpCode,
+            'response'  => $response,
+            'recipient'  => $recipient,
+        ]);
+
+        if ($err) {
+            Log::error('sendsms curl error:', ['error' => $err]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al enviar el SMS'
+            ], 502);
+        }
+
+        $result = json_decode($response, true);
+
+        if (!isset($result['code']) || $result['code'] !== '0') {
+            Log::error('sendsms labsmobile error:', $result ?? []);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al enviar el SMS: ' . ($result['message'] ?? 'Error desconocido')
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'SMS enviado correctamente'
+        ], 200);
     }
     
 }

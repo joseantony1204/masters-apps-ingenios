@@ -14,6 +14,15 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    server: {
+        host: '0.0.0.0', // Permite conexiones externas
+        hmr: {
+            host: '192.168.0.21', // LA IP DE TU MAC
+        },
+        cors: {
+            origin: '*', // Permite que cualquier origen acceda a los scripts de desarrollo
+        },
+    },
     esbuild: {
         jsx: 'automatic',
     },

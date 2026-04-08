@@ -1,27 +1,164 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import React from 'react';
+import { QRCodeSVG } from 'qrcode.react'; // Asegúrate de instalarlo: npm install qrcode.react
+import { useState, useRef, useEffect } from 'react';
+import { useClienteModal } from '@/hooks/use-cliente-context';
+import { router } from '@inertiajs/react';
 
 export default function Dashboard({ auth }: any) {
+    const [horaActual, setHoraActual] = useState(new Date());
+   
+    const user = auth.user;
+    //console.log("mostrando: ",user);
+    //console.log("mostrando token: ",user.personas.comercios.token);
+
+    useEffect(() => {
+        // Actualizamos el reloj cada segundo
+        const timer = setInterval(() => setHoraActual(new Date()), 1000);
+        return () => clearInterval(timer); // Limpieza al desmontar
+    }, []);
+
+    const qrRef = useRef<HTMLDivElement>(null);
+    // URL dinámica basada en el username o ID del comercio
+    const shopUrl = `http://192.168.0.21/masters-apps-ingenios/public/landing?token=${auth.user.personas.comercios.token}`;
+    const handleCrearFactura = () => router.visit(route('ftfacturas.create'));
+
+    const { openModalCliente } = useClienteModal();
+    const registrarYVender = () => {
+        // Abrimos la modal y pasamos un callback opcional
+        openModalCliente((nuevoCliente) => {
+            console.log("Cliente guardado exitosamente:", nuevoCliente);
+            // Aquí puedes redirigir a ventas o actualizar un estado local
+        });
+    };
+
+    // Función para descargar el QR
+    const downloadQR = () => {
+        const svg = qrRef.current?.querySelector('svg');
+        if (!svg) return;
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+
+        img.onload = () => {
+            canvas.width = 1500; // Alta resolución para impresión
+            canvas.height = 1500;
+            if (ctx) {
+                // Fondo blanco obligatorio para escaneo físico
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 100, 100, 1300, 1300);
+            }
+            const pngFile = canvas.toDataURL("image/png");
+            
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `QR-Vantify-Pro-${auth.user.personas.comercios.token}.png`;
+            downloadLink.href = pngFile;
+            downloadLink.click();
+        };
+
+        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    };
+
+    // Función para compartir (Web Share API)
+    const shareQR = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Visita mi comercio en Vantify Pro ${auth.user.personas.comercios.token || 'mi comercio'}`,
+                    text: 'Te comparto mi enlace para citas y servicios:',
+                    url: shopUrl,
+                });
+            } catch (error) {
+                console.log('Error al compartir', error);
+            }
+        } else {
+            alert('Copiado al portapapeles: ' + shopUrl);
+            navigator.clipboard.writeText(shopUrl);
+        }
+    };
+
     return (
         <AppMainLayout>
             <Head title="Vantify - Dashboard Unificado" />
 
-            {/* --- 1. HEADER: BIENVENIDA Y ACCIONES RÁPIDAS --- */}
-            <div className="row align-items-center mb-4">
-                <div className="col-md-7">
-                    <h3 className="fw-bold mb-1">Panel General de {auth.user.name} 🚀</h3>
-                    <p className="text-muted small">Resumen de rendimiento, finanzas y agenda en tiempo real.</p>
-                </div>
-                <div className="col-md-5 text-md-end">
-                    <div className="d-flex justify-content-md-end gap-2">
-                        <select className="form-select form-select-sm d-inline-block w-auto border-0 shadow-sm me-2">
-                            <option>Hoy: 03 Abr 2024</option>
-                            <option>Esta Semana</option>
-                            <option>Este Mes</option>
-                        </select>
-                        <button className="btn btn-light shadow-sm border-0"><i className="ti ti-calendar-plus me-1"></i> Agendar</button>
-                        <button className="btn btn-primary shadow-sm"><i className="ti ti-plus me-1"></i> Nueva Venta</button>
+            {/* --- BANNER DE BIENVENIDA OPTIMIZADO --- */}
+            <div className="row mb-4">
+                <div className="col-12">
+                    <div 
+                        className="card border-0 shadow-sm overflow-hidden" 
+                        style={{ 
+                            background: 'linear-gradient(90deg, #e6f7ff 0%, #ffffff 100%)', 
+                            borderLeft: '5px solid #1890ff',
+                            position: 'relative'
+                        }}
+                    >
+                        <div className="card-body p-4">
+                            <div className="row align-items-center">
+                                
+                                {/* 1. SECCIÓN DE INFORMACIÓN Y ACCIONES (Izquierda) */}
+                                <div className="col-md-12 col-lg-12">
+                                    <div className="d-flex align-items-center mb-2">
+                                        <span className="badge bg-light-primary text-primary me-2 px-2 py-1 small">Resumen en tiempo real</span>
+                                        <span className="text-muted small">
+                                            {horaActual.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            <span className="mx-1">•</span>
+                                            {horaActual.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    
+                                    <h3 className="fw-bold text-dark mb-1">
+                                        ¡Bienvenido a Vantify Pro, {auth.user.nombreComercio || auth.user.name}! 🚀
+                                    </h3>
+                                    <p className="text-muted mb-3 small">
+                                        Tu comercio ha crecido un <span className="text-success fw-bold">15% más</span> esta semana.
+                                    </p>
+
+                                    {/* ACCIONES MOVIDAS AQUÍ PARA NO TAPAR EL FONDO */}
+                                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                                        <select className="form-select form-select-sm w-auto border-0 shadow-sm bg-white cursor-pointer fw-bold text-muted">
+                                            <option>Hoy</option>
+                                            <option>Esta Semana</option>
+                                            <option>Este Mes</option>
+                                        </select>
+                                        
+                                        <button 
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
+                                        >
+                                            <i className="ti ti-calendar-plus me-1"></i> Agendar cita
+                                        </button>
+                                        
+                                        <button 
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
+                                            onClick={handleCrearFactura}
+                                        >
+                                            <i className="ti ti-plus me-1"></i> Nueva Venta
+                                        </button>
+
+                                        {/* NUEVO BOTÓN: OBTENER QR */}
+                                        <button 
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#qrModal"
+                                        >
+                                            <i className="ti ti-qrcode me-1"></i> Mi QR
+                                        </button>
+                                        <button onClick={registrarYVender} className="btn btn-primary">
+                                            <i className="ti ti-plus me-1"></i> Nueva Venta
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Icono Decorativo de Fondo (Limpio, sin botones encima) */}
+                            <div className="position-absolute end-0 top-50 translate-middle-y me-n2 d-none d-lg-block opacity-25">
+                                <i className="ti ti-chart-dots text-primary" style={{ fontSize: '9rem', pointerEvents: 'none' }}></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -267,6 +404,44 @@ export default function Dashboard({ auth }: any) {
                     </div>
                 </div>
             </div>
+
+            {/* --- MODAL PARA EL QR --- */}
+            <div className="modal fade" id="qrModal" tabIndex={-1} aria-hidden="true">
+                <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header border-0 pb-0">
+                            <h5 className="modal-title fw-bold text-primary">Impulsa tu comercio</h5>
+                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div className="modal-body text-center py-5">
+                            <div ref={qrRef} className="d-inline-block p-4 bg-white rounded-4 shadow-sm border mb-4">
+                                <QRCodeSVG 
+                                    value={shopUrl} 
+                                    size={220} 
+                                    fgColor={"#1890ff"} 
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                            </div>
+                            <h6 className="fw-bold mb-1">¡Comparte tu perfil!</h6>
+                            <p className="text-muted small px-4 mb-4">Tus clientes podrán agendar y ver tus servicios escaneando este código.</p>
+                            
+                            <div className="d-flex justify-content-center gap-3">
+                                <button onClick={downloadQR} className="btn btn-primary px-4 rounded-pill">
+                                    <i className="ti ti-download me-1"></i> Descargar
+                                </button>
+                                <button onClick={shareQR} className="btn btn-light px-4 rounded-pill border">
+                                    <i className="ti ti-share me-1"></i> Compartir
+                                </button>
+                            </div>
+                        </div>
+                        <div className="modal-footer border-0 bg-light justify-content-center">
+                            <small className="text-muted">Powered by <strong>Vantify Pro</strong></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </AppMainLayout>
     );
 }

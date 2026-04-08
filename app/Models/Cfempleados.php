@@ -36,11 +36,9 @@ class Cfempleados extends Model
 
     protected $perPage = 20;
     static $rules = [
-			'fechaingreso' => 'required',
 			'comercio_id' => 'required',
 			'persona_id' => 'required',
-			'estado_id' => 'required',
-			'created_by' => 'required',];
+			'estado_id' => 'required',];
 
     /**
      * The attributes that are mass assignable.

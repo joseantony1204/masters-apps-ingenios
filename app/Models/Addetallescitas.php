@@ -38,6 +38,7 @@ class Addetallescitas extends Model
     static $rules = [
 			'cantidad' => 'required',
 			'descuento' => 'required',
+			'preciounitario' => 'required',
 			'preciofinal' => 'required',
 			'fechacreado' => 'required',
 			'model_type' => 'required',
@@ -51,7 +52,7 @@ class Addetallescitas extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['cantidad', 'descuento', 'preciofinal', 'fechacreado', 'model_type', 'model_type_id', 'cita_id', 'estado_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['cantidad', 'descuento', 'preciounitario', 'preciofinal', 'fechacreado', 'model_type', 'model_type_id', 'cita_id', 'estado_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**

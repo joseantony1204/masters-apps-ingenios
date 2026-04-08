@@ -142,11 +142,11 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 888, 'codigo' => NULL, 'nombre' => 'Excluido', 'padre' => 884, 'jerarquia' => NULL, 'observacion' => NULL],
 
             [ 'id' => 889, 'codigo' => 'LIS_CATEGORIASPRODUCTOS', 'nombre' => 'CATEGORIAS DE PRODUCTOS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 890, 'codigo' => NULL, 'nombre' => 'Corte de Cabello y Estilismo', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Corte'],
-            [ 'id' => 891, 'codigo' => NULL, 'nombre' => 'Cuidado de la Barba y Afeitado', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Barba'],
-            [ 'id' => 892, 'codigo' => NULL, 'nombre' => 'Tratamientos Capilares y Faciales', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Cuidado'],
-            [ 'id' => 893, 'codigo' => NULL, 'nombre' => 'Servicios de Estética Masculina', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Complementos'],
-            [ 'id' => 894, 'codigo' => NULL, 'nombre' => 'Experiencia y Venta', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Adicionales'],
+            [ 'id' => 890, 'codigo' => NULL, 'nombre' => 'Cortes', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-cut'],
+            [ 'id' => 891, 'codigo' => NULL, 'nombre' => 'Pestañas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'Barba'],
+            [ 'id' => 892, 'codigo' => NULL, 'nombre' => 'Color cabello', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-palette'],
+            [ 'id' => 893, 'codigo' => NULL, 'nombre' => 'Uñas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-hand-finger'],
+            [ 'id' => 894, 'codigo' => NULL, 'nombre' => 'Depilacion facial', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-scissors'],
             
             [ 'id' => 895, 'codigo' => 'LIS_DIASSEMANA', 'nombre' => 'DIAS DE LA SEMANA', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 896, 'codigo' => NULL, 'nombre' => 'LUNES', 'padre' => 895, 'jerarquia' => NULL, 'observacion' => 'LUN'],
@@ -204,6 +204,19 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 942, 'codigo' => NULL, 'nombre' => 'Compra', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 943, 'codigo' => NULL, 'nombre' => 'Venta', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 944, 'codigo' => NULL, 'nombre' => 'Cotizacion', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
+
+            [ 'id' => 945, 'codigo' => NULL, 'nombre' => 'Depilacion corporal', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-scissors'],
+            [ 'id' => 946, 'codigo' => NULL, 'nombre' => 'Peinados', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 947, 'codigo' => NULL, 'nombre' => 'Maquillaje', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 948, 'codigo' => NULL, 'nombre' => 'Cejas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 949, 'codigo' => NULL, 'nombre' => 'Limpieza facial', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 950, 'codigo' => NULL, 'nombre' => 'Tratamientos capilares', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 951, 'codigo' => NULL, 'nombre' => 'Alisados', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 952, 'codigo' => NULL, 'nombre' => 'Masajes', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 953, 'codigo' => NULL, 'nombre' => 'Promoción', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 954, 'codigo' => NULL, 'nombre' => 'Barba', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-palette'],
+            [ 'id' => 955, 'codigo' => NULL, 'nombre' => 'Experiencia y venta', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+            
   
         ];
         foreach (array_chunk($dataMaestra,1000) as $data){

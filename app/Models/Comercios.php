@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * Class Comercios
@@ -31,6 +32,7 @@ class Comercios extends Model
 
     protected $perPage = 20;
     static $rules = [
+			'token' => 'required',
 			'nombre' => 'required',
 			'persona_id' => 'required',
 			'created_by' => 'required',];
@@ -40,7 +42,7 @@ class Comercios extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['nombre', 'objetocomercial', 'persona_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['token', 'nombre', 'objetocomercial', 'persona_id', 'observaciones', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**
@@ -63,6 +65,13 @@ class Comercios extends Model
     public function soportes()
     {
         return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 923); // 923 es el identificador de tabla padre para Comercios
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($comercio) {
+            $comercio->token = Str::uuid()->toString() . Str::random(32);
+        });
     }
     
 }

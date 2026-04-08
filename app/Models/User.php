@@ -8,10 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail 
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+
     use HasApiTokens;
     use HasFactory;
     use Notifiable;
@@ -23,7 +24,7 @@ class User extends Authenticatable
     ];
 
     protected $with = ['personas.personasnaturales'];
-    protected $appends = ['modulos','nombreCompleto'];
+    protected $appends = ['modulos', 'nombreComercio', 'nombreCompleto'];
     
     /**
      * The attributes that are mass assignable.
@@ -167,6 +168,17 @@ class User extends Authenticatable
         return optional($persona->personasnaturales)->nombreCompleto
             ?? optional($persona->comercios)->nombre 
             ?? "Nombre no definido";
+    }
+
+    public function getNombreComercioAttribute()
+    {
+        $persona = $this->personas;
+
+        if (!$persona) {
+            return "Usuario Sistema";
+        }
+
+        return optional($persona->comercios)->nombre ?? optional($persona->personasnaturales)->nombreCompleto ?? "Nombre no definido";
     }
 
     public function getroles($modulo,$roles = 3){ 
