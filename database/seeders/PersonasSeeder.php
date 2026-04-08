@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\{DB,Hash};
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PersonasSeeder extends Seeder
 {
@@ -25,7 +26,7 @@ class PersonasSeeder extends Seeder
         ];
 
         $dataComercios = [
-            ['nombre' => 'COMERCIO 1', 'objetocomercial' => 'GENERAL', 'persona_id' =>1],
+            ['token' => $token = Str::uuid()->toString() . Str::random(32), 'nombre' => 'COMERCIO 1', 'objetocomercial' => 'GENERAL', 'persona_id' =>1],
         ];
 
         $dataSedes = [

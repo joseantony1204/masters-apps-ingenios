@@ -68,7 +68,7 @@ class RegisteredUserController extends Controller
 
                 // 3. Crear comercio
                $comercio = $persona->comercios()->create([
-                    //'token' => $this->generarToken(),
+                    'token' => $this->generarToken(),
                     'nombre' => $request->name,
                 ] + $audt);
 

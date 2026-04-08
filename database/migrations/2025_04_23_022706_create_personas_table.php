@@ -90,8 +90,7 @@ return new class extends Migration
         Schema::dropIfExists('comercios');
         Schema::create('comercios', function (Blueprint $table) {
             $table->id();
-
-            $table->string('token', 64)->unique()->nullable()->index();
+            $table->string('token', 100)->unique()->index();
             $table->string('nombre',50)->comment('nombre');
             $table->string('objetocomercial',50)->nullable()->comment('objeto comercial');
             
