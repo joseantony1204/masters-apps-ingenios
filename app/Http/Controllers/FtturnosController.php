@@ -128,7 +128,7 @@ class FtturnosController extends Controller
             ->join('ftfacturas', 'ftpagos.factura_id', '=', 'ftfacturas.id')
             ->join('cfmaestras', 'ftpagos.metodo_id', '=', 'cfmaestras.id')
             ->where('ftfacturas.turno_id', $request->id)
-            ->where('ftfacturas.estado_id', 1) // Solo pagos válidos
+            ->where('ftfacturas.estado_id', 938) // Solo pagos válidos 
             ->select('cfmaestras.nombre', DB::raw('SUM(ftpagos.total) as total'))
             ->groupBy('cfmaestras.nombre')
             ->get();

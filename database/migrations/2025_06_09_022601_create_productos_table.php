@@ -32,7 +32,7 @@ return new class extends Migration
                                         ->onDelete('cascade')
                                         ->onUpdate('cascade');
 
-            $table->unsignedBigInteger('unidad_id');
+            $table->unsignedBigInteger('unidad_id')->nullable();
             $table->foreign('unidad_id')->references('id')
                                         ->on('cfmaestras')
                                         ->onDelete('cascade')
@@ -40,7 +40,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('ubicacion_id')->nullable();
 
-            $table->unsignedBigInteger('impuesto_id');                            
+            $table->unsignedBigInteger('impuesto_id')->nullable();                           
             $table->foreign('impuesto_id')->references('id')
                                         ->on('cfimpuestos')
                                         ->onDelete('cascade')

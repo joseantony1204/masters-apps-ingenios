@@ -105,7 +105,14 @@ class Ftfacturas extends Model
      */
     public function pagos()
     {
-        return $this->hasMany(\App\Models\Ftpagos::class, 'id', 'factura_id');
+        return $this->hasMany(\App\Models\Ftpagos::class, 'factura_id');
+    }
+
+    // En App\Models\Venta.php
+    public function cliente()
+    {
+        // Esto mapea model_type_id con el ID de la tabla correspondiente
+        return $this->morphTo(__FUNCTION__, 'model_type', 'model_type_id');
     }
     
 }

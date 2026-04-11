@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\{Cache,Log};
  * @property $deleted_by
  *
  * @property Personasjuridica[] $personasjuridicas
- * @property Personasnaturales[] $personasnaturales
+ * @property Personasnaturales $personasnaturales
  * @property User $user
  * @package App
  * @mixin \Illuminate\Database\Eloquent\Builder
@@ -50,8 +50,7 @@ class Personas extends Model
     static $rules = [
 			'identificacion' => 'required|string',
 			'telefonomovil' => 'string',
-			'email' => 'string',
-			'tipoidentificacion_id' => 'required',];
+			'email' => 'string',];
 
     /**
      * The attributes that are mass assignable.

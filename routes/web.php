@@ -10,11 +10,11 @@ use App\Http\Controllers\{
     FtdetallesController,FtpagosController,FtimpuestosController,
     CfbloqueosagendasController,AddetallescitasController,CfempleadosserviciosController,
     FtserialesController,CfsedesController,UsersController,
-    CfhorariosController};
+    CfhorariosController, CfpromocionesController, CfcuponesController};
 
 use App\Http\Controllers\Public\{LandingController};
-
-use App\Models\Adclientes;
+use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
+use Illuminate\Support\Facades\{Auth,DB,Hash};
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -56,7 +56,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('ftresoluciones', FtresolucionesController::class);
     Route::resource('ftterminales', FtterminalesController::class);
     Route::resource('ftseriales', FtserialesController::class);
-
+    Route::resource('cfpromociones', CfpromocionesController::class);
+    Route::resource('cfcupones', CfcuponesController::class);
 
     Route::post('asignarServicio', [CfempleadosController::class, 'asignarServicio'])->name('cfempleados.asignarservicio');
     Route::put('cfempleados/{empleado}/servicios/{servicio}/estado', [CfempleadosController::class, 'updateEstadoServicio'])
@@ -86,18 +87,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/citas/actualizardetallecita/{id}', [AdcitasController::class, 'actualizardetallecita'])->name('api.citas.actualizar');
     Route::put('adcitas/actualizar-estados/{id}', [AdcitasController::class, 'actualizarEstados'])->name('adcitas.cancelar');
-
+    
     Route::patch('/cfsedes/{id}/estado', [CfsedesController::class, 'updateEstado'])->name('cfsedes.updateEstado');
     Route::patch('/ftresoluciones/{id}/estado', [FtresolucionesController::class, 'updateEstado'])->name('ftresoluciones.updateEstado');
     Route::patch('/ftterminales/{id}/estado', [FtterminalesController::class, 'updateEstado'])->name('ftterminales.updateEstado');
-
+    
     // Ruta para obtener el JSON con el desglose de ventas (Pagos -> Facturas -> Turno)
     Route::get('/ftturnos/{id}/resumen', [FtturnosController::class, 'resumen'])
     ->name('ftturnos.resumen');
-
+    
     // Ruta para ejecutar el cierre definitivo del turno (cambio de estado y fecha de cierre)
     Route::patch('/ftturnos/{id}/cerrar', [FtturnosController::class, 'cerrar'])
     ->name('ftturnos.cerrar');
+
+    Route::patch('/cfpromociones/{cfpromocion}/toggle', [CfPromocionesController::class, 'toggle'])
+    ->name('cfpromociones.toggle');
+    Route::post('/cfcupones/asignarVip', [CfcuponesController::class, 'asignarVip'])->name('cfcupones.asignarVip');
+    Route::post('/cfcupones/storeLote', [CfcuponesController::class, 'storeLote'])->name('cfcupones.storeLote');
+    Route::get('/cfpromociones/{promocion}/cupones', [CfPromocionesController::class, 'getCupones'])->name('cfpromociones.cupones');
 
     Route::prefix('comercios')->group(function () {
         // Vista Principal (Carga todo)
@@ -110,8 +117,406 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+
+        $user = User::where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminada = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->first();
+
+        //Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminada) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminada->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+        //Definir el turno activo por defecto (el primero de la lista)
+       $turnoActivo = $turnosAbiertos->first();
+
+        // 1. Para las citas Iniciamos la Query (sin el get al final todavía)
+        $adcitas = Adcitas::
+        join("adclientes AS c","c.id","=","adcitas.cliente_id")
+        ->join("personas AS p","p.id","=","c.persona_id")
+        ->join('users AS u', 'p.id', '=', 'u.persona_id')
+        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
+        ->join('cfmaestras AS m', 'm.id', '=', 'adcitas.estado_id')
+        ->with([
+            'detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
+            'detalle_con_empleadoservicio.empleadoservicio.servicio',
+            // Aplicamos la restricción a producto y a su relación tipo
+            'detalle_con_producto.producto.tipo' => function($query) {
+                // Seleccionamos id, nombre y la FK tipo_id para poder cargar la siguiente relación
+                $query->select('id', 'nombre'); 
+            },
+            'detalle_con_empleadoservicio.estado',
+        ])
+        ->select([
+            'c.id',
+            'p.foto',
+            'p.identificacion',
+            DB::raw('CONCAT(YEAR(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " años ", MONTH(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " meses y ", DAY(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " dias") AS edad'),
+            DB::raw("CONCAT_WS('',UPPER(LEFT(pn.nombre,1)),UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"),
+            'p.telefonomovil',
+            'p.email',
+            'adcitas.id',
+            'adcitas.codigo',
+            'adcitas.fecha',
+            'adcitas.horainicio',
+            'adcitas.horafinal',
+            'm.observacion AS estado_observacion',
+            'm.codigo AS estado_codigo',
+            'm.nombre AS estado_nombre',
+             // CÁLCULO DEL TOTAL MEDIANTE SUBCONSULTA (Elimina la necesidad del JOIN a addetallescitas)
+             DB::raw("(SELECT SUM(preciofinal) FROM addetallescitas WHERE cita_id = adcitas.id AND deleted_at IS NULL) AS total")
+        ])
+        ->where('su.predeterminada', 1)
+        // Usamos el ID del comercio del usuario autenticado
+        ->where('c.comercio_id', function($q) use ($user) {
+            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
+        })
+        ->whereIn('su.sede_id', function($q) use ($user) {
+            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        })
+        ->whereNull('adcitas.deleted_at');
+
+        // 3. FILTRO DE TIEMPO: Últimos 2 meses
+        // Comparamos la fecha de la factura con la fecha actual menos 2 meses
+        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(6));
+
+        // 4. EJECUTAMOS LA CONSULTA
+        $citas = $adcitas->orderby('adcitas.fecha', 'DESC')
+        ->orderby('adcitas.horainicio', 'DESC')
+        ->get();
+
+        // 0. Para las facturas Iniciamos la Query (sin el get al final todavía)
+        $ftfacturas = Ftfacturas::with([
+            'pagos',
+            'turnos.terminal.sede',
+            'estado'
+        ]);
+
+        // 1. FILTRO DE TIEMPO: Últimos 6 meses
+        // Comparamos la fecha de la factura con la fecha actual menos 6 meses
+        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(6));
+
+        // 2. Filtro de seguridad por comercio
+        $ftfacturas->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
+            $q->where('comercio_id', $comercio->id);
+        });
+
+        // 3. Selección de campos con Lógica Condicional
+        $ftfacturas->select([
+            'ftfacturas.*',
+            // Subconsulta para obtener el ID de la persona real dependiendo del tipo
+            DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END as persona_real_id"),
+            // Cálculo de total
+            DB::raw("(SELECT SUM(total) FROM ftpagos WHERE factura_id = ftfacturas.id) as grand_total")
+        ]);
+
+        // 4. Joins dinámicos basados en la 'persona_real_id' calculada arriba
+        $ftfacturas->leftJoin("personas AS p", function($join) {
+            // Unimos usando la lógica del CASE para normalizar el origen
+            $join->on("p.id", "=", DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END"));
+        })
+        ->leftJoin("personasnaturales AS pn", "p.id", "=", "pn.persona_id");
+
+        // 5. Agregamos las columnas de identidad normalizadas
+        $ftfacturas->addSelect([
+            'p.identificacion',
+            'p.telefonomovil',
+            'p.email',
+            DB::raw("CONCAT_WS('', UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos")
+        ]);
+
+        $facturas = $ftfacturas->orderBy('ftfacturas.fecha', 'DESC')->get();
+
+        // En tu Controller de Laravel
+        $hoy = now(); // Usa la fecha del sistema (configurada en America/Bogota)
+
+        $adclientes = Adclientes::
+        join("personas AS p","p.id","=","adclientes.persona_id")
+        ->join('users AS u', 'p.id', '=', 'u.persona_id')
+        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
+        ->join('cfmaestras AS m', 'm.id', '=', 'adclientes.estado_id')
+        ->select([
+            'adclientes.id',
+            'p.foto',
+            'p.identificacion',
+            'pn.fechanacimiento',
+            DB::raw("TIMESTAMPDIFF(YEAR, pn.fechanacimiento, CURDATE()) AS edad_que_cumple"),
+            DB::raw("CONCAT(UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS iniciales"),
+            DB::raw("CONCAT(pn.nombre, ' ', pn.apellido) AS nombrecompleto"),
+            'p.telefonomovil',
+            'p.email'
+        ])
+        ->where('su.predeterminada', 1)
+        ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$hoy->month])
+        ->whereRaw("DAY(pn.fechanacimiento) = ?", [$hoy->day])
+        // Usamos el ID del comercio del usuario autenticado
+        ->where('adclientes.comercio_id', function($q) use ($user) {
+            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
+        })
+        ->whereIn('su.sede_id', function($q) use ($user) {
+            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        })
+        ->orderby('pn.nombre', 'ASC')
+        ->orderby('pn.apellido', 'ASC');
+        $cumpleanosHoy = $adclientes->orderby('pn.nombre', 'ASC')->get();
+
+        // 0. Total de clientes únicos
+        $clientesHoy = Adclientes::whereDate('fechaingreso',now())->where('comercio_id', $comercio->id)->count();
+        // 1. Total de clientes únicos
+        $totalClientes = Adclientes::where('comercio_id', $comercio->id)->count();
+
+        // 2. Clientes que han venido más de una vez (Recurrentes)
+        $clientesRecurrentes = Adclientes::with(['citas'])->where('comercio_id', $comercio->id)
+            ->whereHas('citas', function($q) {
+                $q->where('estado_id', 915); // Solo citas pagadas/completadas
+            }, '>=', 2) // Que tengan 2 o más
+            ->count();
+
+        // 3. Cálculo final
+        $tasaRetencion = $totalClientes > 0 ? round(($clientesRecurrentes / $totalClientes) * 100, 1) : 0;
+
+        return Inertia::render('dashboard/index', [
+            'citas' => $citas,
+            'cumpleanosHoy' => $cumpleanosHoy,
+            'facturas' => $facturas,
+            'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
+            'estadosList' => Cfmaestra::where('padre','=',Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first()->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
+            'clientesHoy' => $clientesHoy,
+            'totalClientes' => $totalClientes,
+            'clientesRecurrentes' => $clientesRecurrentes,
+            'tasaRetencion' => $tasaRetencion,
+            'turnoActivo' => $turnoActivo,
+            'turnosList'  => $turnosAbiertos,
+            'sedePredeterminada' => $sedePredeterminada,
+        ]);
     })->name('dashboard');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard/analytics', function () {
+
+        $user = User::where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminada = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->first();
+
+        //Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminada) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminada->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+        //Definir el turno activo por defecto (el primero de la lista)
+       $turnoActivo = $turnosAbiertos->first();
+
+        // 1. Para las citas Iniciamos la Query (sin el get al final todavía)
+        $adcitas = Adcitas::
+        join("adclientes AS c","c.id","=","adcitas.cliente_id")
+        ->join("personas AS p","p.id","=","c.persona_id")
+        ->join('users AS u', 'p.id', '=', 'u.persona_id')
+        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
+        ->join('cfmaestras AS m', 'm.id', '=', 'adcitas.estado_id')
+        ->with([
+            'detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
+            'detalle_con_empleadoservicio.empleadoservicio.servicio',
+            // Aplicamos la restricción a producto y a su relación tipo
+            'detalle_con_producto.producto.tipo' => function($query) {
+                // Seleccionamos id, nombre y la FK tipo_id para poder cargar la siguiente relación
+                $query->select('id', 'nombre'); 
+            },
+            'detalle_con_empleadoservicio.estado',
+        ])
+        ->select([
+            'c.id',
+            'p.foto',
+            'p.identificacion',
+            DB::raw('CONCAT(YEAR(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " años ", MONTH(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " meses y ", DAY(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " dias") AS edad'),
+            DB::raw("CONCAT_WS('',UPPER(LEFT(pn.nombre,1)),UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"),
+            'p.telefonomovil',
+            'p.email',
+            'adcitas.id',
+            'adcitas.codigo',
+            'adcitas.fecha',
+            'adcitas.horainicio',
+            'adcitas.horafinal',
+            'm.observacion AS estado_observacion',
+            'm.codigo AS estado_codigo',
+            'm.nombre AS estado_nombre',
+             // CÁLCULO DEL TOTAL MEDIANTE SUBCONSULTA (Elimina la necesidad del JOIN a addetallescitas)
+             DB::raw("(SELECT SUM(preciofinal) FROM addetallescitas WHERE cita_id = adcitas.id AND deleted_at IS NULL) AS total")
+        ])
+        ->where('su.predeterminada', 1)
+        // Usamos el ID del comercio del usuario autenticado
+        ->where('c.comercio_id', function($q) use ($user) {
+            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
+        })
+        ->whereIn('su.sede_id', function($q) use ($user) {
+            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        })
+        ->whereNull('adcitas.deleted_at');
+
+        // 3. FILTRO DE TIEMPO: Últimos 2 meses
+        // Comparamos la fecha de la factura con la fecha actual menos 2 meses
+        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(6));
+
+        // 4. EJECUTAMOS LA CONSULTA
+        $citas = $adcitas->orderby('adcitas.fecha', 'DESC')
+        ->orderby('adcitas.horainicio', 'DESC')
+        ->get();
+
+        // 0. Para las facturas Iniciamos la Query (sin el get al final todavía)
+        $ftfacturas = Ftfacturas::with([
+            'pagos',
+            'turnos.terminal.sede',
+            'estado'
+        ]);
+
+        // 1. FILTRO DE TIEMPO: Últimos 6 meses
+        // Comparamos la fecha de la factura con la fecha actual menos 6 meses
+        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(6));
+
+        // 2. Filtro de seguridad por comercio
+        $ftfacturas->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
+            $q->where('comercio_id', $comercio->id);
+        });
+
+        // 3. Selección de campos con Lógica Condicional
+        $ftfacturas->select([
+            'ftfacturas.*',
+            // Subconsulta para obtener el ID de la persona real dependiendo del tipo
+            DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END as persona_real_id"),
+            // Cálculo de total
+            DB::raw("(SELECT SUM(total) FROM ftpagos WHERE factura_id = ftfacturas.id) as grand_total")
+        ]);
+
+        // 4. Joins dinámicos basados en la 'persona_real_id' calculada arriba
+        $ftfacturas->leftJoin("personas AS p", function($join) {
+            // Unimos usando la lógica del CASE para normalizar el origen
+            $join->on("p.id", "=", DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END"));
+        })
+        ->leftJoin("personasnaturales AS pn", "p.id", "=", "pn.persona_id");
+
+        // 5. Agregamos las columnas de identidad normalizadas
+        $ftfacturas->addSelect([
+            'p.identificacion',
+            'p.telefonomovil',
+            'p.email',
+            DB::raw("CONCAT_WS('', UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos")
+        ]);
+
+        $facturas = $ftfacturas->orderBy('ftfacturas.fecha', 'DESC')->get();
+
+        // En tu Controller de Laravel
+        $hoy = now(); // Usa la fecha del sistema (configurada en America/Bogota)
+
+        $adclientes = Adclientes::
+        join("personas AS p","p.id","=","adclientes.persona_id")
+        ->join('users AS u', 'p.id', '=', 'u.persona_id')
+        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
+        ->join('cfmaestras AS m', 'm.id', '=', 'adclientes.estado_id')
+        ->select([
+            'adclientes.id',
+            'p.foto',
+            'p.identificacion',
+            'pn.fechanacimiento',
+            DB::raw("TIMESTAMPDIFF(YEAR, pn.fechanacimiento, CURDATE()) AS edad_que_cumple"),
+            DB::raw("CONCAT(UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS iniciales"),
+            DB::raw("CONCAT(pn.nombre, ' ', pn.apellido) AS nombrecompleto"),
+            'p.telefonomovil',
+            'p.email'
+        ])
+        ->where('su.predeterminada', 1)
+        ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$hoy->month])
+        ->whereRaw("DAY(pn.fechanacimiento) = ?", [$hoy->day])
+        // Usamos el ID del comercio del usuario autenticado
+        ->where('adclientes.comercio_id', function($q) use ($user) {
+            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
+        })
+        ->whereIn('su.sede_id', function($q) use ($user) {
+            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        })
+        ->orderby('pn.nombre', 'ASC')
+        ->orderby('pn.apellido', 'ASC');
+        $cumpleanosHoy = $adclientes->orderby('pn.nombre', 'ASC')->get();
+
+        // 0. Total de clientes únicos
+        $clientesHoy = Adclientes::whereDate('fechaingreso',now())->where('comercio_id', $comercio->id)->count();
+        // 1. Total de clientes únicos
+        $totalClientes = Adclientes::where('comercio_id', $comercio->id)->count();
+
+        // 2. Clientes que han venido más de una vez (Recurrentes)
+        $clientesRecurrentes = Adclientes::with(['citas'])->where('comercio_id', $comercio->id)
+            ->whereHas('citas', function($q) {
+                $q->where('estado_id', 915); // Solo citas pagadas/completadas
+            }, '>=', 2) // Que tengan 2 o más
+            ->count();
+
+        // 3. Cálculo final
+        $tasaRetencion = $totalClientes > 0 ? round(($clientesRecurrentes / $totalClientes) * 100, 1) : 0;
+
+        return Inertia::render('dashboard/analytics', [
+            'citas' => $citas,
+            'cumpleanosHoy' => $cumpleanosHoy,
+            'facturas' => $facturas,
+            'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
+            'estadosList' => Cfmaestra::where('padre','=',Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first()->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
+            'clientesHoy' => $clientesHoy,
+            'totalClientes' => $totalClientes,
+            'clientesRecurrentes' => $clientesRecurrentes,
+            'tasaRetencion' => $tasaRetencion,
+            'turnoActivo' => $turnoActivo,
+            'turnosList'  => $turnosAbiertos,
+            'sedePredeterminada' => $sedePredeterminada,
+        ]);
+    })->name('dashboard.analytics');
 });
 
 

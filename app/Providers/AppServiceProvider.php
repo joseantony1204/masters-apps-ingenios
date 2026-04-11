@@ -46,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
                 }),
             ] : null,
         ]);
+        \App\Models\Ftfacturas::observe(\App\Observers\FtfacturasObserver::class);
 
     }
 }

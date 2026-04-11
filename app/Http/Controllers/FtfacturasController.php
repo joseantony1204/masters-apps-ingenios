@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas};
+use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Ftpagos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -36,44 +36,55 @@ class FtfacturasController extends Controller
             'estado'
         ]);
 
-        // 3. FILTRO CRÍTICO: Solo facturas que pertenecen a sedes de MI comercio
+        // 2. Filtro de seguridad por comercio
         $query->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
             $q->where('comercio_id', $comercio->id);
         });
 
-        // 4. Agregamos los datos del cliente (Persona Natural)
-        // Usamos leftJoin para no perder facturas si algo falla en la relación
+        // 3. Selección de campos con Lógica Condicional
         $query->select([
-            'ftfacturas.*', 
+            'ftfacturas.*',
+            // Subconsulta para obtener el ID de la persona real dependiendo del tipo
+            DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END as persona_real_id"),
+            // Cálculo de total
+            DB::raw("(SELECT SUM(total) FROM ftpagos WHERE factura_id = ftfacturas.id) as grand_total")
+        ]);
+
+        // 4. Joins dinámicos basados en la 'persona_real_id' calculada arriba
+        $query->leftJoin("personas AS p", function($join) {
+            // Unimos usando la lógica del CASE para normalizar el origen
+            $join->on("p.id", "=", DB::raw("CASE 
+                WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                ELSE ftfacturas.model_type_id 
+            END"));
+        })
+        ->leftJoin("personasnaturales AS pn", "p.id", "=", "pn.persona_id");
+
+        // 5. Agregamos las columnas de identidad normalizadas
+        $query->addSelect([
             'p.identificacion',
             'p.telefonomovil',
             'p.email',
-            'p.direccion',
-            // Calculamos el total sumando los items de la factura
-            DB::raw("(SELECT SUM(totalapagar) FROM ftdetalles WHERE factura_id = ftfacturas.id) as grand_total"),
-            DB::raw("CONCAT_WS('',UPPER(LEFT(pn.nombre,1)),UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS('', UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS round"),
             DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
-            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"), 
-            ])
-            ->leftJoin("personas AS p", function($join) {
-                $join->on("p.id", "=", "ftfacturas.model_type_id");
-            })
-            ->leftJoin("personasnaturales AS pn", "p.id", "=", "pn.persona_id");
+            DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos")
+        ]);
 
-        // 5. Filtros adicionales opcionales (por si quieres buscar por número o fecha)
-        if ($request->has('search')) {
+        // 6. Buscador optimizado
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('ftfacturas.numero', 'LIKE', "%$search%")
-                ->orwhere('p.identificacion','LIKE', explode(' ','%'.$search.'%'))
-                ->orWhere('pn.nombre','LIKE', explode(' ','%'.$search.'%'))
-                ->orWhere('pn.segundonombre','LIKE', explode(' ','%'.$search.'%'))
-                ->orWhere('pn.apellido','LIKE', explode(' ','%'.$search.'%'))
-                ->orWhere('pn.segundoapellido','LIKE', explode(' ','%'.$search.'%'));
+                ->orWhere('p.identificacion', 'LIKE', "%$search%")
+                ->orWhere('pn.nombre', 'LIKE', "%$search%")
+                ->orWhere('pn.apellido', 'LIKE', "%$search%");
             });
         }
 
-        $ftfacturas = $query->orderBy('ftfacturas.fecha', 'DESC')->get();
+         $ftfacturas = $query->orderBy('ftfacturas.fecha', 'DESC')->get();
 
         return Inertia::render('ftfacturas/index', [
             'ftfacturas' => $ftfacturas,
@@ -179,7 +190,7 @@ class FtfacturasController extends Controller
                 // 2. Crear la Cabecera de la Factura
                 $factura = Ftfacturas::create([
                     'codigoseguridad' => $this->generarCodigoseguridad(), 
-                    'numero' => 0, // Buscar en resolucion
+                    'numero' => $this->obtenerYActualizarNumeroResolucion($request->turno_id), // Buscar en resolucion
                     'fecha' => $request->fecha,
                     'fechanavencimiento' => $request->fechanavencimiento,
                     'model_type' => $request->model_type,
@@ -187,11 +198,6 @@ class FtfacturasController extends Controller
                     'turno_id' => $request->turno_id,
                     'estado_id' => $request->estado_id,
                     'tipo_id' => 943, //Factura de venta
-                    //'metodo_id' => $request->metodo_id,
-                    //'subtotal' => $request->subtotal,
-                    //'discount_amount' => $request->discount_amount,
-                    //'tax_amount' => $request->tax_amount,
-                    //'grand_total' => $request->grand_total,
                     'observaciones' => $request->observaciones,
                     'created_by' => Auth::user()->id, 
                     'created_at' => now(),
@@ -200,13 +206,13 @@ class FtfacturasController extends Controller
                 // 3. Guardar los Items (Detalle)
                 
                 foreach ($request->items as $item) {
-                    $productoId = $item['id'] ?? null;
+                    $productoId = $item['producto_id'] ?? null;
                     // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
-                    if (is_null($productoId) && !empty($item['name'])) {
+                    if (is_null($productoId) && !empty($item['nombre'])) {
                         $nuevoProducto = Productos::create([
-                            'nombre'        => $item['name'],
-                            'precioingreso' => $item['price'],
-                            'preciosalida'  => $item['price'],
+                            'nombre'        => $item['nombre'],
+                            'precioingreso' => $item['precio'],
+                            'preciosalida'  => $item['precio'],
                             'descripcion'   => 'ITEM_MANUAL_CITAS',
                             'estado_id'     => 858, // Activo
                             'unidad_id'     => 863, // Unidad
@@ -222,24 +228,43 @@ class FtfacturasController extends Controller
 
                     $factura->detalles()->create([
                         'numero' => 1,
-                        'cantidad' => $item['qty'],
-                        'precioinicial' => $item['price'],
-                        'preciofinal' => $item['price'],
+                        'cantidad' => $item['cantidad'],
+                        'precioinicial' => $item['precio'],
+                        'preciofinal' => $item['precio'],
                         'descuento' => 0,
                         'totalapagar' => $item['total'],
                         'fecha' => now(),
                         'factura_id' => $factura->id,
                         'producto_id' => $productoId,
                         'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
-                        'observaciones' => $item['description'],
+                        'observaciones' => $item['descripcion'],
                     ]);
+
                 }
 
-                return redirect()->route('ftfacturas.index')->with('success', $estado.' '. 'exitosamente.');
+                $factura->pagos()->create([
+                    'numero' => 1,
+                    'fecha' => now(),
+                    'total' => $request->total,
+                    'factura_id' => $factura->id,                       
+                    'metodo_id' => $request->metodo_id, 
+                    'created_by' => Auth::user()->id, 
+                    'created_at' => now(),
+                ]);
+
+                if($request->model_type == 921) {
+                    $cita = Adcitas::where('id', $request->model_type_id)->first();
+                    $cita->update(['estado_id' => 915]);
+                }
+
+                if($request->redirect)
+                    return redirect()->route('ftfacturas.index')->with('success', $estado.' '. 'exitosamente.');
+                else
+                    return back()->with('success', 'Factura generada exitosamente.');
             });
         } catch (\Exception $e) {
             //return back()->withErrors(['error' => 'Error al guardar: ' . $e->getMessage()]);
-            return back()->with('error', 'Error al guardar la informacion en la factura');
+            return back()->with('error', 'Error al guardar la informacion en la factura' . $e->getMessage());
         }
     }
 
@@ -366,5 +391,29 @@ class FtfacturasController extends Controller
         }
 
         return strtoupper($codigoseguridad); // Lo devolvemos en mayúsculas para que sea más legible
+    }
+
+    private function obtenerYActualizarNumeroResolucion($turno_id)
+    {
+        // 1. Navegar por la relación según tu diagrama: turno -> terminal -> resolucion
+        // Se asume que los modelos tienen las relaciones definidas (belongsTo)
+        $turno = Ftturnos::with('terminal.resolucion')->findOrFail($turno_id);
+        $resolucion = $turno->terminal->resolucion;
+
+        if (!$resolucion || $resolucion->estado != 1) {
+            throw new \Exception("No existe una resolución activa para esta terminal.");
+        }
+
+        // 2. Obtener el número actual y el prefijo de la tabla resoluciones
+        $numeroActual = $resolucion->actual;
+        $prefijo = $resolucion->prefijo;
+
+        // 3. Formatear el número concatenado (Ej: SETT-1)
+        $numeroFacturaCompleto = $prefijo . ' - ' . $numeroActual;
+
+        // 4. Incrementar el campo 'actual' en la base de datos para la próxima factura
+        $resolucion->increment('actual');
+
+        return $numeroFacturaCompleto;
     }
 }

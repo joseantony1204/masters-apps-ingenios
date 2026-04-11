@@ -15,19 +15,22 @@ interface Props {
     metodospagosList: any[];
 }
 
+
+
 export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePredeterminada, turnosList, estadosList, metodospagosList }: Props) {
-    
+    const today = new Date().toLocaleString('sv-SE', { timeZone: 'America/Bogota', hour12: false  }).replace(' ', 'T').slice(0, 16);
+
     const { data, setData, post, processing, errors } = useForm({
         // Datos de cabecera
         id: ftfacturas.id || '',
         numero: ftfacturas.numero || '',
-        fecha: ftfacturas.fecha || new Date().toISOString().slice(0, 16),
-        fechanavencimiento: ftfacturas.fechanavencimiento || new Date().toISOString().slice(0, 16),
+        fecha: ftfacturas.fecha || today,
+        fechanavencimiento: ftfacturas.fechanavencimiento || today,
         observaciones: ftfacturas.observaciones || '',
         
         // Lógica Polimórfica (Cliente)
-        model_type: ftfacturas.model_type || 0,
-        model_type_id: ftfacturas.model_type_id || cita?.cliente?.persona?.id || '',
+        model_type: ftfacturas.model_type || 921 || 0,
+        model_type_id: ftfacturas.model_type_id || cita?.id || '',
         cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || '', // Para mostrar el nombre en la UI sin recargar
         cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || '',
         cliente_direccion_aux: cita?.cliente?.persona?.direccion || '',
@@ -59,7 +62,7 @@ export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePre
     });
 
     // 1. Cambia el nombre de la función para que reciba el parámetro de acción
-    const handleSubmit = (e: React.FormEvent, finalizar: boolean = false) => {
+    const handleSubmit = (e: React.FormEvent, redirect: boolean = false) => {
         e.preventDefault();
         
         if (!data.model_type_id) {
@@ -72,8 +75,8 @@ export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePre
         }
 
         // 2. Enviamos el estado deseado como parte de la petición
-        // 'finalizar' le dirá al controlador si debe cerrar la factura o no
-        post(route('ftfacturas.store', { finalizar: finalizar }), {
+        // 'redirect' le dirá al controlador si debe redireccionar a index o al dash
+        post(route('ftfacturas.store', { redirect: redirect }), {
             onSuccess: () => {
                 // Notificación de éxito
             }

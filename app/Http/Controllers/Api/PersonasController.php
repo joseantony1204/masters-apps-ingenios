@@ -106,7 +106,7 @@ class PersonasController extends Controller
                     'password'    => Hash::make($persona->identificacion),
                     'email'       => $persona->email,
                     'telefonomovil' => $persona->telefonomovil,
-                    'perfil_id'   => 910, // Perfil Cliente/Empleado
+                    'perfil_id'   => 911, // Perfil Cliente/Empleado
                     'estado_id'   => 850, // Activo
                     'persona_id'  => $persona->id,
                 ] + $audt);
@@ -133,8 +133,8 @@ class PersonasController extends Controller
                 // Este objeto debe tener los mismos campos que espera tu buscador de clientes
                 $resultado = [
                     'id' => $persona->id,
-                    'nombres' => $request->nombre,
-                    'apellidos' => $request->apellido,
+                    'nombre' => $request->nombre,
+                    'apellido' => $request->apellido,
                     'identificacion' => $persona->identificacion,
                     'email' => $persona->email,
                     'telefonomovil' => $persona->telefonomovil,

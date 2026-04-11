@@ -34,7 +34,7 @@ class PersonasSeeder extends Seeder
         ];
 
         $dataResoluciones = [
-            ['numero' => '123456789', 'fecha'=>Carbon::create('2000/01/01'), 'prefijo' => 'SETT', 'desde' => '1', 'hasta' => '500', 'advertirescacez'=>'1', 'created_by' => 1, 'comercio_id' =>1],
+            ['numero' => '123456789', 'fecha'=>Carbon::create('2000/01/01'), 'prefijo' => 'SETT', 'desde' => '1', 'hasta' => '500', 'actual'=> '1', 'advertirescacez'=>'1', 'created_by' => 1, 'comercio_id' =>1],
         ];
 
         $dataTerminales = [

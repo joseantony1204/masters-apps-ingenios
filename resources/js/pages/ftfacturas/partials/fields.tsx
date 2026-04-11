@@ -59,10 +59,11 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                 cita.detalle_con_empleadoservicio.forEach((det: any) => {
                     nuevosItems.push({
                         id: det.empleadoservicio?.servicio?.id,
-                        name: det.empleadoservicio?.servicio?.nombre || 'Servicio',
-                        description: `Servicio de cita #${cita.codigo} - ${det.empleadoservicio?.servicio?.nombre}`,
-                        qty: det.cantidad || 1,
-                        price: det.preciounitario || 0,
+                        producto_id: det.empleadoservicio?.servicio?.id,
+                        nombre: det.empleadoservicio?.servicio?.nombre || 'Servicio',
+                        descripcion: `Servicio de cita #${cita.codigo} - ${det.empleadoservicio?.servicio?.nombre}`,
+                        cantidad: det.cantidad || 1,
+                        precio: det.preciounitario || 0,
                         total: (det.cantidad || 1) * (det.preciounitario || 0),
                         is_from_appointment: true
                     });
@@ -76,10 +77,11 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                     const productoInfo = det.producto?.[0]; 
                     nuevosItems.push({
                         id: productoInfo?.id,
-                        name: productoInfo?.nombre || 'Producto',
-                        description: `Producto de cita #${cita.codigo}`,
-                        qty: det.cantidad || 1,
-                        price: det.preciounitario || 0,
+                        producto_id: productoInfo.id,
+                        nombre: productoInfo?.nombre || 'Producto',
+                        descripcion: `Producto de cita #${cita.codigo}`,
+                        cantidad: det.cantidad || 1,
+                        precio: det.preciounitario || 0,
                         total: (det.cantidad || 1) * (det.preciounitario || 0),
                         is_from_appointment: true
                     });
@@ -94,8 +96,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
             // 4. Asegurar que los datos del cliente se vinculen
             setData((prev: any) => ({
                 ...prev,
-                model_type: 921, // 921 el tipo que manejes para el cliente
-                model_type_id: cita.cliente?.persona_id,
+                model_type_id: cita.id,
                 cliente_nombre_aux: cita.cliente?.persona?.personasnaturales?.nombrecompleto,
                 cliente_documento_aux: cita.cliente?.persona?.identificacion,
                 cliente_correo_aux: cita.cliente?.persona?.email,
@@ -128,9 +129,9 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
     const calcularTotales = (nuevosItems: any[], descPorc: number = 0, taxPorc: number = 0) => {
         // 1. Calcular Subtotal recorriendo los items
         const subtotal = nuevosItems.reduce((acc, item) => {
-            const qty = Number(item.qty) || 0;
-            const price = Number(item.price) || 0;
-            return acc + (qty * price);
+            const cantidad = Number(item.cantidad) || 0;
+            const precio = Number(item.precio) || 0;
+            return acc + (cantidad * precio);
         }, 0);
     
         // 2. Asegurar que los porcentajes sean números válidos
@@ -156,7 +157,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
     };
 
     const addItem = () => {
-        const nuevosItems = [...(data.items || []), { name: '', description: '', qty: 1, price: 0, total: 0 }];
+        const nuevosItems = [...(data.items || []), { producto_id: null, nombre: '', descripcion: 'Producto nuevo agregado manualmente', cantidad: 1, precio: 0, total: 0 }];
         calcularTotales(nuevosItems);
     };
 
@@ -169,7 +170,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         const nuevosItems = [...data.items];
         
         // Si el usuario cambia el nombre manualmente, reseteamos el ID del producto
-        if (field === 'name') {
+        if (field === 'nombre') {
             nuevosItems[index].id = null; 
             nuevosItems[index].es_nuevo = true;
         }
@@ -177,10 +178,10 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         nuevosItems[index][field] = value;
     
         // Recalcular total de la fila
-        if (field === 'qty' || field === 'price') {
-            const qty = field === 'qty' ? parseFloat(value) : nuevosItems[index].qty;
-            const price = field === 'price' ? parseFloat(value) : nuevosItems[index].price;
-            nuevosItems[index].total = (qty || 0) * (price || 0);
+        if (field === 'cantidad' || field === 'precio') {
+            const cantidad = field === 'cantidad' ? parseFloat(value) : nuevosItems[index].cantidad;
+            const precio = field === 'precio' ? parseFloat(value) : nuevosItems[index].precio;
+            nuevosItems[index].total = (cantidad || 0) * (precio || 0);
         }
     
         setData('items', nuevosItems);
@@ -194,7 +195,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
 
     const buscarProducto = async (query: string, index: number) => {
         setFilaActiva(index);
-        handleItemChange(index, 'name', query); // Actualiza el input mientras escribes
+        handleItemChange(index, 'nombre', query); // Actualiza el input mientras escribes
 
         if (query.length < 2) {
             setResultadosProductos([]);
@@ -219,10 +220,11 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         nuevosItems[index] = {
             ...nuevosItems[index],
             id: producto.id,
-            name: producto.nombre,
-            description: producto.tipo || '',
-            price: producto.precio || 0,
-            total: (nuevosItems[index].qty || 1) * (producto.precio || 0),
+            producto_id: producto.id,
+            nombre: producto.nombre,
+            descripcion: `Producto adicional #${producto.id} - ${producto?.nombre}`,
+            precio: producto.precio || 0,
+            total: (nuevosItems[index].cantidad || 1) * (producto.precio || 0),
             es_nuevo: false // Este ya existe en DB
         };
         
@@ -401,8 +403,6 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         }    
         
     };
-
-    
 
     return (
     <>
@@ -620,7 +620,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                             <input 
                                                 type="text" 
                                                 className="form-control form-control-sm bg-light border-0" 
-                                                value={item.name} 
+                                                value={item.nombre} 
                                                 onChange={e => buscarProducto(e.target.value, index)}
                                                 placeholder="Escribe para buscar..."
                                                 autoComplete="off"
@@ -654,8 +654,8 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                         <input 
                                             type="text" 
                                             className="form-control form-control-sm bg-light border-0" 
-                                            value={item.description} 
-                                            onChange={e => handleItemChange(index, 'description', e.target.value)} 
+                                            value={item.descripcion} 
+                                            onChange={e => handleItemChange(index, 'descripcion', e.target.value)} 
                                             placeholder="Informacion extra"
                                         />
                                     </td>
@@ -663,9 +663,9 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                         <input 
                                             type="number" 
                                             className="form-control form-control-sm bg-light border-0 text-center" 
-                                            value={item.qty} 
+                                            value={item.cantidad} 
                                             min="1"
-                                            onChange={e => handleItemChange(index, 'qty', e.target.value)} 
+                                            onChange={e => handleItemChange(index, 'cantidad', e.target.value)} 
                                         />
                                     </td>
                                     <td>
@@ -674,8 +674,8 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                             <input 
                                                 type="number" 
                                                 className="form-control bg-light border-0 text-end" 
-                                                value={item.price} 
-                                                onChange={e => handleItemChange(index, 'price', e.target.value)} 
+                                                value={item.precio} 
+                                                onChange={e => handleItemChange(index, 'precio', e.target.value)} 
                                             />
                                         </div>
                                     </td>

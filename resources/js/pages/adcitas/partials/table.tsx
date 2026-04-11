@@ -316,6 +316,12 @@ export default function Table({ citas, estadosList}: Props) {
                                             })}
                                         </div>
                                         <small className="text-muted">{cita.horainicio} - {cita.horafinal}</small>
+                                        <br></br>
+                                        <span 
+                                            className={`badge bg-light-${cita.estado_observacion} text-${cita.estado_observacion}`} 
+                                            style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
+                                            {cita.estado_nombre}
+                                        </span>
                                     </td>
                                     <td className="text-left">
                                         {/* Avatar pequeño opcional */}
@@ -341,7 +347,7 @@ export default function Table({ citas, estadosList}: Props) {
                                             </small>
                                         </div>
                                     </td>
-                                    <td className="text-center">
+                                    <td className="text-left">
                                         {cita.detalle_con_empleadoservicio?.map((detalle: any) => (
                                             <div key={detalle.id} className="d-flex align-items-center">
                                                 <div className="bg-light-primary rounded p-2 me-2">
@@ -352,15 +358,7 @@ export default function Table({ citas, estadosList}: Props) {
                                                     <small className="text-muted">Dur: {detalle.empleadoservicio?.duracionpersonalizado} min</small>
                                                     <br></br>
                                                     <small className="text-muted">Total: $ {detalle?.preciofinal}</small>
-                                                    <br></br>
-                                                    <span 
-                                                        className={`badge bg-light-${detalle.estado.observacion} text-${detalle.estado.observacion}`} 
-                                                        style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
-                                                        {detalle.estado?.nombre}
-                                                    </span>
                                                 </div>
-                                                <br></br>
-                                                
                                             
                                                 <div key={detalle.id} className="d-flex align-items-center mb-1\">
                                                     {/* Avatar pequeño opcional */}
@@ -407,26 +405,25 @@ export default function Table({ citas, estadosList}: Props) {
                                     <td className="text-end pe-4">
                                         <div className="btn-group shadow-sm" style={{ borderRadius: '6px' }}>
                                             
-                                            {/* BOTÓN ESTADO: Si está pagada, podrías poner un icono de check */}
-                                            <button 
-                                                type="button" 
+                                           {/* BOTÓN ESTADO: Si está pagada, podrías poner un icono de check */}
+                                           <button 
+                                                type="button"
+                                                onClick={() => verDetalleCita(cita)}
                                                 className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
                                                 style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, fontSize: '0.75rem', fontWeight: 600 }}
                                                 disabled={esInactiva}
                                             >
-                                                <i className={`ti ${esPagada ? 'ti-circle-check' : esInactiva ? 'ti-lock' : 'ti-traffic-lights'} fs-5`}></i>
-                                                <span>{cita.estado_nombre}</span>
+                                                <i className="ti ti-receipt fs-5"></i>
                                             </button>
-
-                                            {/* BOTÓN RESUMEN / POS: Solo si no está pagada ni cancelada */}
+                                            
                                             <button 
                                                 type="button" 
                                                 className="btn btn-outline-primary btn-sm px-3"
                                                 style={{ borderRadius: 0, borderLeft: 'none' }}
-                                                onClick={() => verDetalleCita(cita)}
+                                                onClick={() => handleFacturar(cita.id)}
                                                 disabled={esInactiva || esPagada} 
                                             >
-                                                <i className="ti ti-receipt fs-5"></i>
+                                                <i className="ti ti-currency-dollar fs-5"></i>
                                             </button>
 
                                             {/* BOTÓN FLECHA DROPDOWN */}

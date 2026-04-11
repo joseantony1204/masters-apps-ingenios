@@ -62,6 +62,8 @@ export default function Index({ citas, estadosList, serviciosList, empleadosList
     // Al lado de los otros useForm (formPass, formBloqueo, etc.)
     const formReserva = useForm({
         cliente_id: '',
+        fechanacimiento: '',
+        sexo_id: '',
         cliente_identificacion: '',
         cliente_nombre: '',
         cliente_telefono: '',
@@ -224,6 +226,8 @@ export default function Index({ citas, estadosList, serviciosList, empleadosList
         formReserva.setData({
             ...formReserva.data, // Mantenemos fecha, hora y servicio que ya se setearon
             cliente_id: cliente.id,
+            sexo_id: cliente.sexo_id || '',
+            fechanacimiento: cliente.fechanacimiento || '',
             cliente_nombre: `${cliente.nombres} ${cliente.apellidos}`,
             cliente_telefono: cliente.telefonomovil || '',
             cliente_email: cliente.email || '',

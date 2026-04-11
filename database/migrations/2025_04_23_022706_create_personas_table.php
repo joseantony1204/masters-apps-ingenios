@@ -36,7 +36,7 @@ return new class extends Migration
             $table->unsignedBigInteger('ciudad_id')->nullable();
             $table->string('barrio',100)->nullable();
             
-            $table->unsignedBigInteger('tipoidentificacion_id');
+            $table->unsignedBigInteger('tipoidentificacion_id')->nullable();
             $table->unsignedBigInteger('tiporegimen_id')->nullable();
             $table->text('observaciones')->nullable();
             
@@ -57,7 +57,7 @@ return new class extends Migration
             $table->string('segundonombre',50)->nullable()->comment('segundo nombre');
             $table->string('apellido',50)->comment('apellido');
             $table->string('segundoapellido',50)->nullable()->comment('segundo apellido');
-            $table->date('fechanacimiento')->comment('Fecha nacmiento');
+            $table->date('fechanacimiento')->nullable()->comment('Fecha nacmiento');
 
             $table->unsignedBigInteger('persona_id');
             $table->foreign('persona_id')->references('id')
@@ -66,7 +66,7 @@ return new class extends Migration
                                         ->onUpdate('cascade');
             
             $table->unsignedBigInteger('zona_id')->nullable();
-            $table->unsignedBigInteger('sexo_id');
+            $table->unsignedBigInteger('sexo_id')->nullable();
             $table->unsignedBigInteger('estadocivil_id')->nullable();
             $table->unsignedBigInteger('niveleducacion_id')->nullable();
             $table->unsignedBigInteger('religion_id')->nullable();

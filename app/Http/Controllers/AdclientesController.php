@@ -343,6 +343,8 @@ class AdclientesController extends Controller
             'adclientes.id',
             'p.foto',
             'p.identificacion',
+            'pn.sexo_id',
+            'pn.fechanacimiento',
             DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
             DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"),
             

@@ -157,7 +157,7 @@ export default function Show({ cliente, sedesComercio, perfilesList, sedesAsigna
     // Al lado de los otros useForm (formPass, formBloqueo, etc.)
     const formReserva = useForm({
         cliente_id: cliente.id,
-        cliente_nombre: '',
+        cliente_nombre:  `${persona.personasnaturales.nombre} ${persona.personasnaturales.apellido}`,
         cliente_telefono: cliente.persona.telefonomovil,
         cliente_email: cliente.persona.email,
         servicioasignado_id: '',

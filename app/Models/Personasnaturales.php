@@ -12,11 +12,9 @@ class Personasnaturales extends Model
     protected $appends = ['nombres','apellidos','nombreapellido','nombrecompleto'];
 
     static $rules = [
-        'fechanacimiento' => 'required',
         'nombre' => 'required',
         'apellido' => 'required',
-        'persona_id' => 'required',
-        'sexo_id' => 'required',];
+        'persona_id' => 'required',];
 
     public function getNombreApellidoAttribute()
     {

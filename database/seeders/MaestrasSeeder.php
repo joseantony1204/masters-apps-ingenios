@@ -22,9 +22,7 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 6, 'codigo' => NULL, 'nombre' => 'SEGURIDAD', 'padre' => 2, 'jerarquia' => NULL, 'observacion' => 'ti-lock'],
             
             [ 'id' => 7, 'codigo' => NULL, 'nombre' => 'ADMINISTRADOR', 'padre' => 5, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 910, 'codigo' => NULL, 'nombre' => 'EMPLEADO', 'padre' => 5, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 911, 'codigo' => NULL, 'nombre' => 'CLIENTE', 'padre' => 5, 'jerarquia' => NULL, 'observacion' => NULL],
-
+            
             [ 'id' => 8, 'codigo' => 'LIS_TIPOSIDENTIFICACIONES', 'nombre' => 'TIPOS DE IDENTIFICACIONES', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 9, 'codigo' => 'TI', 'nombre' => 'TAJETA DE IDENTIDAD', 'padre' => 8, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 10, 'codigo' => 'CC', 'nombre' => 'CEDULA DE CIUDADANIA', 'padre' => 8, 'jerarquia' => NULL, 'observacion' => NULL],
@@ -164,8 +162,11 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 907, 'codigo' => NULL, 'nombre' => 'OTRO', 'padre' => 903, 'jerarquia' => NULL, 'observacion' => NULL],
 
             [ 'id' => 908, 'codigo' => 'LIS_OCUPACIONES', 'nombre' => 'OCUPACIONES', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 909, 'codigo' => NULL, 'nombre' => 'ESTUDIANTE', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
-
+            [ 'id' => 909, 'codigo' => NULL, 'nombre' => 'Directores y Gerentes: Directores generales, gerentes de producción, gerentes financieros.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+           
+            [ 'id' => 910, 'codigo' => NULL, 'nombre' => 'EMPLEADO', 'padre' => 5, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 911, 'codigo' => NULL, 'nombre' => 'CLIENTE', 'padre' => 5, 'jerarquia' => NULL, 'observacion' => NULL],
+            
             [ 'id' => 912, 'codigo' => 'LIS_ESTADOSCITAS', 'nombre' => 'ESTADOS DE CITAS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 913, 'codigo' => 'AC', 'nombre' => 'Activa', 'padre' => 912, 'jerarquia' => NULL, 'observacion' => 'info'],
             [ 'id' => 914, 'codigo' => 'FA', 'nombre' => 'Facturada', 'padre' => 912, 'jerarquia' => NULL, 'observacion' => 'primary'],
@@ -216,6 +217,17 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 953, 'codigo' => NULL, 'nombre' => 'Promoción', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 954, 'codigo' => NULL, 'nombre' => 'Barba', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-palette'],
             [ 'id' => 955, 'codigo' => NULL, 'nombre' => 'Experiencia y venta', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => NULL],
+
+            [ 'id' => 956, 'codigo' => NULL, 'nombre' => 'Profesionales Científicos e Intelectuales: Médicos, ingenieros, docentes, abogados.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 957, 'codigo' => NULL, 'nombre' => 'Técnicos y Profesionales de Nivel Medio: Técnicos en salud, asistentes de ingeniería, técnicos en finanzas.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 958, 'codigo' => NULL, 'nombre' => 'Personal de Apoyo Administrativo: Oficinistas generales, secretarios, digitadores, cajeros.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 959, 'codigo' => NULL, 'nombre' => 'Servicios y Vendedores: Personal de hostelería, comerciantes, cuidadores, personal de seguridad.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 960, 'codigo' => NULL, 'nombre' => 'Agricultores y Operarios Agropecuarios: Agricultores, trabajadores forestales, pescadores.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 961, 'codigo' => NULL, 'nombre' => 'Oficiales, Operarios y Artesanos: Carpinteros, mecánicos, electricistas, plomeros, pintores.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 962, 'codigo' => NULL, 'nombre' => 'Operadores de Maquinaria y Ensambladores: Operadores de maquinaria industrial, conductores de vehículos.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 963, 'codigo' => NULL, 'nombre' => 'Ocupaciones Elementales: Limpiadores, asistentes de cocina, ayudantes de construcción, vendedores ambulantes.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 964, 'codigo' => NULL, 'nombre' => 'Fuerzas Militares: Oficiales y suboficiales de las fuerzas armadas.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
+
             
   
         ];

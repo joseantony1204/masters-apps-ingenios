@@ -52,7 +52,7 @@ class Ftpagos extends Model
      */
     public function ftfactura()
     {
-        return $this->belongsTo(\App\Models\Ftfacturas::class, 'factura_id', 'id');
+        return $this->belongsTo(\App\Models\Ftfactura::class, 'factura_id', 'id');
     }
     
     /**

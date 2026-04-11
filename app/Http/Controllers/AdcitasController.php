@@ -147,11 +147,10 @@ class AdcitasController extends Controller
         )
         ->get()
         ->pluck('nombre_completo', 'id'); // Pluck sobre la colección es más seguro con alias
-
         return Inertia::render('adcitas/index', [
             'comercio' => $comercio,
             'citas' => $citas,
-            'estadosList' => Cfmaestra::where('padre','=',$padre->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
+            'estadosList' => Cfmaestra::where('padre','=',Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first()->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
             'serviciosList' => $serviciosDisponibles,
             'empleadosList' => $empleadosDisponibles,
             // Pasamos los filtros actuales para que no se borren de los inputs al buscar
@@ -300,7 +299,7 @@ class AdcitasController extends Controller
             'items.*.cantidad' => 'required|numeric|min:1',
             'items.*.precio' => 'required|numeric',
             'items.*.descuento' => 'nullable|numeric|min:0|max:100',
-            'total' => 'required|numeric',
+            //'total' => 'required|numeric',
         ]);
 
         try {

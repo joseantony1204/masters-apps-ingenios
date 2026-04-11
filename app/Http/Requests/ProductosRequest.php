@@ -26,7 +26,6 @@ class ProductosRequest extends FormRequest
 			'precioingreso' => 'required',
 			'preciosalida' => 'required',
 			'tipo_id' => 'required',
-			'unidad_id' => 'required',
 			'estado_id' => 'required',
 			'sede_id' => 'required',
         ];
@@ -38,8 +37,6 @@ class ProductosRequest extends FormRequest
             'precioingreso.required' => 'El campo precio ingreso obligatorio.',
             'preciosalida.required' => 'El campo precio salida obligatorio.',
             'tipo_id.required' => 'El campo tipo obligatorio.',
-            'unidad_id.required' => 'El campo unidad obligatorio.',
-            'impuesto_id.required' => 'El campo impuesto obligatorio.',
             'estado_id.required' => 'El campo estado obligatorio.',
             'sede_id.required' => 'El campo sede obligatorio.',
         ];

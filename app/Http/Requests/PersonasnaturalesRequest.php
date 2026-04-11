@@ -24,8 +24,6 @@ class PersonasRequest extends FormRequest
         return [
 			'nombre' => 'required',
 			'apellido' => 'required',
-			'fechanacimiento' => 'required',
-			'sexo_id' => 'required',
 			
         ];
     }
@@ -34,8 +32,6 @@ class PersonasRequest extends FormRequest
         return [
             'nombre.required' => 'El campo nombre obligatorio',
             'apellido.required' => 'El campo apellido es obligatorio',
-            'fechanacimiento.required' => 'El campo fecha nacimiento es obligatorio',
-            'sexo_id.required' => 'El campo sexo es obligatorio',
            
         ];
     }
