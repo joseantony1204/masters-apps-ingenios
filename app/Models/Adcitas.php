@@ -49,9 +49,14 @@ class Adcitas extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigo', 'fecha', 'horainicio', 'horafinal', 'descripcion', 'cupon', 'motivocancelar', 'cliente_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigo', 'fecha', 'horainicio', 'horafinal', 'descripcion', 'cupon_id', 'motivocancelar', 'cliente_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    
+    protected $appends = ['adcliente'];
 
-
+    public function getAdclienteAttribute()
+    {
+        return $this->cliente; // Esto invoca la relación definida abajo
+    }
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

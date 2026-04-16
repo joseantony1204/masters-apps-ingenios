@@ -5,31 +5,19 @@ import { Users } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
     users: Users;
+    perfilesList: Record<string, string>; 
+    estadosList: Record<string, string>; 
 }
 
-export default function Edit({ users}: Props) {
+export default function Edit({ users, perfilesList, estadosList}: Props) {
     const { data, setData, put, delete: destroy, processing, errors } = useForm({
         id: users.id || '',
-        
         username: users.username || '',
-                             
         email: users.email || '',
-                             
         telefonomovil: users.telefonomovil || '',
-                             
         estado_id: users.estado_id || '',
-                             
         perfil_id: users.perfil_id || '',
-                             
         persona_id: users.persona_id || '',
-                             
-        created_by: users.created_by || '',
-                             
-        updated_by: users.updated_by || '',
-                             
-        deleted_by: users.deleted_by || '',
-                             
-
       });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -70,7 +58,7 @@ export default function Edit({ users}: Props) {
                 <div className="card">
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
-                            <Fields data={data} setData={setData} errors={errors}/>
+                            <Fields data={data} setData={setData} errors={errors} estadosList={estadosList} perfilesList={perfilesList}/>
                             <div className="col-12">
                                 <div className="row align-items-end justify-content-between g-3">
                                     <div className="col-sm-auto">

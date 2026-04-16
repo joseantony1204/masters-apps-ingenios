@@ -6,6 +6,7 @@ import Modal from '@/components/ui/Modal';
 import * as bootstrap from 'bootstrap';
 
 interface Props {
+    ftfactura: any;
     data: any;
     setData: any;
     errors: Record<string, string>;
@@ -18,7 +19,7 @@ interface Props {
     turnosList: any[];
 }
 
-export default function Fields({ data, setData, errors, cita, comercio, sedePredeterminada, turnoActivo, turnosList, estadosList, metodospagosList }: Props) {
+export default function Fields({ftfactura, data, setData, errors, cita, comercio, sedePredeterminada, turnoActivo, turnosList, estadosList, metodospagosList }: Props) {
     // Al inicio de tu componente o donde manejes el modal
     const inputBusquedaRef = React.useRef<HTMLInputElement>(null);
     // Al cargar, si hay un turno activo y el form no tiene ID, lo asignamos
@@ -50,11 +51,26 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
     }, []);
 
     useEffect(() => {
-        // Si recibimos una cita y aún no hemos cargado los items en el formulario
-        if (cita && data.items.length === 0) {
-            const nuevosItems: any[] = [];
-
-            // 1. Procesar Servicios (detalle_con_empleadoservicio)
+        const nuevosItems: any[] = [];
+        if (ftfactura.id && data.items.length === 0 && ftfactura.detalles?.length > 0) {
+            const nuevosItems = ftfactura.detalles.map((det: any) => ({
+                id: det.id || 0,
+                producto_id: det.producto?.id || det.producto_id,
+                nombre: det.producto?.nombre || 'Producto/Servicio',
+                descripcion: det.observaciones || '',
+                cantidad: Number(det.cantidad),
+                precio: Number(det.preciofinal),
+                total: Number(det.totalapagar),
+                is_from_appointment: !!det.observaciones?.includes('cita') // Detectar si era de cita por la observación
+            }));
+            
+            actualizarItems(nuevosItems);
+            return; // Salimos para no ejecutar la lógica de "cita"
+        }
+    
+        // 2. SI ES CREACIÓN DESDE CITA: Cargar lo que viene de la agenda
+        if (!data.id && cita && data.items.length === 0) {
+            // Procesar Servicios
             if (cita.detalle_con_empleadoservicio) {
                 cita.detalle_con_empleadoservicio.forEach((det: any) => {
                     nuevosItems.push({
@@ -69,15 +85,14 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                     });
                 });
             }
-
-            // 2. Procesar Productos adicionales (detalle_con_producto)
+    
+            // Procesar Productos adicionales
             if (cita.detalle_con_producto) {
                 cita.detalle_con_producto.forEach((det: any) => {
-                    // El producto viene como un array según tu JSON
                     const productoInfo = det.producto?.[0]; 
                     nuevosItems.push({
                         id: productoInfo?.id,
-                        producto_id: productoInfo.id,
+                        producto_id: productoInfo?.id,
                         nombre: productoInfo?.nombre || 'Producto',
                         descripcion: `Producto de cita #${cita.codigo}`,
                         cantidad: det.cantidad || 1,
@@ -87,13 +102,12 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                     });
                 });
             }
-
-            // 3. Cargar todo al estado y recalcular totales
+    
             if (nuevosItems.length > 0) {
                 actualizarItems(nuevosItems);
             }
-
-            // 4. Asegurar que los datos del cliente se vinculen
+    
+            // Vincular datos del cliente solo si es nuevo
             setData((prev: any) => ({
                 ...prev,
                 model_type_id: cita.id,
@@ -102,26 +116,28 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                 cliente_correo_aux: cita.cliente?.persona?.email,
             }));
         }
-    }, [cita]);
+    }, [cita, data.id]); // Escuchamos cita y el ID de la factura
+
+    
 
     // Función auxiliar para actualizar e integrar con tus cálculos de impuestos/descuentos
     const actualizarItems = (nuevosItems: any[]) => {
         const subtotal = nuevosItems.reduce((acc, item) => acc + Number(item.total), 0);
         
         // Aquí reutilizas tu lógica de impuestos/descuentos para que el Grand Total sea correcto
-        const descPorc = Number(data.discount_percent) || 0;
+        const descPorc = Number(data.porcentajedescuento) || 0;
         const taxPorc = Number(data.tax_percent) || 0;
         
-        const discount_amount = (subtotal * descPorc) / 100;
-        const tax_amount = ((subtotal - discount_amount) * taxPorc) / 100;
+        const descuento = (subtotal * descPorc) / 100;
+        const tax_amount = ((subtotal - descuento) * taxPorc) / 100;
 
         setData((prev: any) => ({
             ...prev,
             items: nuevosItems,
             subtotal: subtotal,
-            discount_amount: discount_amount,
+            descuento: descuento,
             tax_amount: tax_amount,
-            total: subtotal - discount_amount + tax_amount
+            total: subtotal - descuento + tax_amount
         }));
     };
 
@@ -139,18 +155,18 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         const tPorc = Number(taxPorc) || 0;
     
         // 3. Cálculos de montos
-        const discount_amount = (subtotal * dPorc) / 100;
-        const tax_amount = ((subtotal - discount_amount) * tPorc) / 100;
-        const total = subtotal - discount_amount + tax_amount;
+        const descuento = (subtotal * dPorc) / 100;
+        const tax_amount = ((subtotal - descuento) * tPorc) / 100;
+        const total = subtotal - descuento + tax_amount;
     
         // 4. Actualizar el estado global de una sola vez
         setData((prev: any) => ({
             ...prev,
             items: nuevosItems,
             subtotal: subtotal,
-            discount_percent: dPorc,
+            porcentajedescuento: dPorc,
             tax_percent: tPorc,
-            discount_amount: discount_amount,
+            descuento: descuento,
             tax_amount: tax_amount,
             total: total
         }));
@@ -404,6 +420,80 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
         
     };
 
+    // Dentro de tu componente Fields
+    const [codigoCupon, setCodigoCupon] = useState('');
+    const [cargandoCupon, setCargandoCupon] = useState(false);
+    const [mensajeCupon, setMensajeCupon] = useState({ texto: '', tipo: '' });
+
+    // Efecto para cargar el código si estamos editando
+    useEffect(() => {
+        if (data.cupon_id && !codigoCupon) {
+            // Aquí podrías buscar el código del cupón si el objeto ftfactura lo trae
+            setCodigoCupon(data.adcupon?.codigo || ftfactura?.adcupon?.codigo  || '');
+        }
+    }, [data.cupon_id]);
+
+    const aplicarCupon = async () => {
+        if (!codigoCupon) return;
+        
+        setCargandoCupon(true);
+        setMensajeCupon({ texto: '', tipo: '' });
+    
+        try {
+            const response = await axios.post(route('cfcupones.validar'), { 
+                codigo: codigoCupon,
+                persona_id: data.persona_id, // Asegúrate de que 'data.persona_id' tenga valor
+                factura_id: data.id,        // Usa 'data.id' que es lo que maneja useForm
+            });
+    
+            if (response.data.valido) {
+                const cupon = response.data.cupon;
+                // Obtenemos el valor del descuento desde la relación promociones
+                const valorDescuento = cupon.promociones?.valor || 0;
+    
+                setData((prev:any) => ({
+                    ...prev,
+                    cupon_id: cupon.id,
+                    porcentajedescuento: valorDescuento,
+                }));
+    
+                setMensajeCupon({ 
+                    texto: `¡Éxito! Cupón aplicado: ${valorDescuento}% de descuento`, 
+                    tipo: 'success' 
+                });
+            }
+        } catch (error:any) {
+            // Capturamos el mensaje específico enviado por el controlador (422, 404, 403)
+            const mensajeError = error.response?.data?.mensaje || 'Error al validar el cupón';
+            
+            setMensajeCupon({ 
+                texto: mensajeError, 
+                tipo: 'danger' 
+            });
+    
+            // Limpiamos el cupón en el estado si la validación falla
+            setData('cupon_id', null);
+            setData('porcentajedescuento', 0);
+        } finally {
+            setCargandoCupon(false);
+        }
+    };
+
+    useEffect(() => {
+        const subtotal = data.items.reduce((acc: number, item: any) => acc + (item.total || 0), 0);
+        
+        // Calculamos el valor del descuento basado en el porcentaje del cupón
+        const valorDescuento = (subtotal * (data.porcentajedescuento || 0)) / 100;
+        const totalConDescuento = subtotal - valorDescuento;
+    
+        setData((prev: any) => ({
+            ...prev,
+            subtotal: subtotal,
+            descuento: valorDescuento,
+            total: totalConDescuento
+        }));
+    }, [data.items, data.porcentajedescuento]); // Importante escuchar cambios en el porcentaje
+
     return (
     <>
         <div className="row">  
@@ -418,6 +508,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                         value={data.numero}
                         onChange={e => setData('numero', e.target.value)}
                         placeholder="Numero" 
+                        disabled={!!ftfactura.id} // Si ya existe un ID, no se puede editar el número
                     />
                     {errors.numero && <div className="invalid-feedback" role="alert"><strong>{errors.numero}</strong></div>}
                 </div>
@@ -466,6 +557,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                             value={data.turno_id}
                             onChange={e => setData('turno_id', e.target.value)}
                             style={{ fontSize: '13px' }}
+                            disabled={!!ftfactura.id} // Si viene de una factura, no se puede cambiar el turno
                         >
                             {Array.isArray(turnosList) ? (
                                 turnosList.map((t: any) => (
@@ -536,6 +628,7 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
                                 type="button" 
                                 className="btn btn-sm btn-light-secondary rounded-pill px-3"
                                 onClick={() => setData({ ...data, model_type_id: null, model_type: 922})}
+                                disabled={!!ftfactura.id} // Si viene de una factura, no se puede cambiar el turno
                             >
                                 <i className="ti ti-rotate"></i> Cambiar
                             </button>
@@ -708,79 +801,168 @@ export default function Fields({ data, setData, errors, cita, comercio, sedePred
             </div>
 
             {/* --- SECCIÓN 4: TOTALES --- */}
-            <div className="col-12">
-                <div className="invoice-total ms-auto py-3" style={{ maxWidth: '400px' }}>
-                    <div className="row g-2">
+            <div className="col-12 mt-4">
+                <div className="invoice-total ms-auto p-4 bg-light-50 border" style={{ maxWidth: '450px' }}>
+                    <div className="row g-3">
+                        {/* --- SECCIÓN DE AJUSTES RÁPIDOS --- */}
                         <div className="col-6">
-                            <label className="small fw-bold">Descuento (%)</label>
-                            <input 
-                                type="number" 
-                                className="form-control form-control-sm" 
-                                value={data.discount_percent || ''} // Mostrar vacío si es 0 para mejor UX
-                                placeholder="0"
-                                onChange={e => {
-                                    const val = e.target.value === '' ? 0 : Number(e.target.value);
-                                    calcularTotales(data.items, val, data.tax_percent);
-                                }} 
-                            />
+                            <div className="form-floating shadow-sm">
+                                <input 
+                                    type="number" 
+                                    className={`form-control form-control-sm ${data.cupon_id ? 'bg-light text-muted' : ''}`}
+                                    id="porcentajedescuento"
+                                    placeholder="0"
+                                    value={data.porcentajedescuento || ''}
+                                    disabled={!!data.cupon_id} // Si hay cupón, el descuento manual se bloquea
+                                    onChange={e => {
+                                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                        calcularTotales(data.items, val, data.tax_percent);
+                                    }} 
+                                />
+                                <label htmlFor="porcentajedescuento">Descuento (%)</label>
+                            </div>
                         </div>
 
                         <div className="col-6">
-                            <label className="small fw-bold">Impuestos (%)</label>
-                            <input 
-                                type="number" 
-                                className="form-control form-control-sm" 
-                                value={data.tax_percent || ''} 
-                                placeholder="0"
-                                onChange={e => {
-                                    const val = e.target.value === '' ? 0 : Number(e.target.value);
-                                    calcularTotales(data.items, data.discount_percent, val);
-                                }} 
-                            />
+                            <div className="form-floating shadow-sm">
+                                <input 
+                                    type="number" 
+                                    className="form-control form-control-sm" 
+                                    id="tax_percent"
+                                    placeholder="0"
+                                    value={data.tax_percent || ''} 
+                                    onChange={e => {
+                                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                        calcularTotales(data.items, data.porcentajedescuento, val);
+                                    }} 
+                                />
+                                <label htmlFor="tax_percent">Impuestos (%)</label>
+                            </div>
                         </div>
+
+                        {/* --- SECCIÓN DE PAGOS Y ESTADO --- */}
                         <div className="col-6">
-                            <label className="small fw-bold">Estado de factura</label>
+                            <label className="x-small fw-bolder text-uppercase text-muted mb-1">Estado Factura</label>
                             <select 
-                                className={`form-control form-select form-select-sm ${errors.estado_id ? ' is-invalid' : ''}`}
+                                className={`form-select form-select-sm shadow-sm ${errors.estado_id ? 'is-invalid' : ''}`}
                                 value={data.estado_id} 
                                 onChange={e => setData('estado_id', e.target.value)} 
-                                required
                             >
-                            <option value="">Elige...</option>
-                            {Object.entries(estadosList).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
+                                <option value="">Seleccionar...</option>
+                                {Object.entries(estadosList).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
                             </select>
                             {errors.estado_id && <div className="invalid-feedback" role="alert"><strong>{errors.estado_id}</strong></div>}
                         </div>
 
                         <div className="col-6">
-                            <label className="small fw-bold">Metodos de pago</label>
+                            <label className="x-small fw-bolder text-uppercase text-muted mb-1">Método de Pago</label>
                             <select 
-                                className={`form-control form-select form-select-sm ${errors.metodo_id ? ' is-invalid' : ''}`}
+                                className={`form-select form-select-sm shadow-sm ${errors.metodo_id ? 'is-invalid' : ''}`}
                                 value={data.metodo_id} 
                                 onChange={e => setData('metodo_id', e.target.value)} 
-                                required
                             >
-                            <option value="">Elige...</option>
-                            {Object.entries(metodospagosList).map(([key, label]) => (
-                                <option key={key} value={key}>{label}</option>
-                            ))}
+                                <option value="">Seleccionar...</option>
+                                {Object.entries(metodospagosList).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
                             </select>
                             {errors.metodo_id && <div className="invalid-feedback" role="alert"><strong>{errors.metodo_id}</strong></div>}
                         </div>
-                        
-                        <div className="col-12 mt-3"><hr/></div>
 
-                        <div className="col-6 text-muted">Subtotal :</div>
-                        <div className="col-6 text-end fw-bold">${new Intl.NumberFormat().format(data.subtotal)}</div>
-                        <div className="col-6 text-muted">Descuento :</div>
-                        <div className="col-6 text-end text-success fw-bold">-${new Intl.NumberFormat().format(data.discount_amount)}</div>
-                        <div className="col-6 text-muted">Impuesto :</div>
-                        <div className="col-6 text-end fw-bold">${new Intl.NumberFormat().format(data.tax_amount)}</div>
-                        <div className="col-12"><hr/></div>
-                        <div className="col-6 fs-5 fw-bold text-primary">Total a pagar:</div>
-                        <div className="col-6 fs-5 text-end fw-bolder text-primary">${new Intl.NumberFormat().format(data.total)}</div>
+                        {/* --- SECCIÓN DE CUPÓN (Diseño compacto) --- */}
+                        <div className="col-12 mt-2">
+                            <div className={`p-1 rounded-3 border-dashed ${data.cupon_id ? 'bg-light-primary border-primary' : 'bg-white'}`} style={{ border: '2px dashed #dfe5ef' }}>
+                                {!data.cupon_id ? (
+                                    <div className="input-group input-group-sm">
+                                        <span className="input-group-text bg-transparent border-end-0"><i className="ti ti-ticket text-muted"></i></span>
+                                        <input
+                                            type="text"
+                                            className="form-control border-start-0 ps-0"
+                                            placeholder="CÓDIGO DE CUPÓN"
+                                            value={codigoCupon}
+                                            onChange={(e) => setCodigoCupon(e.target.value.toUpperCase())}
+                                        />
+                                        <button className="btn btn-primary px-3" type="button" onClick={aplicarCupon} disabled={cargandoCupon || !codigoCupon}>
+                                            {cargandoCupon ? <span className="spinner-border spinner-border-sm"></span> : 'Aplicar'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="d-flex align-items-center justify-content-between p-1">
+                                        <div className="d-flex align-items-center">
+                                            <i className="ti ti-circle-check-filled text-primary fs-4 me-2"></i>
+                                            <div>
+                                                <small className="d-block text-muted lh-1 text-uppercase fw-bold" style={{ fontSize: '9px' }}>Cupón activo</small>
+                                                <span className="fw-bold text-primary">{codigoCupon}</span>
+                                                <span className="badge bg-primary ms-2" style={{ fontSize: '10px' }}>{data.porcentajedescuento}% OFF</span>
+                                            </div>
+                                        </div>
+                                        <div className="d-flex gap-1">
+                                            {/* BOTÓN REAPLICAR / RECALCULAR */}
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-sm btn-light-primary btn-icon"
+                                                title="Recalcular / Re-validar"
+                                                onClick={aplicarCupon}
+                                                disabled={cargandoCupon}
+                                            >
+                                                {cargandoCupon ? <span className="spinner-border spinner-border-sm"></span> : <i className="ti ti-refresh fs-5"></i>}
+                                            </button>
+
+                                            {/* BOTÓN ELIMINAR */}
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-sm btn-light-danger btn-icon"
+                                                title="Quitar cupón"
+                                                onClick={() => {
+                                                    setData((prev: any) => ({ ...prev, cupon_id: null, porcentajedescuento: 0 }));
+                                                    setCodigoCupon('');
+                                                    setMensajeCupon({ texto: '', tipo: '' });
+                                                }}
+                                            >
+                                                <i className="ti ti-trash fs-5"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                {mensajeCupon.texto && (
+                                    <div className={`x-small mt-1 px-2 pb-1 text-${mensajeCupon.tipo} fw-medium`}>
+                                        <i className={`ti ti-${mensajeCupon.tipo === 'success' ? 'check' : 'alert-circle'} me-1`}></i>
+                                        {mensajeCupon.texto}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* --- DESGLOSE FINAL --- */}
+                        <div className="col-12">
+                            <div className="mt-2 p-2">
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span className="text-muted">Subtotal</span>
+                                    <span className="fw-semibold text-dark">${new Intl.NumberFormat().format(data.subtotal)}</span>
+                                </div>
+                                
+                                {data.descuento > 0 && (
+                                    <div className="d-flex justify-content-between mb-2">
+                                        <span className="text-success fw-medium">Descuento {data.cupon_id ? '(Cupón)' : ''}</span>
+                                        <span className="text-success fw-bold">-${new Intl.NumberFormat().format(data.descuento)}</span>
+                                    </div>
+                                )}
+
+                                <div className="d-flex justify-content-between mb-2">
+                                    <span className="text-muted">Impuestos</span>
+                                    <span className="fw-semibold text-dark">${new Intl.NumberFormat().format(data.tax_amount)}</span>
+                                </div>
+
+                                <div className="border-top my-3"></div>
+
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <h4 className="mb-0 fw-bolder text-dark">Total a pagar</h4>
+                                    <h3 className="mb-0 fw-bolder text-primary">${new Intl.NumberFormat().format(data.total)}</h3>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

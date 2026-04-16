@@ -5,7 +5,7 @@ import { Ftfacturas } from '@/types';
 import React from 'react';
 
 interface Props {
-    ftfacturas: Ftfacturas;
+    ftfactura: Ftfacturas;
     cita : any;
     turnoActivo : any;
     sedePredeterminada : any;
@@ -15,23 +15,22 @@ interface Props {
     metodospagosList: any[];
 }
 
-
-
-export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePredeterminada, turnosList, estadosList, metodospagosList }: Props) {
+export default function Create({ftfactura, cita, turnoActivo, comercio, sedePredeterminada, turnosList, estadosList, metodospagosList }: Props) {
     const today = new Date().toLocaleString('sv-SE', { timeZone: 'America/Bogota', hour12: false  }).replace(' ', 'T').slice(0, 16);
-
+    console.log("Persona", cita?.cliente?.persona_id || ftfactura.model_type_id || '', );
     const { data, setData, post, processing, errors } = useForm({
         // Datos de cabecera
-        id: ftfacturas.id || '',
-        numero: ftfacturas.numero || '',
-        fecha: ftfacturas.fecha || today,
-        fechanavencimiento: ftfacturas.fechanavencimiento || today,
-        observaciones: ftfacturas.observaciones || '',
+        id: ftfactura.id || null,
+        numero: ftfactura.numero || '',
+        fecha: ftfactura.fecha || today,
+        fechanavencimiento: ftfactura.fechanavencimiento || today,
+        observaciones: ftfactura.observaciones || '',
         
         // Lógica Polimórfica (Cliente)
-        model_type: ftfacturas.model_type || 921 || 0,
-        model_type_id: ftfacturas.model_type_id || cita?.id || '',
+        model_type: ftfactura.model_type || 921 || 0,
+        model_type_id: ftfactura.model_type_id || cita?.id || '',
         cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || '', // Para mostrar el nombre en la UI sin recargar
+        persona_id: cita?.cliente?.persona_id || ftfactura.model_type_id || '', // Para obterner el ID real de la persona al enviar el formulario
         cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || '',
         cliente_direccion_aux: cita?.cliente?.persona?.direccion || '',
         cliente_telefonomovil_aux: cita?.cliente?.persona?.telefonomovil || '',
@@ -47,16 +46,16 @@ export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePre
 
         // Detalle e Impuestos
         items: [] as any[], // Aquí se guardarán los productos/servicios
-        subtotal: 0,
-        discount_percent: 0,
-        discount_amount: 0,
-        tax_percent: 0,
-        tax_amount: 0,
-        total: 0,
+        subtotal: ftfactura?.subtotal || 0,
+        descuento: ftfactura?.descuento || 0,
+        porcentajedescuento: ftfactura?.porcentajedescuento || 0,
+        impuesto: ftfactura?.impuesto || 0,
+        total: ftfactura?.total || 0,
 
         // Otros
-        metodo_id: '',
-        estado_id: '',
+        metodo_id: ftfactura?.adpagos?.[0]?.metodo_id || '',
+        estado_id: ftfactura?.estado_id || '',
+        cupon_id: ftfactura?.cupon_id || '',
         turno_id: turnoActivo?.id || '',
         comercio_id: comercio?.id || '',
     });
@@ -112,6 +111,7 @@ export default function Create({ftfacturas, cita, turnoActivo, comercio, sedePre
                         <div className="card-body">
                             <form onSubmit={handleSubmit}>
                                 <Fields 
+                                    ftfactura={ftfactura} 
                                     data={data} 
                                     setData={setData} 
                                     errors={errors} 

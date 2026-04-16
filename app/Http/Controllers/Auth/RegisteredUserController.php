@@ -13,6 +13,7 @@ use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
 {
@@ -129,6 +130,24 @@ class RegisteredUserController extends Controller
                         'predeterminada' => true
                     ]);
                 }
+
+                // 8. Crear Suscripcion por defecto
+                $suscripcionId = DB::table('scsuscripciones')->insertGetId([
+                        'fecha_inicio'=>Carbon::now()->format('Y/m/d'), 
+                        'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 
+                        'estado_id' => 850, 
+                        'plan_id' => 968, 
+                        'comercio_id' => $comercio->id,
+                ] + $audt);
+
+                // 9. Crear pago por defecto
+                DB::table('scpagos')->insert([
+                        'valor'=>0, 
+                        'fecha'=>Carbon::now(), 
+                        'estado_id' => 974, 
+                        'metodo_id' => 933, 
+                        'suscripcion_id' =>$suscripcionId,  
+                ] + $audt);
 
                 event(new Registered($nuevoUsuario));
                 Auth::login($nuevoUsuario);

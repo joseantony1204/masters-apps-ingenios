@@ -3,8 +3,9 @@ import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
 import { Ftfacturas } from '@/types';
 import { useForm } from '@inertiajs/react';
+
 interface Props {
-    ftfactura: any;
+    ftfactura: Ftfacturas;
     cita : any;
     turnoActivo : any;
     sedePredeterminada : any;
@@ -19,6 +20,7 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
         // Datos de cabecera
         id: ftfactura.id || '',
         numero: ftfactura.numero || '',
+        codigoseguridad: ftfactura.codigoseguridad || '',
         fecha: ftfactura.fecha || new Date().toISOString().slice(0, 16),
         fechanavencimiento: ftfactura.fechanavencimiento || new Date().toISOString().slice(0, 16),
         observaciones: ftfactura.observaciones || '',
@@ -27,6 +29,7 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
         model_type: ftfactura.model_type || 0,
         model_type_id: ftfactura.model_type_id || cita?.cliente?.persona?.id || '',
         cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || '', // Para mostrar el nombre en la UI sin recargar
+        persona_id: cita?.cliente?.persona_id || ftfactura.model_type_id || '', 
         cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || '',
         cliente_direccion_aux: cita?.cliente?.persona?.direccion || '',
         cliente_telefonomovil_aux: cita?.cliente?.persona?.telefonomovil || '',
@@ -42,37 +45,54 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
                              
         // Detalle e Impuestos
         items: [] as any[], // Aquí se guardarán los productos/servicios
-        subtotal: 0,
-        discount_percent: 0,
-        discount_amount: 0,
-        tax_percent: 0,
-        tax_amount: 0,
-        total: 0,
+        subtotal: ftfactura?.subtotal || 0,
+        descuento: ftfactura?.descuento || 0,
+        porcentajedescuento: ftfactura?.porcentajedescuento || 0,
+        impuesto: ftfactura?.impuesto || 0,
+        total: ftfactura?.total || 0,
 
         // Otros
-        metodo_id: '',
-        estado_id: '',
+        pago_id: ftfactura.adpagos?.[0]?.id || '',
+        metodo_id: ftfactura.adpagos?.[0]?.metodo_id || '',
+        estado_id: ftfactura.estado_id || '',
+        cupon_id: ftfactura.cupon_id || '',
         turno_id: turnoActivo?.id || '',
-        comercio_id: comercio?.id || '',
-                             
-
+        tipo_id: ftfactura?.tipo_id || '',
       });
 
-    const handleSubmit = (e: React.FormEvent) => {
+
+    // 1. Cambia el nombre de la función para que reciba el parámetro de acción
+    const handleSubmit = (e: React.FormEvent, redirect: boolean = false) => {
         e.preventDefault();
-        put(route('ftfacturas.update', data.id));
+        
+        if (!data.model_type_id) {
+            alert("Por favor seleccione un cliente");
+            return;
+        }
+        if (data.items.length === 0) {
+            alert("Debe agregar al menos un ítem al detalle");
+            return;
+        }
+
+        // 2. Enviamos el estado deseado como parte de la petición
+        // 'redirect' le dirá al controlador si debe redireccionar a index o al dash
+        put(route('ftfacturas.update', { id: ftfactura.id }), {
+            onSuccess: () => {
+                // Notificación de éxito
+            }
+        });
     };
 
     const handleDelete = () => {
         if (confirm('¿Seguro que quiere eliminar este elemento?')) {
-            destroy(route('ftfacturas.destroy', data.id));
+            //destroy(route('ftfacturas.destroy', data.id));
         }
     };
 
     return (
         
     <AppMainLayout>
-        <Head title="Crear registro" />
+        <Head title="Editar factura" />
         <div className="page-header">
             <div className="page-block">
                 <div className="row align-items-center">
@@ -97,6 +117,7 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
                     <div className="card-body">
                         <form onSubmit={handleSubmit}>
                             <Fields 
+                                ftfactura={ftfactura} 
                                 data={data} 
                                 setData={setData} 
                                 errors={errors} 
@@ -120,8 +141,18 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
                                     </div>
                                     <div className="col-sm-auto btn-page">
                                         <a href={route('ftfacturas.index')} className="btn btn-outline-secondary">Cancelar</a> 
-                                        <button type="submit" className="btn btn-light-primary" disabled={processing}>
-                                            <i className="fa fa-fw fa-check-circle"></i> Actualizar
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-light-primary" 
+                                            disabled={processing}
+                                            onClick={(e) => handleSubmit(e, true)}
+                                        >
+                                            {processing ? (
+                                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                            ) : (
+                                                <i className="ti ti-circle-check me-1"></i>
+                                            )}
+                                            Actualizar factura con estado
                                         </button>
                                     </div>
                                 </div>

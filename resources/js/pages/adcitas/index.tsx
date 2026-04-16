@@ -13,9 +13,14 @@ interface Props {
     estadosList: Record<string, string>;
     serviciosList: Record<string, string>;
     empleadosList: Record<string, string>;
+
+    sedePredeterminada: any;
+    turnoActivo: any;
+    metodospagosList: Record<string, string>;
+    turnosList: Record<string, string>;
 }
 
-export default function Index({ citas, estadosList, serviciosList, empleadosList }: Props) {
+export default function Index({ citas, estadosList, serviciosList, empleadosList, sedePredeterminada, turnoActivo, metodospagosList, turnosList }: Props) {
     const { auth } = usePage().props as any;
     const user = auth.user;
     //console.log("mostrandos",user.personas.comercios.token)
@@ -416,7 +421,14 @@ export default function Index({ citas, estadosList, serviciosList, empleadosList
                 <div className="card">
                     
                     <div className="card-body">
-                        <Table citas={citas} estadosList={estadosList}/>
+                        <Table 
+                        citas={citas} 
+                        estadosList={estadosList}
+                        metodospagosList={metodospagosList}
+                        sedePredeterminada={sedePredeterminada}
+                        turnoActivo={turnoActivo}
+                        turnosList={turnosList}
+                        />
                     </div>
                 </div>
             </div>

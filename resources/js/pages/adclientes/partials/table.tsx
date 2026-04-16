@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { useForm } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { router, usePage, Link } from '@inertiajs/react';
+import axios from 'axios';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg';
-import { Link } from '@inertiajs/react';
+import avatar10 from '/public/assets/images/user/default.png';
 
 interface Props {
     clientes: any[];
@@ -12,107 +12,111 @@ interface Props {
 
 export default function Table({ clientes }: Props) {
     const tableRef = useRef<HTMLTableElement>(null);
+    const dataTableInstance = useRef<any>(null);
+
+    // Efecto para inicializar y destruir DataTables correctamente
     useEffect(() => {
         if (tableRef.current) {
-          initDataTable(tableRef.current);
+            // Inicializamos la tabla y guardamos la instancia
+            dataTableInstance.current = initDataTable(tableRef.current);
         }
-    }, []);
-    const { delete: destroy } = useForm();
 
-    const handleDelete = (id: number) => {
-        if (confirm('¿Seguro que quiere eliminar este elemento?')) {
-            destroy(route('adclientes.destroy', id));
-        }
-    };
-    
+        // Limpieza: Esto evita el error "Node.removeChild" al desmontar o actualizar
+        return () => {
+            if (dataTableInstance.current) {
+                dataTableInstance.current.destroy();
+                dataTableInstance.current = null;
+            }
+        };
+    }, [clientes]); // Se reinicia si los clientes cambian
+
     const handleEdit = (id: number) => {
         router.visit(route('adclientes.edit', id));
     };
 
-    const handleView = (id: number) => {
-        router.visit(route('adclientes.show', id));
+    const [sending, setSending] = useState(false); // Estado de carga
+    const handleSendWhatsapp = async (cliente: any) => {
+        if(sending) return; // Evita clics múltiples
+        setSending(true);
+        try {
+            const response = await axios.post(route('api.whatsapp.send'), {
+                telefono: cliente.telefonomovil,
+                template: "hello_world",
+                params: []
+            });
+
+            // Opcional: Podrías marcar en el estado local que este cliente ya recibió el mensaje
+            alert(`✅ ${response.data.message}`);
+        } catch (error: any) {
+            // Ahora capturamos el error real enviado desde el backend
+            const errorMsg = error.response?.data?.message || "Error de conexión";
+            alert(`❌ ${errorMsg}`);
+        } finally {
+            setSending(false);
+        }
     };
-    
 
     return (
-        <>
+        <div className="table-responsive">
             <table ref={tableRef} className="table table-hover">
                 <thead>
                     <tr>
-                        <th className="text-center" style={{ width: '1%' }}>Editar</th>
-                        <th className="text-left" style={{ width: '2%' }}>Item</th> 
-                        <th className="text-left" style={{ width: '10%' }}>Nombre</th>
-                        <th >Telefono movil</th>
-                        <th >F. ingreso</th>
-                        <th >Estado</th>
+                        <th className="text-center" style={{ width: '1%' }}>Acciones</th>
+                        <th className="text-center" style={{ width: '2%' }}>#</th> 
+                        <th className="text-left" style={{ width: '30%' }}>Cliente</th>
+                        <th>Teléfono Móvil</th>
+                        <th>F. Ingreso</th>
+                        <th className="text-center">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
-                {clientes.map((item, index) => (
-                    <tr key={item.id}>
-                        <td className="text-center">
-                        <ul className="list-inline mb-0">
-                            {/*
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleView(adclientes.id)}
-                                    className="avtar avtar-s btn-link-info btn-pc-default">
-                                    <i className="ti ti-eye f-20"></i>
-                                </button>
-                            </li>
-                            */}
-                            <li className="list-inline-item">
+                    {clientes.map((item, index) => (
+                        <tr key={item.id}>
+                            <td className="text-center">
                                 <button
                                     onClick={() => handleEdit(item.id)}
-                                    className="avtar avtar-s btn-link-success btn-pc-default">
+                                    className="avtar avtar-s btn-link-success btn-pc-default border-0 bg-transparent"
+                                >
                                     <i className="ti ti-edit f-20"></i>
                                 </button>
-                            </li>
-                            {/*
-                            <li className="list-inline-item">
-                                <button
-                                    onClick={() => handleDelete(adclientes.id)}
-                                    className="avtar avtar-s btn-link-danger btn-pc-default">
-                                    <i className="ti ti-trash f-20"></i>
-                                </button>
-                            </li>
-                            */}
-                        </ul>
-                        </td>
-                        <td className="text-center">{index + 1}</td>
-                        <td className="text-left">
-                            <div className="row">
-                                <div className="col-auto pe-0">
+                            </td>
+                            <td className="text-center">{index + 1}</td>
+                            <td className="text-left">
+                                <div className="d-flex align-items-center">
                                     <img 
-                                        src={item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : '' } 
-                                        alt="user-image" 
-                                        className="wid-40 rounded-circle" 
+                                        src={item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : avatar10 } 
+                                        alt="user" 
+                                        className="wid-40 rounded-circle me-3 border shadow-sm" 
                                     />
+                                    <div>
+                                        <Link href={route('adclientes.show', item.id)} className="text-dark fw-bold mb-0">
+                                            {item.nombres} {item.apellidos}
+                                        </Link>
+                                        <p className="text-muted f-12 mb-0">Identificación: { item.identificacion }</p>
+                                        <p className="text-muted f-12 mb-0">Email: { item.email }</p>
+                                        <p className="text-muted f-12 mb-0"> Edad: { item.edad }</p>
+                                    </div>
                                 </div>
-                                <div className="col">
-                                    <Link href={route('adclientes.show', item.id)} className="text-dark">
-                                        <h6 className="mb-1">{item.nombres } {item.apellidos }</h6>
-                                    </Link>
-                                    <p className="text-muted f-12 mb-0">Identificación: { item.identificacion }</p>
-                                    <p className="text-muted f-12 mb-0">Email: { item.email }</p>
-                                    <p className="text-muted f-12 mb-0"> Edad: { item.edad }</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td >{ item.telefonomovil }</td>
-                        <td >{ item.fechaingreso }</td>
-                        <td className="text-center">
-                            <span 
-                                className={`badge bg-light-${item.color_estado} text-${item.color_estado}`} 
-                                style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
-                                {item.estado}
-                            </span>
-                        </td>
-
-                    </tr>
+                            </td>
+                            <td>
+                                <button 
+                                    onClick={() => handleSendWhatsapp(item)}
+                                    className="btn btn-link p-0 text-success text-decoration-none fw-bold d-flex align-items-center"
+                                >
+                                    <i className="ti ti-brand-whatsapp me-2 fs-4"></i>
+                                    {item.telefonomovil}
+                                </button>
+                            </td>
+                            <td>{item.fechaingreso}</td>
+                            <td className="text-center">
+                                <span className={`badge bg-light-${item.color_estado} text-${item.color_estado} px-3 py-2`}>
+                                    {item.estado}
+                                </span>
+                            </td>
+                        </tr>
                     ))}
                 </tbody>
             </table>
-        </> 
+        </div>
     );
-  }
+}

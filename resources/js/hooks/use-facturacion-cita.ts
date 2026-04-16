@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
     const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
     const form = useForm({
         nombreCliente: '',
         observaciones: '',
         items: [] as any[],
+        cupon_id: '',
+        porcentajedescuento: 0,
+        descuento: 0
     });
 
     // --- FORMULARIOS INERTIA ---
@@ -34,11 +41,14 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         
         // Totales
         subtotal: 0,
-        discount_percent: 0,
-        tax_percent: 0,
+        descuento: 0, // <--- Agregado para tu controlador
+        impuesto: 0,  // <--- Agregado para tu controlador
         total: 0,
+        porcentajedescuento: 0,
+        tax_percent: 0,
     
         // Para factura rápida, podrías preseleccionar el método más común (ej: Efectivo)
+        cupon_id: '', // Deja vacío para que el usuario elija
         turno_id: '', // Deja vacío para que el usuario elija
         metodo_id: '', // Deja vacío para que el usuario elija
         estado_id: 938, // Asumiendo que 938 es 'Pagada'
@@ -64,11 +74,22 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     // Sincronizar datos cuando la cita cambia o se abre el modal
     useEffect(() => {
         if (cita) {
+            setCouponCode('');
+            setAppliedCoupon(null);
+            setIsValidatingCoupon(false);
             form.setData({
                 nombreCliente: `${cita.nombres} ${cita.apellidos}`,
                 observaciones: cita.observaciones || '',
                 items: [], // Reiniciamos items adicionales al cambiar de cita
+                cupon_id: '',
+                porcentajedescuento: 0,
+                descuento: 0
             });
+            setFacturaData(prev => ({
+                ...prev,
+                porcentajedescuento: 0,
+                cupon_id: ''
+            }));
         }
     }, [cita]);
 
@@ -107,7 +128,9 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     
             const todosLosItems = [...serviciosComoItems, ...productosComoItems];
             const sumaTotal = todosLosItems.reduce((acc, item) => acc + (Number(item.precio) * item.cantidad), 0);
-    
+            setCouponCode('');
+            setAppliedCoupon(null);
+            setIsValidatingCoupon(false);
             setFacturaData(prev => ({
                 ...prev,
                 model_type_id: cita.id,
@@ -125,6 +148,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         fetchFactura(route('ftfacturas.store', { rediret: false }), {
             onSuccess: () => {
                 resetFactura();
+                setAppliedCoupon(null);
+                setCouponCode('');
                 callbackCerrar();
             },
         });
@@ -284,8 +309,6 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         }
     };
 
-    
-
     const finalizarYGuardarCita = (e: React.FormEvent, callbackCerrar: () => void) => {
         e.preventDefault();
     
@@ -298,8 +321,9 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     
                 // 2. Limpieza opcional de estados locales del hook
                 setFiltroBusqueda('');
+                setAppliedCoupon(null);
+                setCouponCode('');
                 setResultadosBusqueda([]);
-    
                 // 3. Notificación opcional (Si usas SweetAlert2)
                 // Swal.fire({
                 //     icon: 'success',
@@ -315,10 +339,69 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         });
     };
 
+    const validarCupon = async () => {
+        if (!couponCode) return;
+        setIsValidatingCoupon(true);
+        try {
+            // Llamamos a un endpoint que crearemos (ej: ftcupones.validate)
+            const { data } = await axios.post(route('cfcupones.validar'), {
+                codigo: couponCode,
+                persona_id: cita?.adcliente?.persona_id, // Para validar que sea de este cliente
+            });
+    
+            if (data.valido) {
+                setAppliedCoupon(data.cupon);
+                // Aplicamos el descuento al formulario de la factura
+                setFacturaData(prev => ({
+                    ...prev,
+                    porcentajedescuento: data.cupon.promociones.valor,
+                    // Guardamos el ID del cupón para que el backend lo marque como USADO al facturar
+                    cupon_id: data.cupon.id 
+                }));
+                toast.success(`¡Cupón aplicado!: ${data.cupon.promociones.nombre}`);
+            } else {
+                toast.error(data.mensaje || "Cupón no válido");
+                setAppliedCoupon(null);
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.mensaje || "Cupón no válido");
+        } finally {
+            setIsValidatingCoupon(false);
+        }
+    };
+    
     // Totales calculados al vuelo (disponibles en cada render)
     const subtotalServicios = cita?.detalle_con_empleadoservicio?.reduce((acc: number, d: any) => acc + Number(d.preciofinal), 0) || 0;
     const subtotalProductosPrevios = cita?.detalle_con_producto?.reduce((acc: number, d: any) => acc + Number(d.preciofinal), 0) || 0;
     const subtotalNuevos = form.data.items.reduce((acc: number, item: any) => acc + item.total, 0) || 0;
+    
+    const totalAntesDeDescuento = subtotalServicios + subtotalProductosPrevios + subtotalNuevos;
+    const montoDescuento = totalAntesDeDescuento * (facturaData.porcentajedescuento / 100);
+    const totalFinal = totalAntesDeDescuento - montoDescuento;
+    
+    // 1. Efecto para sincronizar los totales calculados con el estado de la factura
+    // Sincronización con FacturaData (Agregando descuento e impuesto para el controlador)
+    useEffect(() => {
+        setFacturaData(prev => ({
+            ...prev,
+            subtotal: totalAntesDeDescuento,
+            descuento: montoDescuento, // <--- Envía el valor en dinero
+            impuesto: 0, // <--- Si luego agregas impuestos, aquí lo calculas
+            total: totalFinal // <--- ESTO es lo que recibe Laravel,
+            
+        }));
+    }, [totalAntesDeDescuento, totalFinal]); 
+
+    // 2. Mejora en quitarCupon para limpiar el total
+    const quitarCupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setFacturaData(prev => ({
+            ...prev,
+            porcentajedescuento: 0,
+            cupon_id: ''
+        }));
+    };
 
     return {
         form,
@@ -346,12 +429,20 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         turnoErrors,
         showTurnoModal,
         setShowTurnoModal,
+
+        couponCode,
+        setCouponCode,
+        validarCupon,
+        appliedCoupon,
+        quitarCupon,
+        isValidatingCoupon,
         totales: {
             subtotalServicios,
             subtotalProductosPrevios,
             subtotalNuevos,
-            totalFinal: subtotalServicios + subtotalProductosPrevios + subtotalNuevos
-        },
+            montoDescuento,
+            totalFinal
+        }
         
     };
 };

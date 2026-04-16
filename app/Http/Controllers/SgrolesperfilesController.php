@@ -101,4 +101,29 @@ class SgrolesperfilesController extends Controller
         return redirect()->route('sgrolesperfiles.index')
             ->with('success', 'Elemento eliminado correctamente.');
     }
+
+
+    public function setperfilrol(Request $request)
+    {
+        $response = Sgrolesperfiles::setperfilrol($request);
+        $res = $response->getData(); // Extraemos los datos del JSON
+
+        if ($res->info === 'success') {
+            // Si quieres un mensaje dinámico basado en el estado
+            return back()->with('success', 'Configuración de rol actualizada correctamente.');
+        }
+
+        return back()->with('error', 'Error al procesar el rol: ' . $res->message);
+    }
+
+    public function updatepermiso(Request $request)
+    {
+        $msg = Sgrolesperfiles::updatepermiso($request); // Recibe el array directamente
+        
+        if($msg['info'] === 'success') {
+            return back()->with('success', 'Permiso cambiado correctamente.');
+        }
+        
+        return back()->with('error', $msg['message']);
+    }
 }

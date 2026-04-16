@@ -114,15 +114,7 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
     mesPasadoDate.setMonth(ahora.getMonth() - 1);
     const mesPasadoReferencia = getFechaLocal(mesPasadoDate).substring(0, 7);
 
-    // 3. Cálculos de Citas
-    const universoCitas = citas || [];
-
-    const totalCitasHoy = universoCitas.filter((c: any) => c.fecha === hoyString).length;
-    const totalCitasAyer = universoCitas.filter((c: any) => c.fecha === ayerString).length;
-
-    const totalCitasMes = universoCitas.filter((c: any) => c.fecha?.startsWith(mesActualReferencia)).length;
-    const totalCitasMesAnterior = universoCitas.filter((c: any) => c.fecha?.startsWith(mesPasadoReferencia)).length;
-
+   
     // 4. Cálculos de Ingresos
     const universoFacturas = facturas || [];
 
@@ -160,37 +152,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
         return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
     };
 
-    // 6. Tu arreglo de Stats actualizado
-    const stats = [
-        { 
-            label: 'TOTAL CITAS MES', 
-            val: totalCitasMes, 
-            growth: calcularGrowth(totalCitasMes, totalCitasMesAnterior), 
-            icon: 'ti-calendar-event', 
-            color: '#0d6efd' 
-        },
-        { 
-            label: 'CITAS HOY', 
-            val: totalCitasHoy, 
-            growth: calcularGrowth(totalCitasHoy, totalCitasAyer), 
-            icon: 'ti-star', 
-            color: '#198754' 
-        },
-        { 
-            label: 'TOTAL INGRESOS MES', 
-            val: `$${ingresosMes.toLocaleString()}`, 
-            growth: calcularGrowth(ingresosMes, ingresosMesAnterior), 
-            icon: 'ti-currency-dollar', 
-            color: '#0dcaff' 
-        },
-        { 
-            label: 'INGRESOS HOY', 
-            val: `$${ingresosHoy.toLocaleString()}`, 
-            growth: calcularGrowth(ingresosHoy, ingresosAyer), 
-            icon: 'ti-wallet', 
-            color: '#ffc107' 
-        },
-    ];
 
     useEffect(() => {
         // Actualizamos el reloj cada segundo
@@ -561,36 +522,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
         }
         return null;
     };
-    const [busquedaCita, setBusquedaCita] = useState('');
-    const [paginaActual, setPaginaActual] = useState(1);
-    const citasPorPagina = 3; // Puedes cambiar este número según prefieras
-
-    // 1. Primero filtramos por fecha, búsqueda y estado "No Pagado"
-    const citasFiltradas = citas.filter((cita: any) => {
-        const matchFecha = cita.fecha === hoyString;
-        const nombreCompleto = `${cita.nombres} ${cita.apellidos}`.toLowerCase();
-        const matchBusqueda = nombreCompleto.includes(busquedaCita.toLowerCase()) || cita.identificacion.includes(busquedaCita);
-        
-        // Filtro de estado: Solo mostramos lo que NO esté pagado
-        const noEstaPagada = cita.estado_codigo?.toUpperCase() !== 'AS';
-
-        return matchFecha && matchBusqueda && noEstaPagada;
-    });
-
-    // 2. Ordenamos la lista filtrada
-    const citasOrdenadas = [...citasFiltradas].sort((a: any, b: any) => a.horainicio.localeCompare(b.horainicio));
-
-    // 3. Aplicamos la paginación sobre los resultados ya filtrados y ordenados
-    const totalPaginas = Math.ceil(citasOrdenadas.length / citasPorPagina);
-    const indiceUltimo = paginaActual * citasPorPagina;
-    const indicePrimer = indiceUltimo - citasPorPagina;
-
-    // Esta es la lista final que recorrerás en el .map()
-    const citasVisibles = citasOrdenadas.slice(indicePrimer, indiceUltimo);
-    
-    const handleFacturar = (id: number) => {
-        router.visit(route('ftfacturas.create',{ cita: id }));
-    };
 
     // 1. Extraer todos los nombres de servicios del JSON
     const serviciosExtraidos = citas.flatMap((cita: any) => 
@@ -614,23 +545,7 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
         color: colores[index % colores.length]
     }));
 
-    // Cálculo de progreso para la barra (máximo 100)
-    const metaQ2 = 90;
-    const porcentajeProgreso = (tasaRetencion / metaQ2) * 100;
-
-    // Estados para paginación
-    const [paginaActualFt, setPaginaActualFt] = useState(1);
-    const itemsPorPaginaFt = 3; // Puedes cambiar este número
-
-    // Cálculos de índices
-    const indiceUltimoItemFt = paginaActualFt * itemsPorPaginaFt;
-    const indicePrimerItemFt = indiceUltimoItemFt - itemsPorPaginaFt;
-    const facturasPaginadas = facturas.slice(indicePrimerItemFt, indiceUltimoItemFt);
-    const totalPaginasFt = Math.ceil(facturas.length / itemsPorPaginaFt);
-
-    // Cambiar de página
-    const cambiarPagina = (numeroPagina: number) => setPaginaActualFt(numeroPagina);
-
+   
     return (
         <AppMainLayout>
             <Head title="Vantify - Dashboard Unificado" />

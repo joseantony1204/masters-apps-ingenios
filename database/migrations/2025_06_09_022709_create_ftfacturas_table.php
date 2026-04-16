@@ -110,6 +110,13 @@ return new class extends Migration
             $table->id();
             $table->string('codigoseguridad');
             $table->string('numero')->nullable();
+            
+            $table->float('subtotal',12,2)->default(0)->comment('Subtotal factura');
+            $table->float('descuento',12,2)->default(0)->nullable()->comment('Descuento total factura');
+            $table->float('porcentajedescuento',12,2)->default(0)->nullable()->comment('Porcentaje de descuento total factura');
+            $table->float('impuesto',12,2)->default(0)->nullable()->comment('Impuesto total factura');
+            $table->float('total',12,2)->default(0)->comment('Total factura');
+            
             $table->datetime('fecha')->comment('Fecha');
             $table->datetime('fechanavencimiento')->comment('Fecha vencimiento');
             $table->string('observaciones')->nullable()->comment('Observaciones');
@@ -121,6 +128,7 @@ return new class extends Migration
             $table->unsignedBigInteger('destino_id')->nullable()->comment('Utilizado para tranferencias, sede destino');
 
             $table->unsignedBigInteger('tipo_id');
+            $table->unsignedBigInteger('cupon_id')->nullable();
             $table->unsignedBigInteger('turno_id');
             $table->unsignedBigInteger('estado_id');
 

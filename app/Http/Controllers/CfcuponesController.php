@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cfcupones;
+use App\Models\{Cfcupones, Comercios, User, Cfpromociones, Adclientes};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -161,5 +161,123 @@ class CfcuponesController extends Controller
         });
 
         return back()->with('success', "Se han generado {$request->cantidad} cupones exitosamente.");
+    }
+
+    public function validar(Request $request)
+    {
+        // 1. Obtención de datos del comercio (Optimizado en una sola consulta)
+        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->first();
+
+        if (!$comercio) {
+            return response()->json(['valido' => false, 'mensaje' => 'Comercio no encontrado'], 404);
+        }
+
+        // 2. Búsqueda del cupón con su relación de promoción
+        $cupon = Cfcupones::with('promociones')
+            ->where('codigo', $request->codigo)
+            ->whereHas('promociones', function($q) use($comercio) {
+                $q->where('comercio_id', $comercio->id);
+            })
+            ->first();
+
+        if (!$cupon) {
+            return response()->json(['valido' => false, 'mensaje' => 'Cupón no encontrado'], 404);
+        }
+
+        // 3. Verificar si el cupón ya está asignado a ESTA factura (Modo Edición)
+        $usoEnEstaFactura = false;
+        if ($request->factura_id) {
+            $usoEnEstaFactura = DB::table('ftfacturas')
+                ->where('id', $request->factura_id)
+                ->where('cupon_id', $cupon->id)
+                ->exists();
+        }
+
+        // 4. Validar Estado
+        // Si el estado es 0 (usado/desactivado) y NO es el cupón que ya tiene esta factura, es inválido.
+        if (!$cupon->estado && !$usoEnEstaFactura) {
+            return response()->json(['valido' => false, 'mensaje' => 'Este cupón ya ha sido utilizado o está desactivado'], 422);
+        }
+
+        // 5. Validar Expiración
+        if ($cupon->fechavence && \Carbon\Carbon::parse($cupon->fechavence)->isPast()) {
+            return response()->json(['valido' => false, 'mensaje' => 'Este cupón ha expirado'], 422);
+        }
+
+        // 6. Validar Límites de Uso (Total y Por Persona)
+        // Agrupamos el conteo en consultas eficientes ignorando la factura actual
+        $queryBase = DB::table('ftfacturas')
+            ->where('cupon_id', $cupon->id)
+            ->where('estado_id', '!=', 939) // Ignorar anuladas
+            ->when($request->factura_id, function ($q) use ($request) {
+                return $q->where('id', '!=', $request->factura_id);
+            });
+
+        // Validar límite TOTAL
+        $usosTotales = (clone $queryBase)->count();
+        if ($usosTotales >= $cupon->limite_uso_total) {
+            return response()->json(['valido' => false, 'mensaje' => 'El límite de usos total de este cupón se ha agotado'], 422);
+        }
+
+        // 7. Validar Cliente Específico
+        if ($cupon->persona_id && $cupon->persona_id != $request->persona_id) {
+            return response()->json(['valido' => false, 'mensaje' => 'Este cupón es exclusivo para otro cliente'], 403);
+        }
+
+        /* Validar límite POR PERSONA
+        if ($cupon->limite_uso_por_persona) {
+            $usosPersona = $queryBase->where('persona_id', $request->persona_id)->count();
+            if ($usosPersona >= $cupon->limite_uso_por_persona) {
+                return response()->json(['valido' => false, 'mensaje' => 'Ya has alcanzado el límite de usos permitido para este cliente'], 422);
+            }
+        }*/
+
+        return response()->json([
+            'valido' => true,
+            'cupon' => $cupon
+        ]);
+    }
+
+    public function generarCuponesMasivos(Request $request) {
+        $user = User::where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercioId = $comercio->id;
+        $categoria = $request->categoria;
+
+        // 0. Buscamos la promoción activa de esa categoría
+        $promo = Cfpromociones::where('categoria', $categoria)
+                               ->where('comercio_id', $comercioId)
+                               ->where('estado', 1)
+                               ->first();
+        if (!$promo) return null;
+
+        // 2. Obtienes los clientes que cumplen hoy y NO tienen cupón aún para este año
+        $personas = Adclientes::obtenerCumpleanos($request->fecha);
+    
+        // 3. generamos los cupones para cada cliente que cumple hoy y no tiene cupón asignado
+        foreach($personas as $persona) {
+            if(!$persona->cupon) {
+                //¿Se le generó ya un cupón de esta promo HOY? (independientemente de si lo usó)
+                $existe = Cfcupones::where('persona_id', $persona->persona_id)
+                ->where('promocion_id', $promo->id)
+                ->whereDate('created_at', now()->today())
+                ->exists();
+
+                if ($existe) return null;
+
+                Cfcupones::create([
+                    'promocion_id' => $promo->id,
+                    'persona_id'   => $persona->persona_id,
+                    'codigo'       => 'HBD-' . strtoupper(Str::random(6)), // Ejemplo: HBD-XJ82P
+                    'limite_uso_total' => 1,
+                    'limite_uso_por_persona' => 1,
+                    'usos_actuales' => 0,
+                    'es_automatico' => 1,
+                    'fechavence'    => now()->addDays(30), // Vence en un mes
+                ]);
+            }
+        }
+    
+        return back()->with('success', 'Cupones generados exitosamente.');
     }
 }

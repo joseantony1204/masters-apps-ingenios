@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'check.comercio' => \App\Http\Middleware\CheckComercioStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Personas, Adcitas, Addetallescitas, Adclientes, User, Comercios, Cfmaestra, Productos, Cfempleados};
+use App\Models\{Personas, Adcitas, Addetallescitas, Adclientes, User, Comercios, Cfmaestra, Productos, Cfempleados, Ftturnos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
@@ -52,7 +52,7 @@ class AdcitasController extends Controller
             'detalle_con_empleadoservicio.estado',
         ])
         ->select([
-            'c.id',
+            'c.id AS cliente_id',
             'p.foto',
             'p.identificacion',
             DB::raw('CONCAT(YEAR(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " años ", MONTH(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " meses y ", DAY(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " dias") AS edad'),
@@ -147,6 +147,30 @@ class AdcitasController extends Controller
         )
         ->get()
         ->pluck('nombre_completo', 'id'); // Pluck sobre la colección es más seguro con alias
+
+
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminada = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->first();
+
+        //Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminada) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminada->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+        //Definir el turno activo por defecto (el primero de la lista)
+       $turnoActivo = $turnosAbiertos->first();
+
         return Inertia::render('adcitas/index', [
             'comercio' => $comercio,
             'citas' => $citas,
@@ -154,7 +178,12 @@ class AdcitasController extends Controller
             'serviciosList' => $serviciosDisponibles,
             'empleadosList' => $empleadosDisponibles,
             // Pasamos los filtros actuales para que no se borren de los inputs al buscar
-            'filtros' => $request->only(['fecha', 'servicio_id', 'identificacion', 'nombre', 'apellido', 'empleado_id', 'estado_id'])
+            'filtros' => $request->only(['fecha', 'servicio_id', 'identificacion', 'nombre', 'apellido', 'empleado_id', 'estado_id']),
+
+            'turnoActivo' => $turnoActivo,
+            'turnosList'  => $turnosAbiertos,
+            'sedePredeterminada' => $sedePredeterminada,
+            'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
         ]);
     }
 

@@ -43,12 +43,17 @@ class Cfcupones extends Model
 			'es_automatico' => 'required',
 			'created_by' => 'required',];
 
+   
+    protected $casts = [
+        'fechavence' => 'datetime', // Esto hace la magia
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
-    protected $fillable = ['promocion_id', 'codigo', 'persona_id', 'limite_uso_total', 'limite_uso_por_persona', 'usos_actuales', 'es_automatico', 'fechavence', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['promocion_id', 'codigo', 'persona_id', 'limite_uso_total', 'limite_uso_por_persona', 'usos_actuales', 'es_automatico', 'estado', 'fechavence', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**
@@ -65,6 +70,11 @@ class Cfcupones extends Model
     public function personas()
     {
         return $this->belongsTo(\App\Models\Personas::class, 'persona_id', 'id');
+    }
+
+    public function facturas()
+    {
+        return $this->belongsTo(\App\Models\Ftfacturas::class, 'id', 'cupon_id');
     }
     
     /**

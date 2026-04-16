@@ -51,6 +51,7 @@ return new class extends Migration
             $table->integer('usos_actuales')->default(0);
             
             $table->boolean('es_automatico')->default(false); // ¿Lo creó el sistema por una regla?
+            $table->boolean('estado')->default(true); // Estado del cupón: 1 o 0
             $table->timestamp('fechavence')->nullable(); // Fecha específica de expiración del cupón
             
             $table->timestamp('created_at', $precision = 0)->useCurrent();

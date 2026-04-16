@@ -175,7 +175,7 @@ class ComerciosController extends Controller
                     StorageHelper::save(
                         $request->file('logo'), 
                         'comercios/logos', 
-                        923, // model_type
+                        965, // model_type
                         $comercio->id, // model_type_id
                         1 // Referencia a cfmaestras (Tipo Soporte)
                     );

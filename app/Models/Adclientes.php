@@ -106,5 +106,44 @@ class Adclientes extends Model
 
         return $clientes;
     }
+
+    public static function obtenerCumpleanos($fecha){
+        $user = User::where('persona_id', Auth::user()->persona_id)->first();
+        $fecha = \Carbon\Carbon::parse($fecha);
     
+        return Adclientes::join("personas AS p", "p.id", "=", "adclientes.persona_id")
+            ->join('users AS u', 'p.id', '=', 'u.persona_id')
+            ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+            ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
+            ->select([
+                'adclientes.id',
+                'p.id AS persona_id',
+                'p.foto',
+                'pn.fechanacimiento',
+                DB::raw("TIMESTAMPDIFF(YEAR, pn.fechanacimiento, CURDATE()) AS edad_que_cumple"),
+                DB::raw("CONCAT(UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS iniciales"),
+                DB::raw("CONCAT(pn.nombre, ' ', pn.apellido) AS nombrecompleto"),
+                'p.telefonomovil',
+                // Subconsulta optimizada para traer el cupón y su estado de uso
+                DB::raw("(SELECT cp.codigo FROM cfcupones cp 
+                          JOIN cfpromociones pm ON pm.id = cp.promocion_id 
+                          WHERE p.id = cp.persona_id AND pm.categoria = 'cumple' 
+                          AND cp.deleted_at IS NULL ORDER BY cp.created_at DESC LIMIT 1) AS cupon"),
+                DB::raw("(SELECT cp.estado FROM cfcupones cp 
+                          JOIN cfpromociones pm ON pm.id = cp.promocion_id 
+                          WHERE p.id = cp.persona_id AND pm.categoria = 'cumple' 
+                          AND cp.deleted_at IS NULL ORDER BY cp.created_at DESC LIMIT 1) AS cupon_estado")
+            ])
+            ->where('su.predeterminada', 1)
+            ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$fecha->month])
+            ->whereRaw("DAY(pn.fechanacimiento) = ?", [$fecha->day])
+            ->where('adclientes.comercio_id', function($q) use ($user) {
+                $q->select('id')->from('comercios')->where('persona_id', $user->persona_id);
+            })
+            ->whereIn('su.sede_id', function($q) use ($user) {
+                $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+            })
+            ->orderBy('pn.nombre', 'ASC')
+            ->get();
+    }    
 }

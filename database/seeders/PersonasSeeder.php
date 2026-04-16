@@ -81,5 +81,24 @@ class PersonasSeeder extends Seeder
         foreach ($dataTerminales as $terminal) {
             DB::table('ftterminales')->insert($terminal);
         };
+
+        /*
+        *Datos por defecto de suscripciones
+        */
+        $dataSuscripciones = [
+            ['fecha_inicio'=>Carbon::now()->format('Y/m/d'), 'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 'estado_id' => 850, 'plan_id' => 968, 'comercio_id' =>1, 'created_by' => 1],
+        ];
+
+        $dataPagos = [
+            ['valor'=>0, 'fecha'=>Carbon::now(), 'estado_id' => 974, 'metodo_id' => 933, 'suscripcion_id' =>1, 'created_by' => 1],
+        ];
+
+        foreach ($dataSuscripciones as $suscripcion) {
+            DB::table('scsuscripciones')->insert($suscripcion);
+        };
+
+        foreach ($dataPagos as $pago) {
+            DB::table('scpagos')->insert($pago);
+        };
     }
 }

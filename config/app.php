@@ -105,6 +105,13 @@ return [
         ),
     ],
 
+    /**
+     * Token whatsapp de faccebook
+     */
+    'whatsapptoken' => env('WHATSAPP_TOKEN','EAAna8tLwPREBRK9om4PS1rKpvqB6azsFVzQZAP7uCwh250S6VmmCi4e2xZCkKLEoZBvEABev5qZBzUbiIZAATBc3ABSSO29YpOQ77c1WZALiBtZAQOM1LfvMr39ZA7PbzNftQlwDPM9c99uVtEYvJWHodJsW34oTZCjZBdQKZBQcMJAYx37ZCmwSQGRNBItJt9bda4Ug394ZA3HRZAbf3MEghXtpPDHvjYfjvup2Jsixc3rHdt'),
+    'whatsapphonenumberid' => env('WHATSAPP_PHONE_NUMBER_ID','985728251299871'),
+    'whatsappversion' => env('WHATSAPP_API_VERSION','v25.0'),
+   
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver

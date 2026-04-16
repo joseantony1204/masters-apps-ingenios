@@ -1,14 +1,14 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import avatar1 from '/public/assets/images/user/avatar-1.jpg';
+import photo_default from '/public/assets/images/user/default.png';  
 
 export default function AppMasterHeader() {
     const cleanup = useMobileNavigation();
     
     // Obtenemos el usuario autenticado desde los props compartidos de Inertia
     const { auth } = usePage().props as any;
-    const user = auth.user;
-    //console.log("mostrando",user.personas.comercios.token)
+    const user = auth?.user;
+    //console.log("mostrando",user)
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -61,16 +61,39 @@ export default function AppMasterHeader() {
                                 data-bs-auto-close="outside"
                                 aria-expanded="false"
                             >
-                                <img src={avatar1} alt="user-image" className="user-avtar" />
+                                {user?.foto ? (
+                                    // 2. Si hay una foto guardada en el servidor
+                                    <img 
+                                        src={`${user?.foto}`} 
+                                        className="w-100 h-100 object-fit-cover" 
+                                        alt="Foto perfil" 
+                                    />
+                                ) : (
+                                    // 3. FALLBACK: Si no hay nada, usamos la lógica de sexo o el default (avatar10)
+                                    <img src={photo_default} alt="user-image" className="user-avtar" />
+                                    
+                                )}
                                 {/* NOMBRE DEL USUARIO LOGUEADO */}
                                 <span>{user?.nombreCompleto || user?.username}</span>
                             </a>
                             <div className="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
                                 <div className="dropdown-header">
                                     <div className="d-flex mb-1">
-                                        <div className="flex-shrink-0">
-                                            <img src={avatar1} alt="user-image" className="user-avtar" />
+                                        <div className="flex-shrink-0" style={{ width: '48px', height: '48px' }}> 
+                                            {user?.foto ? (
+                                                // 2. Si hay una foto guardada en el servidor
+                                                <img 
+                                                    src={`${user?.foto}`} 
+                                                    className="w-100 h-100 object-fit-cover" 
+                                                    alt="Foto perfil" 
+                                                />
+                                            ) : (
+                                                // 3. FALLBACK: Si no hay nada, usamos la lógica de sexo o el default (avatar10)
+                                                <img src={photo_default} alt="user-image" className="user-avtar" />
+                                                
+                                            )}
                                         </div>
+                                        
                                         <div className="flex-grow-1 ms-3">
                                             <h6 className="mb-1">{user?.nombreCompleto || user?.username}</h6>
                                             <span>{user?.personas.email}</span>

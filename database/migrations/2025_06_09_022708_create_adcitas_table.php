@@ -51,7 +51,7 @@ return new class extends Migration
             $table->time('horafinal')->comment('Hora final');
             $table->text('descripcion')->nullable();
             $table->text('motivocancelar')->nullable();
-            $table->text('cupon')->nullable()->comment('Para cuando el cliente se le haga un descuento');
+            $table->text('cupon_id')->nullable()->comment('Para cuando el cliente se le haga un descuento');
 
             $table->unsignedBigInteger('cliente_id');
             $table->foreign('cliente_id')->references('id')

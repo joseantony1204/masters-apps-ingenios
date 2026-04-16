@@ -64,7 +64,7 @@ class Comercios extends Model
     // En el modelo Comercios.php
     public function soportes()
     {
-        return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 923); // 923 es el identificador de tabla padre para Comercios
+        return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 965); // 965 es el identificador de tabla padre para Comercios
     }
 
     protected static function booted()
@@ -72,6 +72,17 @@ class Comercios extends Model
         static::creating(function ($comercio) {
             $comercio->token = Str::uuid()->toString() . Str::random(32);
         });
+    }
+
+    public function promociones()
+    {
+        return $this->hasMany(\App\Models\Cfpromociones::class, 'comercio_id', 'id');
+    }
+
+    public function suscripcion()
+    {
+        // Trae la última suscripción creada para este comercio
+        return $this->hasOne(Scsuscripciones::class, 'comercio_id')->latestOfMany();
     }
     
 }

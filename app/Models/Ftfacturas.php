@@ -44,6 +44,8 @@ class Ftfacturas extends Model
     protected $perPage = 20;
     static $rules = [
 			'codigoseguridad' => 'required',
+			'subtotal' => 'required',
+			'total' => 'required',
 			'fecha' => 'required',
 			'fechanavencimiento' => 'required',
 			'model_type' => 'required',
@@ -52,13 +54,40 @@ class Ftfacturas extends Model
 			'turno_id' => 'required',
 			'estado_id' => 'required',];
 
+    
+    protected $appends = ['adestado','adtipo','adturno','adcupon','adpagos'];        
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigoseguridad', 'numero', 'fecha', 'fechanavencimiento', 'observaciones', 'model_type', 'model_type_id', 'origen_id', 'destino_id', 'tipo_id', 'turno_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigoseguridad', 'numero', 'subtotal', 'descuento', 'porcentajedescuento', 'impuesto', 'total', 'fecha', 'fechanavencimiento', 'observaciones', 'model_type', 'model_type_id', 'origen_id', 'destino_id', 'tipo_id', 'cupon_id', 'turno_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
 
+    
+    public function getAdestadoAttribute()
+    {
+        return $this->estado; // Esto invoca la relación definida abajo
+    }
+
+    public function getAdtipoAttribute()
+    {
+        return $this->tipo; // Esto invoca la relación definida abajo
+    }
+
+    public function getAdcuponAttribute()
+    {
+        return $this->cupon; // Esto invoca la relación definida abajo
+    }
+
+    public function getAdturnoAttribute()
+    {
+        return $this->turnos; // Esto invoca la relación definida abajo
+    }
+
+    public function getAdpagosAttribute()
+    {
+        return $this->pagos; // Esto invoca la relación definida abajo
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -83,13 +112,21 @@ class Ftfacturas extends Model
     {
         return $this->belongsTo(\App\Models\Ftturnos::class, 'turno_id', 'id');
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cupon()
+    {
+        return $this->belongsTo(\App\Models\Cfcupones::class, 'cupon_id', 'id');
+    }
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function detalles()
     {
-        return $this->hasMany(\App\Models\Ftdetalles::class, 'id', 'factura_id');
+        return $this->hasMany(\App\Models\Ftdetalles::class, 'factura_id');
     }
     
     /**

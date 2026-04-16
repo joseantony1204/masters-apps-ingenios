@@ -23,7 +23,7 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
         filtroBusqueda, 
         setFiltroBusqueda, 
         resultadosBusqueda, 
-        totales,
+
         finalizarYGuardarCita,
         abrirModalRapidoProducto, // Asegúrate de que esta función esté en tu hook
         manejarFacturaRapida,
@@ -40,7 +40,10 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
         turnoErrors,
         showTurnoModal,
         setShowTurnoModal,
-    } = useFacturacionCita(cita,turnoActivo);
+   
+        couponCode, setCouponCode, validarCupon, appliedCoupon, quitarCupon, isValidatingCoupon,
+        totales
+    } = useFacturacionCita(cita, turnoActivo);
 
     const manejarClickFactura = () => {
         // Validamos que haya un método de pago antes de preguntar
@@ -272,101 +275,162 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
                                 </div>
 
                                 {/* COLUMNA DERECHA: TOTALES Y OBSERVACIONES */}
-                                <div className="col-lg-4 bg-light-subtle h-100">
+                                <div className="col-lg-4 bg-light-subtle h-100 border-start">
                                     <div className="p-4 d-flex flex-column h-100">
                                         
+                                        <h5 className="mb-4 fw-bold text-dark d-flex align-items-center">
+                                            <i className="ti ti-receipt-2 me-2 text-primary"></i> Resumen de Cobro
+                                        </h5>
+
+                                        {/* --- NOTAS --- */}
                                         <div className="mb-4">
-                                            <label className="form-label fw-bold text-uppercase small text-muted mb-2">Notas Finales de la Cita</label>
+                                            <label className="form-label x-small fw-bolder text-uppercase text-muted mb-2">
+                                                <i className="ti ti-notes me-1"></i> Recomendaciones / Fórmulas
+                                            </label>
                                             <textarea 
-                                                className="form-control border-0 shadow-sm" 
-                                                rows={4}
-                                                placeholder="Escribe recomendaciones o fórmulas..."
+                                                className="form-control border-0 shadow-sm bg-white" 
+                                                rows={3}
+                                                style={{ resize: 'none', fontSize: '14px' }}
+                                                placeholder="Escribe aquí las observaciones finales..."
                                                 value={form.data.observaciones}
                                                 onChange={(e) => form.setData('observaciones', e.target.value)}
                                             ></textarea>
                                         </div>
 
-                                        <div className="mb-2">
-                                            <label className="small fw-bold">Metodos de pago</label>
-                                            <select 
-                                                className={`form-control form-select form-select-sm ${facturaErrors.metodo_id ? ' is-invalid' : ''}`}
-                                                value={facturaData.metodo_id} 
-                                                onChange={e => setFacturaData('metodo_id', e.target.value)} 
-                                            >
-                                            <option value="">Elige...</option>
-                                            {Object.entries(metodospagosList).map(([key, label]) => (
-                                                <option key={key} value={key}>{label}</option>
-                                            ))}
-                                            </select>
-                                            {facturaErrors.metodo_id && <div className="invalid-feedback" role="alert"><strong>{facturaErrors.metodo_id}</strong></div>}
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="fw-bold small text-muted mb-1">Turno de caja</label>
-                                            {turnoActivo ? (
-                                                <div className="input-group shadow-sm rounded-3 overflow-hidden">
-                                                    <span className="input-group-text bg-white border-0">
-                                                        <i className="ti ti-device-floppy text-primary fs-4"></i>
-                                                    </span>
-                                                    <select 
-                                                        className={`form-select border-0 fw-bold bg-white ${facturaErrors.turno_id ? 'is-invalid' : ''}`}
-                                                        value={facturaData.turno_id}
-                                                        onChange={e => setFacturaData('turno_id', e.target.value)}
-                                                        style={{ fontSize: '13px' }}
-                                                    >
-                                                        {Array.isArray(turnosList) ? (
-                                                            turnosList.map((t: any) => (
-                                                                <option key={t.id} value={t.id}>
-                                                                    {t.codigo} — {t.terminal?.nombre || 'Terminal'}
-                                                                </option>
-                                                            ))
-                                                        ) : (
-                                                            <option value={turnoActivo.id}>{turnoActivo.codigo}</option>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                            ) : (
-                                                <div className="d-flex flex-column gap-2">
-                                                    {/* Botón de acción principal con estilo dashed */}
+                                        {/* --- PAGO Y CAJA --- */}
+                                        <div className="row g-2 mb-4">
+                                            <div className="col-12">
+                                                <label className="x-small fw-bolder text-uppercase text-muted mb-1">Método de Pago</label>
+                                                <select 
+                                                    className={`form-select form-select-sm shadow-sm border-0 ${facturaErrors.metodo_id ? 'is-invalid' : ''}`}
+                                                    value={facturaData.metodo_id} 
+                                                    onChange={e => setFacturaData('metodo_id', e.target.value)} 
+                                                >
+                                                    <option value="">Seleccionar...</option>
+                                                    {Object.entries(metodospagosList).map(([key, label]) => (
+                                                        <option key={key} value={key}>{label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="col-12 mt-2">
+                                                <label className="x-small fw-bolder text-uppercase text-muted mb-1">Turno de Caja</label>
+                                                {turnoActivo ? (
+                                                    <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
+                                                        <span className="input-group-text bg-white border-0"><i className="ti ti-device-floppy text-primary"></i></span>
+                                                        <select 
+                                                            className="form-select border-0 fw-bold"
+                                                            value={facturaData.turno_id}
+                                                            onChange={e => setFacturaData('turno_id', e.target.value)}
+                                                        >
+                                                            {Array.isArray(turnosList) ? (
+                                                                turnosList.map((t: any) => (
+                                                                    <option key={t.id} value={t.id}>{t.codigo} — {t.terminal?.nombre}</option>
+                                                                ))
+                                                            ) : (
+                                                                <option value={turnoActivo.id}>{turnoActivo.codigo}</option>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                ) : (
                                                     <button 
                                                         type="button"
-                                                        className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm"
+                                                        className="btn btn-sm btn-outline-danger w-100 border-dashed py-2"
                                                         onClick={() => setShowTurnoModal(true)}
-                                                        style={{ 
-                                                            borderStyle: 'dashed', 
-                                                            borderWidth: '2px',
-                                                            backgroundColor: '#fff5f5' 
-                                                        }}
                                                     >
-                                                        <i className="ti ti-plus fs-4"></i>
-                                                        <span className="fw-bold small">SIN TURNOS, ABRE UNO AQUÍ</span>
+                                                        <i className="ti ti-alert-triangle me-1"></i> ABRIR TURNO REQUERIDO
                                                     </button>
-                                                </div>
-                                            )}
-                                            {facturaErrors.turno_id && <div className="text-danger small mt-1 fw-bold">{facturaErrors.turno_id}</div>}
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Card de Totales */}
-                                        <div className="card border-0 shadow-sm rounded-3 mt-auto mb-3">
-                                            <div className="card-body p-3">
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="text-muted small">Cita Base:</span>
-                                                    <span className="fw-medium text-dark">${totales.subtotalServicios.toLocaleString()}</span>
+                                        {/* --- SECCIÓN DE CUPÓN (Dinamizada) --- */}
+                                        <div className="mb-4">
+                                            <label className="x-small fw-bolder text-uppercase text-muted mb-2 d-block">Cupón de Descuento</label>
+                                            {!appliedCoupon ? (
+                                                <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
+                                                    <input 
+                                                        type="text" 
+                                                        className="form-control border-0 bg-white fw-bold text-primary" 
+                                                        placeholder="CÓDIGO AQUÍ"
+                                                        value={couponCode}
+                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    />
+                                                    <button className="btn btn-primary" type="button" onClick={validarCupon} disabled={isValidatingCoupon || !couponCode}>
+                                                        {isValidatingCoupon ? <span className="spinner-border spinner-border-sm"></span> : 'Aplicar'}
+                                                    </button>
                                                 </div>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="text-muted small">Adicionales previos:</span>
-                                                    <span className="fw-medium text-dark">${totales.subtotalProductosPrevios.toLocaleString()}</span>
+                                            ) : (
+                                                <div className="p-2 rounded-3 bg-light-primary border border-primary border-dashed d-flex align-items-center justify-content-between">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="avtar avtar-s bg-primary text-white me-2" style={{ width: '30px', height: '30px' }}>
+                                                            <i className="ti ti-ticket fs-5"></i>
+                                                        </div>
+                                                        <div>
+                                                            <small className="d-block text-muted lh-1" style={{ fontSize: '10px' }}>CUPÓN ACTIVO</small>
+                                                            <span className="fw-bolder text-primary small">{appliedCoupon.promociones.nombre}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="d-flex gap-1">
+                                                    {/* Botón RE-APLICAR / RECALCULAR */}
+                                                    <button 
+                                                        type="button"  // <--- CRUCIAL: Esto evita el submit del formulario
+                                                        className="btn btn-sm btn-link-primary p-1" 
+                                                        title="Recalcular" 
+                                                        onClick={(e) => {
+                                                            e.preventDefault(); // Doble seguridad
+                                                            validarCupon();
+                                                        }}
+                                                        disabled={isValidatingCoupon}
+                                                    >
+                                                        {isValidatingCoupon ? (
+                                                            <span className="spinner-border spinner-border-sm"></span>
+                                                        ) : (
+                                                            <i className="ti ti-refresh fs-5"></i>
+                                                        )}
+                                                    </button>
+
+                                                    {/* Botón ELIMINAR */}
+                                                    <button 
+                                                        type="button" // <--- CRUCIAL
+                                                        className="btn btn-sm btn-link-danger p-1" 
+                                                        title="Quitar" 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            quitarCupon();
+                                                        }}
+                                                    >
+                                                        <i className="ti ti-trash fs-5"></i>
+                                                    </button>
                                                 </div>
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <span className="text-muted small">Nuevos consumos:</span>
-                                                    <span className="fw-medium text-warning">+ ${totales.subtotalNuevos.toLocaleString()}</span>
                                                 </div>
-                                                <hr className="my-2 opacity-25" />
-                                                <div className="d-flex justify-content-between align-items-center">
-                                                    <h5 className="fw-bold mb-0 text-uppercase">TOTAL A COBRAR</h5>
-                                                    <h3 className="fw-bold text-primary mb-0">
-                                                        ${totales.totalFinal.toLocaleString()}
-                                                    </h3>
+                                            )}
+                                        </div>
+
+                                        {/* --- TOTALES (Jerarquía Visual) --- */}
+                                        <div className="mt-auto pt-3 border-top">
+                                            <div className="d-flex justify-content-between mb-1">
+                                                <span className="text-muted small">Subtotal Base</span>
+                                                <span className="fw-semibold text-dark">${(totales.subtotalServicios + totales.subtotalProductosPrevios).toLocaleString()}</span>
+                                            </div>
+                                            <div className="d-flex justify-content-between mb-2">
+                                                <span className="text-muted small">Nuevos consumos</span>
+                                                <span className="text-warning fw-bold small">+ ${totales.subtotalNuevos.toLocaleString()}</span>
+                                            </div>
+                                            
+                                            {totales.montoDescuento > 0 && (
+                                                <div className="d-flex justify-content-between mb-2 p-2 bg-light-danger rounded-2">
+                                                    <span className="text-danger fw-bold small">DESCUENTO ({appliedCoupon?.promociones.valor}%)</span>
+                                                    <span className="text-danger fw-bold">-${totales.montoDescuento.toLocaleString()}</span>
                                                 </div>
+                                            )}
+                                            
+                                            <div className="d-flex justify-content-between align-items-end mt-3">
+                                                <div>
+                                                    <h6 className="text-uppercase text-muted fw-bolder mb-0" style={{ fontSize: '11px', letterSpacing: '1px' }}>Total a cobrar</h6>
+                                                    <h2 className="fw-bolder text-primary mb-0">${totales.totalFinal.toLocaleString()}</h2>
+                                                </div>
+                                                <i className="ti ti-wallet fs-1 text-light-primary opacity-50"></i>
                                             </div>
                                         </div>
                                     </div>

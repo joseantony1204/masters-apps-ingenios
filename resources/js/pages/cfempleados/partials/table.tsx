@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg';
+import avatar10 from '/public/assets/images/user/default.png';
 import { Link } from '@inertiajs/react';
 
 interface Props {
@@ -85,7 +86,7 @@ export default function Table({ empleados }: Props) {
                             <div className="row">
                                 <div className="col-auto pe-0">
                                     <img 
-                                        src={item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : '' } 
+                                        src={item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : avatar10 } 
                                         alt="user-image" 
                                         className="wid-40 rounded-circle" 
                                     />

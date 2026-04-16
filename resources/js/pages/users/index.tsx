@@ -19,7 +19,7 @@ export default function Index({ users }: Props) {
                     <div className="col-md-12">
                         <ul className="breadcrumb">
                             <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
-                            <li className="breadcrumb-item"><a href={route('users.index')}> Users</a></li>
+                            <li className="breadcrumb-item"><a href={route('users.index')}> Usuarios</a></li>
                             <li className="breadcrumb-item" aria-current="page">Listado</li>
                         </ul>
                     </div>
@@ -37,10 +37,9 @@ export default function Index({ users }: Props) {
                     <div className="card-header">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span id="card_title">
-                                Gestión de users
+                                Gestión de usuarios
                             </span>
                             <div className="float-right">
-                                <a className="btn btn-sm btn-light-primary " href={ route('users.create') }><i className="fa fa-fw fa-plus"></i> Agregar</a>
                             </div>
                         </div>
                     </div>	

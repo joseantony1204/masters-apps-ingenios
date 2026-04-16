@@ -56,6 +56,18 @@ export interface User {
     [key: string]: unknown; // This allows for additional properties...
 }
 
+export interface Users {
+    id: number;
+    username: string;
+    email: string;
+    telefonomovil: string;
+    estado_id: string;
+    perfil_id: string;
+    persona_id: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Cfmaestra {
     id: number;
     codigo: string;
@@ -225,17 +237,56 @@ export interface Comercios {
     deleted_by: string;
 }
 
+export interface Ftpagos {
+    id: number;
+    numero: string;
+    fecha: string;
+    concepto: string;
+    total: string;
+    metodo_id: number;
+    factura_id: string;
+    created_by: string;
+    updated_by: string;
+    deleted_by: string;
+}
+
+export interface Cfcupones {
+    id: number;
+    promocion_id: string;
+    codigo: string;
+    persona_id: string;
+    limite_uso_total: string;
+    limite_uso_por_persona: string;
+    usos_actuales: string;
+    es_automatico: string;
+    estado: number;
+    fechavence: number;
+    created_by: string;
+    updated_by: string;
+    deleted_by: string;
+}
+
 export interface Ftfacturas {
     id: number;
     codigoseguridad: string;
     numero: string;
     fecha: string;
+    subtotal: string;
+    descuento: string;
+    porcentajedescuento: string;
+    impuesto: string;
+    total: string;
+
     fechanavencimiento: string;
     model_type: string;
     model_type_id: string;
     origen_id: string;
     destino_id: string;
     tipo_id: string;
+    adpagos: Ftpagos[];
+    adcupon: Cfcupones;
+    estado_id: string;
+    cupon_id: string;
     turno_id: string;
     estado_id: string;
     comercio_id: string;

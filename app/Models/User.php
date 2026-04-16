@@ -21,10 +21,11 @@ class User extends Authenticatable implements MustVerifyEmail
 		'username' => 'required',
         'perfil_id' => 'required',
 		'persona_id' => 'required',
+		'estado_id' => 'required',
     ];
 
     protected $with = ['personas.personasnaturales'];
-    protected $appends = ['modulos', 'nombreComercio', 'nombreCompleto'];
+    protected $appends = ['modulos', 'foto', 'nombreComercio', 'nombreCompleto'];
     
     /**
      * The attributes that are mass assignable.
@@ -58,6 +59,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         // Buscamos el comercio donde la persona_id sea la misma del usuario
         return $this->hasOne(Comercios::class, 'persona_id', 'persona_id');
+    }
+
+    // En el modelo Comercios.php
+    public function soportes()
+    {
+        return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 966); // 966 es el identificador de tabla padre para users
     }
 
     /**
@@ -97,7 +104,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function check($route){
         return 'true';
-
         $sw = $this->getroute($route);
         if($sw===1)
             return true;
@@ -153,6 +159,21 @@ class User extends Authenticatable implements MustVerifyEmail
         return($list);
     }
 
+    public function getFotoAttribute(){
+        // 1. Definimos la relación 'soportes' correctamente (si no está definida abajo)
+        // Usamos $this directamente porque estamos dentro de la clase User
+        $soporte = $this->soportes()->where('tipo_id', 1)->where('predeterminado', 1)->first();
+
+        if ($soporte && $soporte->ruta) {
+            // 2. Retornamos la URL pública para que el navegador pueda cargarla
+            return asset('storage/' . $soporte->ruta);
+        }
+
+        // 3. Opcional: Retornar null o una imagen por defecto
+        // Si prefieres el avatar default de tus assets: asset('assets/images/user/default.png')
+        return null;
+    }
+
     public function getModulosAttribute(){
         return $this->modulosmenu();
     }
@@ -200,5 +221,42 @@ class User extends Authenticatable implements MustVerifyEmail
         ->groupBy(['r.id', 'r.codigo', 'r.nombre', 'index', 'icon'])        
         ->get();
         return($list);    
+    }
+
+    public static function search($params){
+        $users = User::
+        join("personas AS p","p.id","=","users.persona_id")
+        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
+        ->join("cfmaestras AS pr","pr.id","=","users.perfil_id")
+        ->join("cfmaestras AS e","e.id","=","users.estado_id")
+        ->join('cfsedesusers AS su', 'users.id', '=', 'su.usuario_id')
+        ->where('su.predeterminada',1)
+        ->whereIn('su.sede_id',(Cfsedesusers::select('sede_id')->where('usuario_id',Auth::user()->id)->get()))
+        ->whereNull('users.deleted_at')
+        ->select(
+            'users.id',
+            'users.username',
+            'p.identificacion',
+            DB::raw("CONCAT_WS(' ',p.email) AS email"),
+            DB::raw("CONCAT_WS(' ',p.telefonomovil) AS telefonomovil"),
+            DB::raw("CONCAT_WS('',UPPER(LEFT(pn.nombre,1)),UPPER(LEFT(pn.apellido,1))) AS round"),
+            DB::raw("CONCAT_WS(' ',pn.nombre,pn.segundonombre,pn.apellido,pn.segundoapellido) AS persona"),
+            'pr.nombre AS perfil',
+            'e.nombre AS estado',
+            );
+
+            if ($params) {
+                $users->where('p.identificacion','LIKE',explode(' ','%'.trim($params->get('identificacion')).'%'))
+                ->where('pn.nombre','LIKE',explode(' ','%'.trim($params->get('nombre')).'%'))
+                ->where('pn.apellido','LIKE',explode(' ','%'.trim($params->get('apellido')).'%'));
+            }
+            if ($params->get('segundonombre')) {
+                $users->where('pn.segundonombre','LIKE',explode(' ','%'.trim($params->get('segundonombre')).'%'));
+            }
+            if ($params->get('segundoapellido')) {
+                $users->where('pn.segundoapellido','LIKE',explode(' ','%'.trim($params->get('segundoapellido')).'%'));
+            }
+
+        return $users;
     }
 }

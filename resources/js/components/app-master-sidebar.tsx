@@ -1,7 +1,8 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import AppMasterLogo from './app-master-logo';
 import { useEffect, useState } from 'react'; // 1. Agregamos useState
 import { type User } from '@/types';
+import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 
 // 1. SOLUCIÓN AL ERROR DE TYPESCRIPT: 
 // Declaramos la propiedad feather para que TS no se queje
@@ -15,7 +16,8 @@ export default function AppMasterSidebar() {
     const { props } = usePage<{ user: User }>();
     const user = props.user;
     const currentRoute = route().current();
-  
+    const cleanup = useMobileNavigation();
+
     // Detectamos si es la ruta exacta 'dashboard' O cualquier sub-ruta 'dashboard.*'
     const [isOpen, setIsOpen] = useState(route().current('dashboard') || route().current('dashboard.*'));
 
@@ -41,6 +43,13 @@ export default function AppMasterSidebar() {
     const toggleMenu = (e: React.MouseEvent, moduloId: number) => {
         e.preventDefault();
         setOpenModulo(openModulo === moduloId ? null : moduloId);
+    };
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        cleanup();
+        // Usamos el router de Inertia para hacer el POST de logout
+        router.post(route('logout'));
     };
 
     return (
@@ -131,6 +140,19 @@ export default function AppMasterSidebar() {
                                 <span className="pc-micon"><i className="ti ti-brand-chrome"></i></span>
                                 <span className="pc-mtext">Maestra</span>
                             </Link>
+                        </li>
+
+                        <li className="pc-item">
+                            <button 
+                                onClick={handleLogout} 
+                                className="pc-link border-0 bg-transparent w-100 text-start"
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <span className="pc-micon">
+                                    <i className="ti ti-power text-danger"></i>
+                                </span>
+                                <span className="pc-mtext text-danger">Cerrar Sesión</span>
+                            </button>
                         </li>
                     </ul>
                 </div>

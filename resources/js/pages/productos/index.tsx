@@ -1,15 +1,16 @@
 import AppMainLayout from '@/layouts/app-main-layout';
-import { Head } from '@inertiajs/react';
 import Table from './partials/table';
 import { Productos } from '@/types';
-  
+import { Head, Link, useForm, usePage} from '@inertiajs/react';
+
 interface Props {
     productos: Productos[];
 }
 
 
 export default function Index({ productos }: Props) {
-    
+    const { auth } = usePage().props as any;
+    console.log('Auth user:', auth.user); // Verificar que auth.user esté disponible
     return (  
     <AppMainLayout>
         <Head title="productos" />
@@ -39,9 +40,23 @@ export default function Index({ productos }: Props) {
                             <span id="card_title">
                                 Gestión de productos
                             </span>
+					
                             <div className="float-right">
                                 <a className="btn btn-sm btn-light-primary " href={ route('productos.create') }><i className="fa fa-fw fa-plus"></i> Agregar</a>
-                            </div>
+				            </div>
+                            {/*
+                            <div className="float-right">
+                                Comprobamos si el permiso existe dentro de las props globales de auth 
+                                {auth.user.check('productos.create') && (
+                                    <Link 
+                                        className="btn btn-sm btn-light-primary" 
+                                        href={route('productos.create')}
+                                    >
+                                        <i className="fa fa-fw fa-plus me-1"></i> Agregar
+                                    </Link>
+                                )}
+                                </div>*/}
+
                         </div>
                     </div>	
                     

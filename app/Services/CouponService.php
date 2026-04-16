@@ -16,10 +16,10 @@ class CouponService
                                ->first();
         if (!$promo) return null;
 
-        // VALIDACIÓN CRÍTICA: ¿Ya tiene un cupón activo de esta categoría hoy?
+        //¿Se le generó ya un cupón de esta promo HOY? (independientemente de si lo usó)
         $existe = Cfcupones::where('persona_id', $personaId)
         ->where('promocion_id', $promo->id)
-        ->where('usos_actuales', 0) // O tu lógica de "no usado"
+        //->where('estado', 0) // O tu lógica de "no usado"
         ->whereDate('created_at', now()->today())
         ->exists();
 

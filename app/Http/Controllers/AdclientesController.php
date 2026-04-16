@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AdclientesRequest;
-use App\Models\{Personas, Personasnaturales, Adclientes, Cfsedesusers, Cfmaestra, User, Comercios};
+use App\Models\{Personas, Personasnaturales, Adclientes, Cfsedesusers, Cfmaestra, User, Comercios, Ftturnos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{DB,Auth,Hash,Mail};
@@ -158,6 +158,15 @@ class AdclientesController extends Controller
         $cliente = Adclientes::with([
             'persona.personasnaturales', 
             'persona.user.perfil',
+            // 1. Cargamos los cupones de la persona
+            'persona.cupones' => function($query) use ($comercio) {
+                // 2. Filtramos los cupones que tengan una promoción ligada a este comercio
+                $query->whereHas('promociones', function($q) use ($comercio) {
+                    $q->where('comercio_id', $comercio->id);
+                })
+                // 3. Cargamos la relación promociones ya filtrada
+                ->with('promociones'); 
+            },
             'estado',          
             'persona.user.sedes',
             'citas.estado',
@@ -174,6 +183,7 @@ class AdclientesController extends Controller
         // Dentro del método show
         $sedesIds = $cliente->persona->user->sedes()
         ->wherePivot('estado_id', 858) // Solo las que tienen estado activo
+        ->where('comercio_id', $comercio->id) // Aseguramos que sean del mismo comercio
         ->pluck('cfsedes.id')
         ->toArray();
 
@@ -182,6 +192,29 @@ class AdclientesController extends Controller
         ->where('comercio_id', $comercio->id) // Aseguramos que sea del mismo comercio
         ->wherePivot('predeterminada', 1)
         ->first()?->id;
+        
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminadaPos = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->where('comercio_id', $comercio->id) // Aseguramos que sea del mismo comercio
+        ->first();
+
+        //Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminadaPos) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminadaPos->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+        //Definir el turno activo por defecto (el primero de la lista)
+       $turnoActivo = $turnosAbiertos->first();
 
         return Inertia::render('adclientes/show', [
             'cliente' => $cliente,
@@ -189,6 +222,12 @@ class AdclientesController extends Controller
             'sedesAsignadasIds' => $sedesIds,
             'sedePredeterminadaId' => $sedePredeterminada,
             'perfilesList' => Cfmaestra::getlistatipos('LIS_PERFILES'),
+
+            'turnoActivo' => $turnoActivo,
+            'turnosList'  => $turnosAbiertos,
+            'sedePredeterminadaPos' => $sedePredeterminadaPos,
+            'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
+            'estadosList' => Cfmaestra::where('padre','=',Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first()->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
         ]);
     }
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Ftpagos};
+use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Ftpagos, Cfcupones, Personas};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -144,7 +144,7 @@ class FtfacturasController extends Controller
 
         return Inertia::render('ftfacturas/create', [
             'comercio' => $comercio,
-            'ftfacturas' => new Ftfacturas(),
+            'ftfactura' => new Ftfacturas(),
             'turnoActivo' => $turnoActivo,
             'sedePredeterminada' => $sedePredeterminada,
             'turnosList'  => $turnosAbiertos, // Por si tiene más de uno
@@ -168,6 +168,8 @@ class FtfacturasController extends Controller
             'fecha' => 'required|date',
             'metodo_id' => 'required',
             'estado_id' => 'required',
+            'subtotal' => 'required',
+            'total' => 'required',
             'items' => 'required|array|min:1',
         ],[
             'turno_id.required' => 'El turno es requerido',
@@ -176,6 +178,8 @@ class FtfacturasController extends Controller
             'fecha.required' => 'La fecha es requeridoa.',
             'metodo_id.required' => 'El metodo de pago es requerido',
             'estado_id.required' => 'El estado de factura es requerido',
+            'subtotal.required' => 'El subtotal de factura es requerido',
+            'total.required' => 'El total de factura es requerido',
             'items.required' => 'Debe agregar al menos un ítem al detalle.',
         ]);
         
@@ -192,12 +196,18 @@ class FtfacturasController extends Controller
                     'codigoseguridad' => $this->generarCodigoseguridad(), 
                     'numero' => $this->obtenerYActualizarNumeroResolucion($request->turno_id), // Buscar en resolucion
                     'fecha' => $request->fecha,
+                    'subtotal' => $request->subtotal,
+                    'descuento' => $request->descuento,
+                    'porcentajedescuento' => $request->porcentajedescuento,
+                    'impuesto' => $request->impuesto,
+                    'total' => $request->total,
                     'fechanavencimiento' => $request->fechanavencimiento,
                     'model_type' => $request->model_type,
                     'model_type_id' => $request->model_type_id,
                     'turno_id' => $request->turno_id,
                     'estado_id' => $request->estado_id,
                     'tipo_id' => 943, //Factura de venta
+                    'cupon_id' => $request->cupon_id,
                     'observaciones' => $request->observaciones,
                     'created_by' => Auth::user()->id, 
                     'created_at' => now(),
@@ -209,21 +219,22 @@ class FtfacturasController extends Controller
                     $productoId = $item['producto_id'] ?? null;
                     // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
                     if (is_null($productoId) && !empty($item['nombre'])) {
-                        $nuevoProducto = Productos::create([
-                            'nombre'        => $item['nombre'],
-                            'precioingreso' => $item['precio'],
-                            'preciosalida'  => $item['precio'],
-                            'descripcion'   => 'ITEM_MANUAL_CITAS',
-                            'estado_id'     => 858, // Activo
-                            'unidad_id'     => 863, // Unidad
-                            'impuesto_id'   => 1, // Excluido
-                            'categoria_id'   => 955, // Producto
-                            'tipo_id'       => 854, // Tipo producto
-                            'sede_id'       => $sedePredeterminada,
-                            'created_by'    => $userAuth->id,
-                            'created_at'    => now(),
-                        ]);
-                        $productoId = $nuevoProducto->id;
+                        $productoId = Productos::firstOrCreate(
+                            ['nombre' => strtoupper($item['nombre']), 'sede_id' => $sedePredeterminada],
+                            [
+                                'precioingreso' => $item['precio'],
+                                'preciosalida'  => $item['precio'],
+                                'descripcion'   => 'ITEM_MANUAL_CITAS',
+                                'estado_id'     => 858,
+                                'unidad_id'     => 863,
+                                'impuesto_id'   => 1, // Excluido
+                                'categoria_id'  => 955,
+                                'tipo_id'       => 854,
+                                'sede_id'       => $sedePredeterminada,
+                                'created_by'    => $userAuth->id,
+                                'created_at'    => now(),
+                            ]
+                        )->id;
                     }
 
                     $factura->detalles()->create([
@@ -254,7 +265,20 @@ class FtfacturasController extends Controller
 
                 if($request->model_type == 921) {
                     $cita = Adcitas::where('id', $request->model_type_id)->first();
-                    $cita->update(['estado_id' => 915]);
+                    $cita->update(['estado_id' => 915, 'cupon_id' => $request->cupon_id]);
+                }
+
+                // 2. SI HAY UN CUPÓN, ACTUALIZAR SU ESTADO
+                if ($request->cupon_id) {
+                    $cupon = Cfcupones::find($request->cupon_id);
+                    if ($cupon) {
+                        $cupon->increment('usos_actuales');
+                        
+                        // Si el cupón era de un solo uso, lo podemos desactivar
+                        if ($cupon->usos_actuales >= $cupon->limite_uso_total) {
+                            $cupon->update(['estado' => 0]);
+                        }
+                    }
                 }
 
                 if($request->redirect)
@@ -273,8 +297,39 @@ class FtfacturasController extends Controller
      */
     public function show($id)
     {
+        // 0. Obtenemos la sede de la sesión (asumiendo que la guardas al hacer login)
+        $user = User::with('sedes')->where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Comercios::with('sedes', 'persona')->where('persona_id', $user->persona_id)->first();
+
+        //5. --- LÓGICA PARA CARGAR LA FACTURA ---
+        $ftfactura = Ftfacturas::with([
+            'detalles.producto',
+            'turnos.terminal.sede',
+        ])->findOrFail($id);
+
+        $cita = null; 
+        if($ftfactura->model_type===921) {
+            // Cargamos la cita con la persona (cliente) y sus servicios asociados
+            $cita = Adcitas::with([
+                'cliente.persona.personasnaturales'
+            ])
+            ->find($ftfactura->model_type_id);
+        }
+
+        $persona = null;
+        if($ftfactura->model_type===922) {
+            // Cargamos la cita con la persona (cliente) y sus servicios asociados
+            $persona = Personas::with([
+                'personasnaturales'
+            ])
+            ->find($ftfactura->model_type_id);
+        }
+        
         return Inertia::render('ftfacturas/show', [
-            'ftfacturas' => ftfacturas::findOrFail($id),
+            'ftfactura' => $ftfactura,
+            'comercio' => $comercio,
+            'cita' => $cita,
+            'persona' => $persona,
         ]);
     }
 
@@ -317,12 +372,9 @@ class FtfacturasController extends Controller
         $turnoActivo = $turnosAbiertos->first();
 
         //5. --- LÓGICA PARA CARGAR LA FACTURA ---
-        return $ftfactura = Ftfacturas::findOrFail($id)->load([
-            'turnos.terminal.sede',
-            'estado',
-            'tipo',
-            'detalles.producto',
-        ]);
+        $ftfactura = Ftfacturas::with([
+            'detalles.producto'
+        ])->findOrFail($id);
 
         //6. --- LÓGICA PARA CARGAR LA CITA ---
         $cita = null;
@@ -351,14 +403,140 @@ class FtfacturasController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $ftfacturas)
+    public function update(Request $request, $ftfactura)
     {
-        request()->validate(Ftfacturas::$rules);
+        //dd($request->all() );
+        // 1. Validación de datos
+        $validated = $request->validate([
+            'model_type' => 'required|int',
+            'model_type_id' => 'required|int',
+            'fecha' => 'required|date',
+            'metodo_id' => 'required',
+            'estado_id' => 'required',
+            'subtotal' => 'required',
+            'total' => 'required',
+            'items' => 'required|array|min:1',
+        ],[
+            'model_type.required' => 'El tipo de factura es requerido',
+            'model_type_id.required' => 'Por favor seleccione un cliente',
+            'fecha.required' => 'La fecha es requeridoa.',
+            'metodo_id.required' => 'El metodo de pago es requerido',
+            'estado_id.required' => 'El estado de factura es requerido',
+            'subtotal.required' => 'El subtotal de factura es requerido',
+            'total.required' => 'El total de factura es requerido',
+            'items.required' => 'Debe agregar al menos un ítem al detalle.',
+        ]);
+        
+        
         try {                        
             $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
-            $ftfacturas = Ftfacturas::findOrFail($ftfacturas);
-            $ftfacturas->update($request->all() + $audt);
-            return redirect()->route('ftfacturas.index')->with('success', 'Elemento actualizado exitosamente.');
+            $userAuth = User::where('persona_id', Auth::user()->persona_id)->first();
+            $sedePredeterminada = $userAuth->sedes()
+                ->wherePivot('predeterminada', 1)
+                ->value('cfsedes.id');
+
+            // 1. Buscamos o creamos la factura
+            $factura = Ftfacturas::updateOrCreate(
+                ['id' => $ftfactura], // Condición de búsqueda
+                [
+                    'codigoseguridad' => $request->codigoseguridad,
+                    'numero' => $request->numero,
+                    'fecha' => $request->fecha,
+                    'subtotal' => $request->subtotal,
+                    'descuento' => $request->descuento,
+                    'porcentajedescuento' => $request->porcentajedescuento,
+                    'impuesto' => $request->impuesto,
+                    'total' => $request->total,
+                    'fechanavencimiento' => $request->fechanavencimiento,
+                    'model_type' => $request->model_type,
+                    'model_type_id' => $request->model_type_id,
+                    'turno_id' => $request->turno_id,
+                    'estado_id' => $request->estado_id,
+                    'tipo_id' => $request->tipo_id,
+                    'cupon_id' => $request->cupon_id,
+                    'observaciones' => $request->observaciones,
+                    'turno_id' => $request->turno_id,
+                    'turno_id' => $request->turno_id,
+                    'updated_by' => Auth::user()->id, 
+                    'updated_at' => now(),
+                ] + $audt
+            );
+
+            // 2. Guardar los Items (Detalle)  
+            foreach ($request->items as $item) {
+                $productoId = $item['producto_id'] ?? null;
+                // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
+                if (is_null($productoId) && !empty($item['nombre'])) {
+                    $productoId = Productos::firstOrCreate(
+                        ['nombre' => strtoupper($item['nombre']), 'sede_id' => $sedePredeterminada],
+                        [
+                            'precioingreso' => $item['precio'],
+                            'preciosalida'  => $item['precio'],
+                            'descripcion'   => 'ITEM_MANUAL_CITAS',
+                            'estado_id'     => 858,
+                            'unidad_id'     => 863,
+                            'impuesto_id'   => 1, // Excluido
+                            'categoria_id'  => 955,
+                            'tipo_id'       => 854,
+                            'sede_id'       => $sedePredeterminada,
+                            'created_by'    => $userAuth->id,
+                            'created_at'    => now(),
+                        ]
+                    )->id;
+                }
+
+                $factura->detalles()->updateOrCreate(
+                    ['id' => $item['id']], // Condición de búsqueda
+                    [
+                    'numero' => 1,
+                    'cantidad' => $item['cantidad'],
+                    'precioinicial' => $item['precio'],
+                    'preciofinal' => $item['precio'],
+                    'descuento' => 0,
+                    'totalapagar' => $item['total'],
+                    'fecha' => now(),
+                    'factura_id' => $factura->id,
+                    'producto_id' => $productoId,
+                    'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
+                    'observaciones' => $item['descripcion'],
+                    'updated_by' => Auth::user()->id, 
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $factura->pagos()->updateOrCreate(
+                ['id' => $request->pago_id], // Condición de búsqueda
+                [
+                'numero' => 1,
+                'fecha' => now(),
+                'total' => $request->total,
+                'factura_id' => $factura->id,                       
+                'metodo_id' => $request->metodo_id, 
+                'updated_by' => Auth::user()->id, 
+                'updated_at' => now(),
+            ]);
+            
+
+            // 3. Actualizar el detalle de pagos
+            if($request->model_type == 921) {
+                $cita = Adcitas::where('id', $request->model_type_id)->first();
+                $cita->update(['estado_id' => 915, 'cupon_id' => $request->cupon_id]);
+            }
+
+            // 2. SI HAY UN CUPÓN, ACTUALIZAR SU ESTADO
+            if ($request->cupon_id) {
+                $cupon = Cfcupones::find($request->cupon_id);
+                if ($cupon) {
+                    $cupon->increment('usos_actuales');
+                    
+                    // Si el cupón era de un solo uso, lo podemos desactivar
+                    if ($cupon->usos_actuales >= $cupon->limite_uso_total) {
+                        $cupon->update(['estado' => 0]);
+                    }
+                }
+            }
+
+            return redirect()->route('ftfacturas.index')->with('success', 'Factura actualizada exitosamente.');
         }catch (\Exception $e){
             return response()->json(['message' => $e->getMessage()]);
         }   

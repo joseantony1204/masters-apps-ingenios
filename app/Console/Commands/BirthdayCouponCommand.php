@@ -20,7 +20,7 @@ class BirthdayCouponCommand extends Command
         // 1. Obtenemos todos los comercios que tienen la promoción de cumpleaños ACTIVA
         // Esto optimiza el comando para no procesar comercios que no usan el módulo.
         $comercios = Comercios::whereHas('promociones', function($q) {
-            $q->where('categoria', 'auto')->where('estado', 1); // Ajusta según tu tabla de promos
+            $q->where('categoria', 'cumple')->where('estado', 1); // Ajusta según tu tabla de promos
         })->get();
 
         foreach ($comercios as $comercio) {

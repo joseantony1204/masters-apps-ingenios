@@ -1,5 +1,5 @@
 import AppMainLayout from '@/layouts/app-main-layout';
-import { Head, useForm} from '@inertiajs/react';
+import { Head, Link, useForm} from '@inertiajs/react';
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // Asegúrate de instalarlo: npm install qrcode.react
 import { useState, useRef, useEffect } from 'react';
@@ -10,6 +10,7 @@ import CitasModalCancelar from '@/components/global/citas-modal-cancelar';
 import CitasOffcanvasReserva from '@/components/global/citas-offcanvas-reserva';
 import * as bootstrap from 'bootstrap';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 // 1. Importamos Recharts con Alias para evitar el choque
 import { 
@@ -81,6 +82,37 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
     const [horaActual, setHoraActual] = useState(new Date());
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
+    
+    {/*}
+    const calcularDias = (fecha: any) => { 
+        console.log(fecha)
+    };
+
+    const SubscriptionBanner = ({ suscripcion }) => {
+        const diasRestantes =  calcularDias(suscripcion.fecha_vencimiento);
+    
+        if (diasRestantes > 5) return null;
+    
+        return (
+            <div className={`alert ${diasRestantes <= 0 ? 'alert-danger' : 'alert-warning'} d-flex justify-content-between`}>
+                <span>
+                    <i className="ti ti-alert-triangle me-2"></i>
+                    {diasRestantes <= 0 
+                        ? "Tu suscripción ha vencido. Tienes 10 días para pagar antes de la suspensión." 
+                        : `Tu suscripción vence en ${diasRestantes} días.`}
+                </span>
+                <button className="btn btn-sm btn-dark">Pagar Ahora</button>
+            </div>
+        );
+    };*/}
+    
+    const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
+    // Función para cerrar el menú al hacer click afuera
+    useEffect(() => {
+        const cerrarMenu = () => setDropdownAbierto(null);
+        window.addEventListener('click', cerrarMenu);
+        return () => window.removeEventListener('click', cerrarMenu);
+    }, []);
 
     // Función para asignar colores aleatorios a los avatares
     const colors = ['primary', 'info', 'success', 'danger', 'warning'];
@@ -630,6 +662,22 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
 
     // Cambiar de página
     const cambiarPagina = (numeroPagina: number) => setPaginaActualFt(numeroPagina);
+    // 1. Definir la función de manejo
+    const handleGenerarCupones = () => {
+        // Usamos Swal (SweetAlert2) para darle un toque premium si lo tienes instalado, 
+        // sino puedes usar un confirm normal de JS.
+        if (confirm('¿Deseas generar cupones de regalo para todos los cumpleañeros de hoy?')) {
+            router.post(route('cfcupones.generar-cupones-masivos'), {fecha: hoyString, categoria:'cumple'}, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    // Opcional: Alguna notificación de éxito
+                    console.log("Cupones creados");
+                },
+            });
+        }
+    };
+
+
 
     return (
         <AppMainLayout>
@@ -816,8 +864,8 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                                             ) || 0;
                                             const totalGeneral = totalServicios + totalProductos;
 
-                                            const esInactiva = ['CA', 'RE', 'CAN'].includes(cita.estado_codigo?.toUpperCase());
-                                            const esPagada = ['PA'].includes(cita.estado_codigo?.toUpperCase());
+                                            const esInactiva = ['RE', 'CA'].includes(cita.estado_codigo?.toUpperCase());
+                                            const esPagada = ['AS'].includes(cita.estado_codigo?.toUpperCase());
                                             return (
                                                 <tr key={cita.id} className={esInactiva ? 'opacity-75 bg-light' : ''}>
                                                      <td className="text-left pe-4">
@@ -827,7 +875,11 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                                                                     </div>
                                                             <div>
                                                                 <span className="fw-bold text-primary">#{cita.codigo}</span>
-                                                                <div className="fw-bold text-dark">{cita.nombres} {cita.apellidos}</div>
+                                                                <div className="fw-bold text-dark">
+                                                                    <Link href={route('adclientes.show', cita.cliente_id)} className="text-dark">
+                                                                        <h6 className="mb-1">{cita.nombres} {cita.apellidos}</h6>
+                                                                    </Link>
+                                                                </div>
                                                                 <div className="text-muted" style={{fontSize: '10px'}}>{cita.identificacion}</div>
                                                                 <span 
                                                                     className={`badge bg-light-${cita.estado_observacion} text-${cita.estado_observacion}`} 
@@ -878,47 +930,63 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                                                     </td>
                                                     <td className="text-center" title={`Servicios: $${totalServicios} | Productos: $${totalProductos}`}>
                                                         <small className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                                        {`Servicios: $${totalServicios}  Adicionales: $${totalProductos}`}
+                                                            {`Servicios: $${totalServicios}`}
                                                         </small>
-                                                        <br></br>
+                                                        <br/>
+                                                        <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                            {`Adicionales: $${totalProductos}`}
+                                                        </small>
+                                                        <br/>
                                                         <span className="fw-bold text-success">Total: ${totalGeneral.toLocaleString()}</span>
-                                                        
                                                     </td>
                                                     
                                                     {/* BOTONES DE ACCIÓN */}
-                                                    <td className="text-center pe-4">
-                                                        <div className="d-flex justify-content-center gap-2">
-                                                            {/* BOTÓN VER DETALLE / FACTURAR: Abre el Modal Global */}
-                                                            <button 
-                                                                className="btn btn-icon btn-sm btn-light-primary rounded-circle shadow-sm" 
-                                                                title="Ver detalle y Facturar"
-                                                                disabled={esInactiva}
-                                                                onClick={() => setCitaDetalle(cita)} // <-- Aquí pasamos la data de la cita
+                                                    <td className="text-end pe-4">
+                                                        <div className="btn-group shadow-sm" style={{ borderRadius: '6px' }}>
+                                                            
+                                                        {/* BOTÓN ESTADO: Si está pagada, podrías poner un icono de check */}
+                                                        <button 
+                                                                type="button"
+                                                                onClick={() => setCitaDetalle(cita)}
+                                                                className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, fontSize: '0.75rem', fontWeight: 600 }}
+                                                                disabled={esInactiva || esPagada}
                                                             >
-                                                                <i className="ti ti-receipt fs-5"></i>
+                                                                <i className="ti ti-list-search fs-5"></i>
                                                             </button>
                                                             
-                                                            {/* Botón Cobro Rápido (Opcional si quieres otra lógica) */}
                                                             <button 
-                                                                className="btn btn-icon btn-sm btn-light-primary rounded-circle shadow-sm" 
-                                                                title="Cobro Directo"
-                                                                disabled={esInactiva || esPagada} 
+                                                                type="button" 
+                                                                className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                style={{ borderRadius: 0, borderLeft: 'none' }}
                                                                 onClick={() => handleFacturar(cita.id)}
+                                                                disabled={esInactiva || esPagada} 
                                                             >
                                                                 <i className="ti ti-coin fs-5"></i>
                                                             </button>
-                                                            
-                                                            {/* Botón Cancelar */}
-                                                            <button 
-                                                                className="btn btn-icon btn-sm btn-light-danger rounded-circle shadow-sm" 
-                                                                title="Cancelar Cita"
-                                                                disabled={esInactiva}
-                                                                onClick={() => {setCitaCancelar(cita)}}
-                                                            >
-                                                                <i className="ti ti-x fs-5"></i>
-                                                            </button>
+
+                                                            {/* SI YA ESTÁ PAGADA: Mostrar Ir a Factura */}
+                                                            {esPagada ? (
+                                                                <button 
+                                                                    className="dropdown-item d-flex align-items-center py-2 px-3 text-info"
+                                                                    onClick={() => window.open(route('facturas.show', cita.factura_id), '_blank')}
+                                                                >
+                                                                    <i className="ti ti-file-invoice fs-5"></i>
+                                                                </button>
+                                                            ) : (
+                                                                /* SI NO ESTÁ PAGADA NI CANCELADA: Mostrar Facturar y Cancelar */
+                                                                !esInactiva && (  
+                                                                    <button 
+                                                                        className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                        onClick={() => {setCitaCancelar(cita)}}
+                                                                    >
+                                                                        <i className="ti ti-ban fs-5"></i>
+                                                                    </button>
+                                                                )
+                                                            )}
                                                         </div>
                                                     </td>
+                                                    
                                                 </tr>
                                             );
                                         })}
@@ -980,7 +1048,7 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                     <div className="card border-0 shadow-sm h-100 overflow-hidden" style={{ borderRadius: '15px' }}>
                         <div style={{ height: '4px', background: '#FFC107' }}></div>
                         
-                        <div className="card-body p-4 d-flex flex-column" style={{ maxHeight: '500px' }}>
+                        <div className="card-body p-4 d-flex flex-column" style={{ maxHeight: '600px' }}>
                             <div className="d-flex justify-content-between align-items-center mb-4 flex-shrink-0">
                                 <div>
                                     <h6 className="fw-bold mb-0">Cumpleaños Hoy</h6>
@@ -996,57 +1064,94 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                             {/* LISTA DINÁMICA */}
                             <div className="flex-grow-1 pe-2" style={{ 
                                 overflowY: 'auto', 
-                                maxHeight: '300px', 
+                                maxHeight: '350px', 
                                 scrollbarWidth: 'thin'
                             }}>
                                 {cumpleanosHoy.length > 0 ? (
-                                    cumpleanosHoy.map((cliente: any, idx: number) => (
-                                        <div key={cliente.id} className="d-flex align-items-center justify-content-between p-3 mb-2 rounded-3 bg-light hover-shadow-sm transition-all" 
-                                            style={{ border: '1px solid rgba(0,0,0,0.05)' }}>
+                                    cumpleanosHoy.map((cliente: any, idx: number) => {
+                                        const isUsado = cliente.cupon_estado === 0; // Supongamos 1 = CANJEADO / USADO
+                                        const tieneCupon = !!cliente.cupon;
+                                        return(
+                                        
+                                        <div key={cliente.id} className="p-3 mb-2 rounded-3 bg-light transition-all" 
+                                            style={{ 
+                                                border: isUsado ? '1.5px solid #ef4444' : (tieneCupon ? '1.5px solid #FFC107' : '1px solid rgba(0,0,0,0.05)'),
+                                                opacity: isUsado ? 0.8 : 1 
+                                            }}>        
                                             
-                                            <div className="d-flex align-items-center">
-                                                {/* Avatar con Badge de Edad */}
-                                                <div className="position-relative">
-                                                    {cliente.foto ? (
-                                                        <img src={cliente.foto} className="rounded-circle me-3" style={{width: '45px', height: '45px', objectFit: 'cover'}} />
-                                                    ) : (
-                                                        <div className={`avtar avtar-m bg-${colors[idx % colors.length]} text-white rounded-circle fw-bold me-3 shadow-sm`}>
-                                                            {cliente.iniciales}
-                                                        </div>
-                                                    )}
-                                                    {/* Badge de Años sobre el avatar */}
-                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark border border-white" 
-                                                        style={{ fontSize: '10px', marginLeft: '-15px' }}>
-                                                        {cliente.edad_que_cumple}
-                                                    </span>
-                                                </div>
-                                    
-                                                <div className="ms-2">
-                                                    <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '13px' }}>
-                                                        {cliente.nombrecompleto}
-                                                    </h6>
-                                                    <div className="d-flex align-items-center">
-                                                        <span className="text-muted x-small me-2">
-                                                            <i className="ti ti-brand-whatsapp text-success me-1"></i>
-                                                            {cliente.telefonomovil}
-                                                        </span>
-                                                        {/* Texto secundario de edad */}
-                                                        <span className="badge bg-success-light text-success fw-bold" style={{ fontSize: '9px' }}>
-                                                            {cliente.edad_que_cumple} AÑOS 🎂
+                                            <div className="d-flex align-items-center justify-content-between">
+                                                <div className="d-flex align-items-center">
+                                                    <div className="position-relative">
+                                                        {cliente.foto ? (
+                                                            <img src={cliente.foto} className="rounded-circle me-3" style={{width: '45px', height: '45px', objectFit: 'cover'}} />
+                                                        ) : (
+                                                            <div className={`avtar avtar-m bg-${colors[idx % colors.length]} text-white rounded-circle fw-bold me-3 shadow-sm`}>
+                                                                {cliente.iniciales}
+                                                            </div>
+                                                        )}
+                                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark border border-white" 
+                                                            style={{ fontSize: '10px', marginLeft: '-15px' }}>
+                                                            {cliente.edad_que_cumple}
                                                         </span>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Botón WhatsApp con mensaje personalizado de edad */}
-                                            <a href={`https://wa.me/${cliente.telefonomovil?.replace(/\D/g, '')}?text=¡Feliz cumpleaños número ${cliente.edad_que_cumple}, ${cliente.nombrecompleto}! 🎉 Que tengas un excelente día.`} 
-                                            target="_blank" 
-                                            className="btn btn-icon btn-sm btn-light-success rounded-circle shadow-sm">
-                                                <i className="ti ti-brand-whatsapp fs-5"></i>
-                                            </a>
-                                        </div>
-                                    ))
 
+                                                    <div className="ms-2">
+                                                        <h6 className={`mb-0 fw-bold ${isUsado ? 'text-muted text-decoration-line-through' : 'text-dark'}`} style={{ fontSize: '13px' }}>
+                                                            {cliente.nombrecompleto}
+                                                        </h6>
+                                                        <div className={`mb-0 fw-bold ${isUsado ? 'text-muted text-decoration-line-through' : 'text-dark'}`} style={{ fontSize: '13px' }}>
+                                                            <span className="text-muted x-small me-2">
+                                                                <i className="ti ti-brand-whatsapp text-success me-1"></i>
+                                                                {cliente.telefonomovil}
+                                                            </span>
+                                                            {/* Texto secundario de edad */}
+                                                            <span className="badge bg-success-light text-success fw-bold" style={{ fontSize: '9px' }}>
+                                                                {cliente.edad_que_cumple} AÑOS 🎂
+                                                            </span>
+                                                        </div>
+                                                        <div className="d-flex align-items-center mt-1 gap-1">
+                                                            {isUsado ? (
+                                                                <span className="badge bg-light-danger text-danger fw-bold" style={{ fontSize: '10px' }}>
+                                                                    <i className="ti ti-circle-x me-1"></i> CUPÓN USADO
+                                                                </span>
+                                                            ) : tieneCupon ? (
+                                                                <div className="d-flex align-items-center">
+                                                                    <span className="badge bg-white text-success border border-success fw-bold" style={{ fontSize: '10px' }}>
+                                                                        {cliente.cupon}
+                                                                    </span>
+                                                                    <button 
+                                                                        className="btn btn-sm btn-link-primary p-0 ms-1"
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(cliente.cupon);
+                                                                            toast.success(`Copiado: ${cliente.cupon}`);
+                                                                        }}
+                                                                    >
+                                                                        <i className="ti ti-copy"></i>
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-muted italic" style={{ fontSize: '10px' }}>Sin cupón generado</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Botón WhatsApp: Oculto o deshabilitado si ya se usó el cupón */}
+                                                {!isUsado && (
+                                                    <a href={`https://wa.me/${cliente.telefonomovil?.replace(/\D/g, '')}?text=${
+                                                            tieneCupon 
+                                                            ? `¡Feliz cumpleaños ${cliente.nombrecompleto}! 🎂 Tu cupón es: *${cliente.cupon}*`
+                                                            : `¡Feliz cumpleaños ${cliente.nombrecompleto}! 🎉`
+                                                        }`} 
+                                                        target="_blank" 
+                                                        className={`btn btn-icon btn-sm rounded-circle shadow-sm ${tieneCupon ? 'btn-success' : 'btn-light-success'}`}>
+                                                        <i className="ti ti-brand-whatsapp fs-5"></i>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        );
+                                    })
                                 ) : (
                                     <div className="text-center py-4">
                                         <i className="ti ti-calendar-off fs-1 text-muted opacity-50"></i>
@@ -1055,13 +1160,28 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                                 )}
                             </div>
 
+                            {/* SECCIÓN DE ACCIONES FINAL */}
                             <div className="pt-3 border-top mt-3 flex-shrink-0">
+                                {/* Botón 1: Generar masivamente si alguno no tiene cupón */}
+                                {cumpleanosHoy.some((c: any) => !c.cupon) && cumpleanosHoy.length > 0 && (
+                                    <button 
+                                        className="btn btn-outline-warning w-100 fw-bold py-2 rounded-pill mb-2 shadow-sm"
+                                        onClick={() => handleGenerarCupones()} // Debes crear esta función en tu controlador
+                                    >
+                                        <i className="ti ti-ticket me-2"></i> Generar cupones faltantes
+                                    </button>
+                                )}
+
+                                {/* Botón 2: Enviar Promo (Solo se habilita si todos tienen cupón) */}
                                 <button 
                                     className="btn btn-warning w-100 fw-bold py-2 text-white shadow-sm rounded-pill"
-                                    disabled={cumpleanosHoy.length === 0}
-                                    onClick={() => setShowPromoModal(true)} // <-- Activa el modal
+                                    disabled={cumpleanosHoy.length === 0 || cumpleanosHoy.some((c: any) => !c.cupon)}
+                                    onClick={() => setShowPromoModal(true)}
                                 >
-                                    <i className="ti ti-mail-forward me-2"></i> Enviar Promo a Todos
+                                    <i className="ti ti-mail-forward me-2"></i> 
+                                    {cumpleanosHoy.some((c: any) => !c.cupon) && cumpleanosHoy.length > 0 
+                                        ? 'Primero genera los cupones' 
+                                        : 'Enviar Promo a Todos'}
                                 </button>
                             </div>
                             
@@ -1070,13 +1190,9 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                 </div>
             </div>
 
-           
-
-            
-
             {/* --- 5. HISTORIAL DE TRANSACCIONES --- */}
             <div className="row g-4"> {/* Añadimos g-4 para un gap consistente */}
-                {/* COLUMNA IZQUIERDA: Más ancha para la tabla (7 o 8) */}
+                {/* COLUMNA IZQUIERDA: Historial de Transacciones Detallado */}
                 <div className="col-lg-8">
                     <div className="card border-0 shadow-sm h-100">
                         <div className="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
@@ -1088,67 +1204,123 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                             </div>
                             <button className="btn btn-sm btn-light-primary">Ver todo</button>
                         </div>
-                        <div className="card-body px-0 pb-0"> {/* pb-0 para que la paginación quede pegada abajo */}
+                        <div className="card-body px-0 pb-0">
                             <div className="table-responsive">
                                 <table className="table table-hover align-middle mb-0">
                                     <thead className="bg-light text-muted">
-                                        <tr className="small">
-                                            <th className="ps-4 border-0">CLIENTE</th>
-                                            <th className="border-0">FECHA</th>
-                                            <th className="border-0">MONTO</th>
-                                            <th className="border-0">ESTADO</th>
-                                            <th className="text-end pe-4 border-0"></th>
+                                        <tr className="small text-uppercase">
+                                            <th className="ps-4 border-0">Cliente / Origen</th>
+                                            <th className="border-0">Fecha</th>
+                                            <th className="border-0">Descuentos / Cupones</th>
+                                            <th className="border-0">Monto Final</th>
+                                            <th className="border-0">Estado</th>
+                                            <th className="text-end pe-4 border-0">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="small">
-                                        {facturasPaginadas.map((item: any) => (
-                                            <tr key={item.id}>
-                                                <td className="ps-4">
-                                                    <div className="d-flex align-items-center">
-                                                        <div className="avtar avtar-xs bg-light-primary text-primary rounded-circle me-2 fw-bold" style={{width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                                            {item.round}
-                                                        </div>
-                                                        <div>
-                                                            <div className="fw-bold text-dark">
-                                                                {item.nombres} {item.apellidos}
+                                        {facturasPaginadas.map((item: any) => {
+                                            // Cálculo del porcentaje de descuento si no viene directo del objeto
+                                            const subtotal = Number(item.subtotal || item.grand_total);
+                                            const descuento = Number(item.descuento || 0);
+                                            const porcentajeDesc = item.porcentajedescuento || (descuento > 0 ? Math.round((descuento / subtotal) * 100) : 0);
+
+                                            return (
+                                                <tr key={item.id}>
+                                                    <td className="ps-4">
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avtar avtar-xs bg-light-primary text-primary rounded-circle me-2 fw-bold" style={{width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                                                {item.round || item.nombres?.charAt(0)}
                                                             </div>
-                                                            <div className="x-small text-muted">
-                                                                {item.identificacion}
-                                                                <br />
-                                                                {item.numero} • {item.model_type === 921 ? 'Cita' : 'Venta Directa'}
+                                                            <div>
+                                                                <div className="fw-bold text-dark">
+                                                                    {item.nombres} {item.apellidos}
+                                                                </div>
+                                                                <div className="x-small text-muted">
+                                                                    {item.identificacion}
+                                                                </div>
+                                                                <div className="">
+                                                                    <span className="badge bg-light-secondary text-dark border-0 me-1">#{item.numero}</span>
+                                                                    {item.model_type === 921 ? '📅 Cita' : '🛒 Venta'}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="text-muted">
-                                                    {new Date(item.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}, 
-                                                    {new Date(item.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                                </td>
-                                                <td className="fw-bold text-dark">
-                                                    $ {Number(item.grand_total).toLocaleString('es-CO')}
-                                                </td>
-                                                <td>
-                                                    <span className={`badge bg-light-${item.estado?.observacion || 'success'} text-${item.estado?.observacion || 'success'} border border-${item.estado?.observacion || 'success'} border-opacity-10`}>
-                                                        {item.estado?.nombre}
-                                                    </span>
-                                                </td>
-                                                <td className="text-end pe-4">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <button className="btn btn-sm btn-link-secondary p-0" title="Descargar PDF">
-                                                            <i className="ti ti-file-text fs-5"></i>
-                                                        </button>
-                                                        <button className="btn btn-sm btn-link-secondary p-0">
-                                                            <i className="ti ti-dots-vertical fs-5"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="text-muted">
+                                                        {new Date(item.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}<br/>
+                                                        <span className="x-small">{new Date(item.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                                    </td>
+                                                    
+                                                    {/* COLUMNA DE DESCUENTOS Y CUPONES */}
+                                                    <td>
+                                                        {descuento > 0 ? (
+                                                            <div>
+                                                                <div className="d-flex align-items-center gap-1 text-danger fw-bold">
+                                                                    <i className="ti ti-arrow-down-right"></i>
+                                                                    {porcentajeDesc}% OFF
+                                                                </div>
+                                                                {item.cupon_id && (
+                                                                    <div className="x-small text-primary fw-semibold mt-1">
+                                                                        <i className="ti ti-ticket me-1"></i>
+                                                                        {item.cupon?.codigo || 'Cupón Aplicado'}
+                                                                    </div>
+                                                                )}
+                                                                {!item.cupon_id && (
+                                                                    <div className="x-small text-muted mt-1 italic">Dcto. Manual</div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted opacity-50">—</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* COLUMNA DE MONTO CON SUBOTOTAL */}
+                                                    <td>
+                                                        {descuento > 0 && (
+                                                            <div className="text-muted x-small text-decoration-line-through">
+                                                                $ {subtotal.toLocaleString('es-CO')}
+                                                            </div>
+                                                        )}
+                                                        <div className="fw-bold text-dark fs-6">
+                                                            $ {Number(item.grand_total || item.total).toLocaleString('es-CO')}
+                                                        </div>
+                                                    </td>
+
+                                                    <td>
+                                                        <span className={`badge bg-light-${item.estado?.observacion || 'success'} text-${item.estado?.observacion || 'success'} border border-${item.estado?.observacion || 'success'} border-opacity-10`}>
+                                                            {item.estado?.nombre}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-end pe-4">
+                                                        <div className="d-flex justify-content-end gap-1">
+                                                            <button 
+                                                                className="btn btn-sm btn-icon btn-link-secondary border-0" 
+                                                                title="Ver detalle"
+                                                                onClick={() => {
+                                                                    router.visit(route('ftfacturas.show', item.id))
+                                                                }}
+                                                            >
+                                                                <i className="ti ti-eye fs-5"></i>
+                                                            </button>
+
+                                                            <button 
+                                                                className="btn btn-sm btn-icon btn-link-secondary border-0" 
+                                                                title="Imprimir Recibo"
+                                                                onClick={() => {
+                                                                    window.print()
+                                                                }}
+                                                            >
+                                                                <i className="ti ti-printer fs-5"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
+                        
                         {/* PIE DE TABLA: CONTROLES DE PAGINACIÓN */}
                         <div className="card-footer bg-transparent border-0 px-4 py-3">
                             <div className="d-flex justify-content-between align-items-center">
@@ -1183,7 +1355,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                         </div>
                     </div>
                 </div>
-                
 
                 {/* COLUMNA DERECHA: Más delgada y estilizada (4 o 5) */}
                 <div className="col-lg-4">
@@ -1559,8 +1730,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                     reservaCita.cerrarModal();
                 }}
             />
-            
-        
 
         </AppMainLayout>
     );

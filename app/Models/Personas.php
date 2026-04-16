@@ -87,6 +87,11 @@ class Personas extends Model
     {
         return $this->hasOne('App\Models\Comercios', 'persona_id', 'id');
     }
+
+    public function cupones()
+    {
+        return $this->hasMany('App\Models\Cfcupones', 'persona_id', 'id');
+    }
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasOne

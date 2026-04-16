@@ -179,7 +179,7 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 920, 'codigo' => 'productos', 'nombre' => 'Tabla con productos', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 921, 'codigo' => 'adcitas', 'nombre' => 'Tabla citas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 922, 'codigo' => 'personas', 'nombre' => 'Tabla personas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
-
+            
             [ 'id' => 923, 'codigo' => 'LIS_ESTADOSTURNOS', 'nombre' => 'ESTADOS DE TURNOS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 924, 'codigo' => 'AC', 'nombre' => 'Activo', 'padre' => 923, 'jerarquia' => NULL, 'observacion' => 'success'],
             [ 'id' => 925, 'codigo' => 'BO', 'nombre' => 'Bloqueado', 'padre' => 923, 'jerarquia' => NULL, 'observacion' => 'warning'],
@@ -228,7 +228,20 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 963, 'codigo' => NULL, 'nombre' => 'Ocupaciones Elementales: Limpiadores, asistentes de cocina, ayudantes de construcción, vendedores ambulantes.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 964, 'codigo' => NULL, 'nombre' => 'Fuerzas Militares: Oficiales y suboficiales de las fuerzas armadas.', 'padre' => 908, 'jerarquia' => NULL, 'observacion' => NULL],
 
+            [ 'id' => 965, 'codigo' => 'comercios', 'nombre' => 'Tabla personas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 966, 'codigo' => 'users', 'nombre' => 'Tabla users', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
+
+            [ 'id' => 967, 'codigo' => 'LIS_PLANES', 'nombre' => 'PLANES DE SUSCRIPCIONES', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 968, 'codigo' => '15', 'nombre' => 'FREE', 'padre' => 967, 'jerarquia' => NULL, 'observacion' => '0'],
+            [ 'id' => 969, 'codigo' => '30', 'nombre' => 'MENSUAL', 'padre' => 967, 'jerarquia' => NULL, 'observacion' => '59900'],
+            [ 'id' => 970, 'codigo' => '90', 'nombre' => 'TRIMESTRAL', 'padre' => 967, 'jerarquia' => NULL, 'observacion' => '159900'],
+            [ 'id' => 971, 'codigo' => '180', 'nombre' => 'SEMESTRAL', 'padre' => 967, 'jerarquia' => NULL, 'observacion' => '299900'],
+            [ 'id' => 972, 'codigo' => '365', 'nombre' => 'ANUAL', 'padre' => 967, 'jerarquia' => NULL, 'observacion' => '599900'],
             
+            [ 'id' => 973, 'codigo' => 'LIS_ESTADOPAGOS', 'nombre' => 'ESTADOS DE PAGOS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 974, 'codigo' => NULL, 'nombre' => 'APROBADO', 'padre' => 973, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 975, 'codigo' => NULL, 'nombre' => 'RECHAZADO', 'padre' => 973, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 976, 'codigo' => NULL, 'nombre' => 'PENDIENTE', 'padre' => 973, 'jerarquia' => NULL, 'observacion' => NULL],
   
         ];
         foreach (array_chunk($dataMaestra,1000) as $data){

@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\{Route};
 use App\Http\Controllers\Api\{
     DisponibilidadController,AdclientesController,
-    ProductosController, PersonasController,AdcitasController};
+    ProductosController, PersonasController,AdcitasController,
+    WhatsAppController};
 
 Route::get('/disponibilidad/{token}/buscar', [DisponibilidadController::class, 'generarTurnos'])->name('api.disponibilidad.turnos');
 Route::get('/clientes/buscar', [AdclientesController::class, 'buscar'])->name('api.clientes.buscar');
@@ -14,3 +15,6 @@ Route::post('/personas/store', [PersonasController::class, 'store'])->name('api.
 Route::post('/clientes/verificarcrear', [AdclientesController::class, 'verificarcrear'])->name('api.clientes.verificarcrear');
 Route::post('/citas/store', [AdcitasController::class, 'store'])->name('api.citas.store');
 Route::post('/personas/enviar', [PersonasController::class, 'sendOpt'])->name('api.otp.enviar');
+
+
+Route::post('/whatsapp/send', [WhatsAppController::class, 'send'])->name('api.whatsapp.send'); //->middleware(['auth']); // Solo usuarios logueados pueden enviar mensajes

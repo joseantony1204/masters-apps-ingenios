@@ -10,25 +10,30 @@ use App\Http\Controllers\{
     FtdetallesController,FtpagosController,FtimpuestosController,
     CfbloqueosagendasController,AddetallescitasController,CfempleadosserviciosController,
     FtserialesController,CfsedesController,UsersController,
-    CfhorariosController, CfpromocionesController, CfcuponesController};
+    CfhorariosController, CfpromocionesController, CfcuponesController,
+    CfmaestrasController, ScsuscripcionesController, ScpagosController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
+    // Si entra a la raíz, lo mandamos al dashboard
+    Route::get('/', function () {
+        return redirect()->route('dashboard'); 
+    })->name('home');
+});
 
 // Ruta pública para el QR
 Route::get('/landing', [LandingController::class, 'index'])->name('public.landing');
 Route::get('/confirmada', [LandingController::class, 'confirmada'])->name('public.confirmada');
 
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
     // --- MÓDULO: CONFIGURACIÓN Y MAESTRAS ---
     Route::resource('cfmaestra', CfmaestraController::class);
+    Route::resource('cfmaestras', CfmaestrasController::class);
     Route::resource('cfimpuestos', CfimpuestosController::class);
     Route::resource('sgrolesperfiles', SgrolesperfilesController::class);
     Route::resource('cfsedes', CfsedesController::class);
@@ -58,6 +63,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('ftseriales', FtserialesController::class);
     Route::resource('cfpromociones', CfpromocionesController::class);
     Route::resource('cfcupones', CfcuponesController::class);
+    Route::resource('scsuscripciones', ScsuscripcionesController::class);
+    Route::resource('scpagos', ScpagosController::class);
 
     Route::post('asignarServicio', [CfempleadosController::class, 'asignarServicio'])->name('cfempleados.asignarservicio');
     Route::put('cfempleados/{empleado}/servicios/{servicio}/estado', [CfempleadosController::class, 'updateEstadoServicio'])
@@ -73,8 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('cfempleados/validar-disponibilidad', [CfempleadosController::class, 'validarDisponibilidad'])
         ->name('cfempleados.validar-disponibilidad');
     Route::put('cfempleados/{empleado}/horarios', [CfempleadosController::class, 'updateHorarios'])->name('cfempleados.update-horarios');
-    Route::put('users/{user}/password', [UsersController::class, 'updatePassword'])
-        ->name('users.updatepassword');   
+       
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/clientes/buscar', [AdclientesController::class, 'buscar'])->name('api.clientes.buscar');
@@ -104,7 +110,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('cfpromociones.toggle');
     Route::post('/cfcupones/asignarVip', [CfcuponesController::class, 'asignarVip'])->name('cfcupones.asignarVip');
     Route::post('/cfcupones/storeLote', [CfcuponesController::class, 'storeLote'])->name('cfcupones.storeLote');
+    Route::post('/cfcupones/validar', [CfcuponesController::class, 'validar'])->name('cfcupones.validar');
     Route::get('/cfpromociones/{promocion}/cupones', [CfPromocionesController::class, 'getCupones'])->name('cfpromociones.cupones');
+    Route::post('/cfcupones/generar-cupones-masivos', [CfcuponesController::class, 'generarCuponesMasivos'])->name('cfcupones.generar-cupones-masivos');
 
     Route::prefix('comercios')->group(function () {
         // Vista Principal (Carga todo)
@@ -113,13 +121,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/comercio', [ComerciosController::class, 'update'])->name('comercios.update');
     });
 
+    Route::put('users/{user}/perfil', [UsersController::class, 'updatePerfil'])
+        ->name('users.updateperfil');
+    Route::put('users/{user}/sedes/{sede}/toggle-permiso', [UsersController::class, 'toggleSedePermiso'])->name('users.toggle-permiso');
+    Route::put('users/{user}/sedes/{sede}/set-default', [UsersController::class, 'setSedePredeterminada'])->name('users.set-default'); 
+    Route::put('users/{user}/password', [UsersController::class, 'updatePassword'])
+    ->name('users.updatepassword');
+
+    Route::put('setperfilrol', [App\Http\Controllers\SgrolesperfilesController::class, 'setperfilrol'])->name('sgrolesperfiles.setperfilrol');
+    Route::put('updatepermiso', [App\Http\Controllers\SgrolesperfilesController::class, 'updatepermiso'])->name('sgrolesperfiles.updatepermiso');
+
+
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
     Route::get('dashboard', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        $comercio = Comercios::with('suscripcion')->where('persona_id', $user->persona_id)->first();
         
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
@@ -162,7 +181,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'detalle_con_empleadoservicio.estado',
         ])
         ->select([
-            'c.id',
+            'c.id as cliente_id',
+            'p.id AS persona_id',
             'p.foto',
             'p.identificacion',
             DB::raw('CONCAT(YEAR(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " años ", MONTH(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " meses y ", DAY(FROM_DAYS(DATEDIFF(NOW(), pn.fechanacimiento))), " dias") AS edad'),
@@ -204,6 +224,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // 0. Para las facturas Iniciamos la Query (sin el get al final todavía)
         $ftfacturas = Ftfacturas::with([
             'pagos',
+            'cupon',
             'turnos.terminal.sede',
             'estado'
         ]);
@@ -253,38 +274,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // En tu Controller de Laravel
         $hoy = now(); // Usa la fecha del sistema (configurada en America/Bogota)
-
-        $adclientes = Adclientes::
-        join("personas AS p","p.id","=","adclientes.persona_id")
-        ->join('users AS u', 'p.id', '=', 'u.persona_id')
-        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
-        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
-        ->join('cfmaestras AS m', 'm.id', '=', 'adclientes.estado_id')
-        ->select([
-            'adclientes.id',
-            'p.foto',
-            'p.identificacion',
-            'pn.fechanacimiento',
-            DB::raw("TIMESTAMPDIFF(YEAR, pn.fechanacimiento, CURDATE()) AS edad_que_cumple"),
-            DB::raw("CONCAT(UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS iniciales"),
-            DB::raw("CONCAT(pn.nombre, ' ', pn.apellido) AS nombrecompleto"),
-            'p.telefonomovil',
-            'p.email'
-        ])
-        ->where('su.predeterminada', 1)
-        ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$hoy->month])
-        ->whereRaw("DAY(pn.fechanacimiento) = ?", [$hoy->day])
-        // Usamos el ID del comercio del usuario autenticado
-        ->where('adclientes.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
-        })
-        ->orderby('pn.nombre', 'ASC')
-        ->orderby('pn.apellido', 'ASC');
-        $cumpleanosHoy = $adclientes->orderby('pn.nombre', 'ASC')->get();
-
+        $cumpleanosHoy = Adclientes::obtenerCumpleanos($hoy);
+        
         // 0. Total de clientes únicos
         $clientesHoy = Adclientes::whereDate('fechaingreso',now())->where('comercio_id', $comercio->id)->count();
         // 1. Total de clientes únicos
@@ -317,7 +308,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('dashboard/analytics', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
@@ -453,65 +444,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         $facturas = $ftfacturas->orderBy('ftfacturas.fecha', 'DESC')->get();
 
-        // En tu Controller de Laravel
-        $hoy = now(); // Usa la fecha del sistema (configurada en America/Bogota)
-
-        $adclientes = Adclientes::
-        join("personas AS p","p.id","=","adclientes.persona_id")
-        ->join('users AS u', 'p.id', '=', 'u.persona_id')
-        ->join('personasnaturales AS pn', 'p.id', '=', 'pn.persona_id')
-        ->join('cfsedesusers AS su', 'u.id', '=', 'su.usuario_id')
-        ->join('cfmaestras AS m', 'm.id', '=', 'adclientes.estado_id')
-        ->select([
-            'adclientes.id',
-            'p.foto',
-            'p.identificacion',
-            'pn.fechanacimiento',
-            DB::raw("TIMESTAMPDIFF(YEAR, pn.fechanacimiento, CURDATE()) AS edad_que_cumple"),
-            DB::raw("CONCAT(UPPER(LEFT(pn.nombre,1)), UPPER(LEFT(pn.apellido,1))) AS iniciales"),
-            DB::raw("CONCAT(pn.nombre, ' ', pn.apellido) AS nombrecompleto"),
-            'p.telefonomovil',
-            'p.email'
-        ])
-        ->where('su.predeterminada', 1)
-        ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$hoy->month])
-        ->whereRaw("DAY(pn.fechanacimiento) = ?", [$hoy->day])
-        // Usamos el ID del comercio del usuario autenticado
-        ->where('adclientes.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
-        })
-        ->orderby('pn.nombre', 'ASC')
-        ->orderby('pn.apellido', 'ASC');
-        $cumpleanosHoy = $adclientes->orderby('pn.nombre', 'ASC')->get();
-
-        // 0. Total de clientes únicos
-        $clientesHoy = Adclientes::whereDate('fechaingreso',now())->where('comercio_id', $comercio->id)->count();
-        // 1. Total de clientes únicos
-        $totalClientes = Adclientes::where('comercio_id', $comercio->id)->count();
-
-        // 2. Clientes que han venido más de una vez (Recurrentes)
-        $clientesRecurrentes = Adclientes::with(['citas'])->where('comercio_id', $comercio->id)
-            ->whereHas('citas', function($q) {
-                $q->where('estado_id', 915); // Solo citas pagadas/completadas
-            }, '>=', 2) // Que tengan 2 o más
-            ->count();
-
-        // 3. Cálculo final
-        $tasaRetencion = $totalClientes > 0 ? round(($clientesRecurrentes / $totalClientes) * 100, 1) : 0;
-
+        
         return Inertia::render('dashboard/analytics', [
             'citas' => $citas,
-            'cumpleanosHoy' => $cumpleanosHoy,
             'facturas' => $facturas,
             'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
             'estadosList' => Cfmaestra::where('padre','=',Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first()->id)->whereIn('codigo',['CA','RE'])->get()->sortBy('nombre')->pluck('nombre', 'id')->prepend('', ''),
-            'clientesHoy' => $clientesHoy,
-            'totalClientes' => $totalClientes,
-            'clientesRecurrentes' => $clientesRecurrentes,
-            'tasaRetencion' => $tasaRetencion,
             'turnoActivo' => $turnoActivo,
             'turnosList'  => $turnosAbiertos,
             'sedePredeterminada' => $sedePredeterminada,
