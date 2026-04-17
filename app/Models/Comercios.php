@@ -79,10 +79,10 @@ class Comercios extends Model
         return $this->hasMany(\App\Models\Cfpromociones::class, 'comercio_id', 'id');
     }
 
-    public function suscripcion()
+    public function suscripciones()
     {
         // Trae la última suscripción creada para este comercio
-        return $this->hasOne(Scsuscripciones::class, 'comercio_id')->latestOfMany();
+        return $this->HasMany(Scsuscripciones::class, 'comercio_id', 'id');
     }
     
 }

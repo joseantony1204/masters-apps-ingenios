@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Scsuscripciones;
+use App\Models\{Cfmaestras,Scsuscripciones,Scpagos,Comercios};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth};
@@ -21,8 +21,22 @@ class ScsuscripcionesController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+        $query = Scsuscripciones::with([
+            'comercio',
+            'plan',
+            'estado',
+            'pagos.estado',
+            'pagos.metodo'
+        ])
+        ->where('comercio_id', function($q) use ($user) {
+            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
+        })
+        ->whereNull('deleted_at');
+        $scsuscripciones = $query->get();
+
         return Inertia::render('scsuscripciones/index', [
-            'scsuscripciones' => Scsuscripciones::whereNull('deleted_at')->get() 
+            'suscripciones' => $scsuscripciones
         ]);
     }
 
@@ -100,5 +114,88 @@ class ScsuscripcionesController extends Controller
 
         return redirect()->route('scsuscripciones.index')
             ->with('success', 'Elemento eliminado correctamente.');
+    }
+
+    // 1. Método que CREA el registro (POST)
+    public function checkout(Request $request) 
+    {
+        $request->validate(['plan_id' => 'required|exists:cfmaestras,id']);
+        
+        $plan = Cfmaestras::find($request->plan_id);
+        $user = Auth::user();
+
+        // 0. Buscar el comercio asociado a la persona (usuario)
+        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+
+        // 1. Gestionar la Suscripción (Buscamos si ya tiene una pendiente o creamos nueva)
+        // Esto evita duplicar suscripciones si el usuario intenta pagar varias veces el mismo plan
+        $suscripcion = Scsuscripciones::updateOrCreate(
+            [
+                'comercio_id' => $comercio->id,
+                'estado_id' => 981 // Si ya hay una pendiente, la reutilizamos
+            ],
+            [
+                'plan_id' => $plan->id,
+                'fecha_inicio' => now(),
+                'fecha_vencimiento' => now()->addDays((int)$plan->codigo),
+            ]
+        );
+
+        // 2. Crear el registro del Intento de Pago vinculado a la Suscripción
+        $pago = Scpagos::create([
+            'suscripcion_id' => $suscripcion->id,
+            'referencia_pasarela' => 'PAY' . strtoupper(uniqid() . time()), // Referencia interna 
+            'valor' => (float)$plan->observacion,
+            'estado_id' => 976,
+            'metodo_id' => 933
+        ]);
+
+        // 3. Retornar a la vista de Checkout con toda la data
+        return redirect()->route('scsuscripciones.pay', $pago->id);
+    }
+
+    public function gopay(Request $request) 
+    {
+        $request->validate([
+            'plan_id' => 'required|exists:cfmaestras,id',
+            'id' => 'required|exists:scsuscripciones,id'
+        ]);
+        
+        $plan = Cfmaestras::find($request->plan_id);
+        $suscripcion = Scsuscripciones::findOrFail($request->id);
+
+        // 2. Crear el registro del Intento de Pago vinculado a la Suscripción
+        $pago = Scpagos::create([
+            'suscripcion_id' => $suscripcion->id,
+            'referencia_pasarela' => 'PAY' . strtoupper(uniqid() . time()), // Referencia interna 
+            'valor' => (float)$plan->observacion,
+            'estado_id' => 976,
+            'metodo_id' => 933
+        ]);
+
+        // 3. Retornar a la vista de Checkout con toda la data
+        return redirect()->route('scsuscripciones.pay', $pago->id);
+    }
+
+    // 2. Método que MUESTRA la vista (GET)
+    public function pay($referencia) 
+    {
+        $pago = Scpagos::where('id', $referencia)
+                    ->with(['suscripcion.plan']) // Traemos las relaciones
+                    ->firstOrFail();
+
+        return inertia('scsuscripciones/pay', [
+            'pago' => $pago,
+            'plan' => $pago->suscripcion->plan,
+        ]);
+    }
+
+    public function resultado(Request $request)
+    {
+        // Aquí puedes consultar el estado del pago a ePayco vía API 
+        // usando el $_GET['ref_payco'] para mostrar un mensaje bonito.
+        return inertia('scsuscripciones/resultado', [
+            'ref_payco' => $request->ref_payco
+        ]);
     }
 }

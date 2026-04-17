@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\User;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,7 +48,6 @@ class AppServiceProvider extends ServiceProvider
             ] : null,
         ]);
         \App\Models\Ftfacturas::observe(\App\Observers\FtfacturasObserver::class);
-
     }
 }
 

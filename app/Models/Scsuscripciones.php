@@ -79,7 +79,7 @@ class Scsuscripciones extends Model
      */
     public function pagos()
     {
-        return $this->hasMany(\App\Models\Scpagos::class, 'id', 'suscripcion_id');
+        return $this->hasMany(\App\Models\Scpagos::class, 'suscripcion_id');
     }
     
 }

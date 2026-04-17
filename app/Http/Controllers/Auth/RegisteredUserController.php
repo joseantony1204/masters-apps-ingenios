@@ -135,7 +135,7 @@ class RegisteredUserController extends Controller
                 $suscripcionId = DB::table('scsuscripciones')->insertGetId([
                         'fecha_inicio'=>Carbon::now()->format('Y/m/d'), 
                         'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 
-                        'estado_id' => 850, 
+                        'estado_id' => 980, 
                         'plan_id' => 968, 
                         'comercio_id' => $comercio->id,
                 ] + $audt);

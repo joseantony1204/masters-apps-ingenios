@@ -86,7 +86,7 @@ class PersonasSeeder extends Seeder
         *Datos por defecto de suscripciones
         */
         $dataSuscripciones = [
-            ['fecha_inicio'=>Carbon::now()->format('Y/m/d'), 'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 'estado_id' => 850, 'plan_id' => 968, 'comercio_id' =>1, 'created_by' => 1],
+            ['fecha_inicio'=>Carbon::now()->format('Y/m/d'), 'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 'estado_id' => 980, 'plan_id' => 968, 'comercio_id' =>1, 'created_by' => 1],
         ];
 
         $dataPagos = [

@@ -55,6 +55,7 @@ ChartJS.register(
 
 interface Props {
     auth : any
+    comercio: any;
     citas: any[];
     cumpleanosHoy: any[];
     facturas: any[];
@@ -74,7 +75,7 @@ interface DataGrafico {
 }
 import { useReservaCita } from '@/hooks/use-reserva-cita';
 
-export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada}: Props) {
+export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada}: Props) {
     
     const [citaDetalle, setCitaDetalle] = useState<any>(null);
     const [citaCancelar, setCitaCancelar] = useState<any>(null);
@@ -209,18 +210,11 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
             color: '#198754' 
         },
         { 
-            label: 'TOTAL INGRESOS MES', 
-            val: `$${ingresosMes.toLocaleString()}`, 
-            growth: calcularGrowth(ingresosMes, ingresosMesAnterior), 
-            icon: 'ti-currency-dollar', 
-            color: '#0dcaff' 
-        },
-        { 
             label: 'INGRESOS HOY', 
             val: `$${ingresosHoy.toLocaleString()}`, 
             growth: calcularGrowth(ingresosHoy, ingresosAyer), 
-            icon: 'ti-wallet', 
-            color: '#ffc107' 
+            icon: 'ti-currency-dollar', 
+            color: '#0dcaff' 
         },
     ];
 
@@ -762,60 +756,109 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                 </div>
             </div>
 
-             {/* --- 2. FILA DE KPIs DE IMPACTO --- */}
-             <div className="row g-3 mb-4">
-                {stats.map((item, i) => (
-                    <div className="col-6 col-md-3" key={i}>
-                        <div 
-                            className="shadow-sm h-100 bg-white" 
-                            style={{ 
-                                borderRadius: '12px',
-                                borderLeft: `6px solid ${item.color}`, // Color dinámico según el objeto
-                                borderTop: 'none',
-                                borderRight: 'none',
-                                borderBottom: 'none',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}
-                        >
-                            <div className="p-4 d-flex align-items-center justify-content-between">
-                                
-                                {/* IZQUIERDA: Información */}
-                                <div className="d-flex flex-column">
-                                    <span className="text-muted fw-bold mb-2 text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.8px' }}>
-                                        {item.label}
-                                    </span>
-                                    
-                                    <h2 className="fw-bold mb-1" style={{ fontSize: '24px', color: '#212529', lineHeight: '1' }}>
-                                        {item.val}
-                                    </h2>
-
-                                    <span className={`fw-bold ${item.growth.startsWith('+') ? 'text-success' : 'text-danger'}`} 
-                                        style={{ fontSize: '12px' }}>
-                                        {item.growth} 
-                                        <span className="text-muted fw-normal ms-1">
-                                            {item.label.includes('MES') ? 'vs mes ant.' : 'vs ayer'}
-                                        </span>
-                                    </span>
-                                </div>
-
-                                {/* DERECHA: Icono con fondo traslúcido */}
-                                <div className="d-flex align-items-center justify-content-center rounded-circle" 
+            <div className="row g-4 mb-4 d-flex align-items-stretch">
+                {/* IZQUIERDA: Contenedor de los 3 KPIs */}
+                <div className="col-lg-8">
+                    <div className="row g-3 h-100">
+                        {stats.map((item, i) => (
+                            <div className="col-12 col-md-4" key={i}>
+                                <div 
+                                    className="shadow-sm h-100 bg-white border-0 d-flex flex-column" 
                                     style={{ 
-                                        width: '52px', 
-                                        height: '52px', 
-                                        backgroundColor: `${item.color}15`, // Agrega transparencia al color original
-                                        color: item.color 
-                                    }}>
-                                    <i className={`ti ${item.icon}`} style={{ fontSize: '24px' }}></i>
-                                </div>
+                                        borderRadius: '16px', 
+                                        transition: 'transform 0.2s',
+                                        cursor: 'default'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                >
+                                    <div style={{ height: '4px', width: '100px', backgroundColor: item.color, borderRadius: '10px', margin: '20px 0 0 24px' }}></div>
+                                    
+                                    <div className="p-4 pt-3 d-flex flex-column justify-content-between flex-grow-1">
+                                        <div className="d-flex align-items-center justify-content-between mb-3">
+                                            <div className="d-flex align-items-center justify-content-center rounded-3" 
+                                                style={{ width: '52px', height: '52px', backgroundColor: `${item.color}15`, color: item.color }}>
+                                                <i className={`ti ${item.icon}`} style={{ fontSize: '24px' }}></i>
+                                            </div>
+                                            <div className={`badge rounded-pill ${item.growth.startsWith('+') ? 'bg-light-success text-success' : 'bg-light-danger text-danger'}`}
+                                                style={{ fontSize: '11px', fontWeight: '700' }}>
+                                                {item.growth}
+                                            </div>
+                                        </div>
 
+                                        <div className="d-flex flex-column mt-auto">
+                                            <span className="text-muted fw-semibold text-uppercase mb-1" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                                                {item.label}
+                                            </span>
+                                            <h2 className="fw-bold mb-0" style={{ fontSize: '26px', color: '#1e293b', letterSpacing: '-0.5px' }}>
+                                                {item.val}
+                                            </h2>
+                                            <p className="text-muted mt-2 mb-0" style={{ fontSize: '11px' }}>
+                                                <span className="fw-bold">Comparado</span> con el mes anterior
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* DERECHA: Tarjeta Bancaria de Ingresos */}
+                <div className="col-lg-4">
+                    <div className="shadow-lg h-100 position-relative overflow-hidden d-flex flex-column" 
+                        style={{ 
+                            borderRadius: '16px', 
+                            background: 'linear-gradient(135deg, #051937 0%, #004d7a 100%)',
+                            border: 'none'
+                        }}>
+                        
+                        {/* Círculos decorativos */}
+                        <div className="position-absolute" style={{ right: '10%', top: '10%', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', zIndex: 0 }}></div>
+                        <div className="position-absolute" style={{ right: '4%', top: '20%', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,193,7,0.1)', zIndex: 0 }}></div>
+                            
+                        <div className="p-4 d-flex flex-column justify-content-between flex-grow-1 position-relative" style={{ zIndex: 1 }}>
+                            <div className="d-flex justify-content-between align-items-start">
+                                <div className="d-flex flex-column">
+                                    <span className="text-warning fw-bold text-uppercase" style={{ fontSize: '9px', letterSpacing: '1.5px' }}>
+                                        Tarjeta de ingresos en vivo
+                                    </span>
+                                    <small className="text-white-50" style={{ fontSize: '10px' }}>TOTAL INGRESOS MES</small>
+                                </div>
+                                <div className="text-white-50 opacity-50">
+                                    <i className="ti ti-wifi-2 rotate-90" style={{ fontSize: '18px' }}></i>
+                                </div>
+                            </div>
+                            
+                            <div className="my-3">
+                                <h2 className="fw-bold text-white mb-0" style={{ fontSize: '28px', fontFamily: "'Courier New', Courier, monospace" }}>
+                                    ${(Number(ingresosMes) || 0).toLocaleString('es-CO')}
+                                </h2>
+                                <div className="d-flex align-items-center mt-1">
+                                    <span className="text-white-50 me-1" style={{ fontSize: '9px' }}>VÁLIDO HASTA:</span>
+                                    <span className="text-white" style={{ fontSize: '11px' }}>{new Date().toLocaleDateString('es-CO', { month: '2-digit', year: '2-digit' })}</span>
+                                </div>
+                            </div>
+
+                            <div className="d-flex justify-content-between align-items-end mt-auto">
+                                <div className="d-flex flex-column text-start">
+                                    <span className="text-white-50" style={{ fontSize: '8px' }}>TARJETERO</span>
+                                    <span className="text-white fw-medium" style={{ fontSize: '12px', textTransform: 'uppercase' }}>
+                                        {comercio.nombre?.substring(0, 15) || 'MI COMERCIO'}
+                                    </span>
+                                </div>
+                                
+                                <div className={`badge rounded-pill py-2 px-3 ${calcularGrowth(ingresosMes, ingresosMesAnterior).startsWith('+') ? 'bg-light-success text-success' : 'bg-light-danger text-danger'}`} 
+                                    style={{ fontSize: '10px', backdropFilter: 'blur(4px)' }}>
+                                    <i className={`ti ${calcularGrowth(ingresosMes, ingresosMesAnterior).startsWith('+') ? 'ti-trending-up' : 'ti-trending-down'} me-1`}></i>
+                                    {calcularGrowth(ingresosMes, ingresosMesAnterior)}
+                                    <span className="ms-1 opacity-75">vs mes anterior</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                ))}
+                </div>
             </div>
-            
 
             {/* --- 3. AGENDA PROXIMA Y CUMPLEAÑOS Y ANALYTICS --- */}
             {/* Agenda Próxima */}

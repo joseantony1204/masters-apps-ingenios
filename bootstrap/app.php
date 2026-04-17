@@ -23,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'api/wompi/webhook', 
+        ]);
+
         // Añade esto para que las rutas API reconozcan la sesión del usuario logueado en la web
         $middleware->api(prepend: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
@@ -38,5 +42,4 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
     })->create();

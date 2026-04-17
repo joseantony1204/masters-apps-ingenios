@@ -27,7 +27,6 @@ class CfempleadosRequest extends FormRequest
             'identificacion' => 'required|string|max:20',
             'telefonomovil' => 'required',
             'telefonomovil' => 'required|unique:users,telefonomovil',
-            'email' => 'required',
 
             // Reglas para la tabla PERSONASNATURALES
             'nombre' => 'required',

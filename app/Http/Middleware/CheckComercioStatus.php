@@ -10,30 +10,54 @@ use Inertia\Inertia;
 
 class CheckComercioStatus
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next)
     {
-        // 1. Verificar que haya un usuario logueado
         if (!Auth::check()) {
             return $next($request);
         }
 
         $user = Auth::user();
 
-        // 2. Buscar el comercio asociado a la persona (usuario)
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        // Traemos el comercio con sus suscripciones que podrían darle acceso
+        $comercio = Comercios::with(['suscripciones.pagos' => function($query) {
+            $query->whereIn('estado_id', [980, 981]);
+        }])->where('persona_id', $user->persona_id)->first();
 
-        // 3. Validar estado (851 = Suspendido/Bloqueado)
-        // Usamos el operador nullsafe (?->) por si el comercio no tiene suscripción aún
-        if ($comercio && $comercio->suscripcion?->estado_id === 851) {
+        if (!$comercio) {
+            return $next($request);
+        }
+
+        $subs = collect($comercio->suscripciones);
+        $hoy = now()->startOfDay();
+        $tieneAcceso = false;
+
+        foreach ($subs as $sub) {
+            $vencimiento = \Carbon\Carbon::parse($sub->fecha_vencimiento)->startOfDay();
+            $inicioPlan = \Carbon\Carbon::parse($sub->fecha_inicio)->startOfDay();
             
-            // Si la petición es de Inertia o espera JSON
-            return Inertia::render('welcome', [
-                'mensaje' => 'Tu servicio ha sido suspendido por falta de pago.',
-                'comercio' => $comercio->nombre
-            ]);
+            $diasParaVencer = $hoy->diffInDays($vencimiento, false);
+            $diasDesdeQueInicio = $inicioPlan->diffInDays($hoy, false);
+
+            // --- REGLA 1: SUSCRIPCIÓN ACTIVA (980) ---
+            if ($sub->estado_id == 980 && $diasParaVencer >= 0) {
+                $tieneAcceso = true;
+                break; 
+            }
+            
+            // --- REGLA 2: SUSCRIPCIÓN PENDIENTE PAGO (981) ---
+            // Condición: Que la fecha actual no sea superior a 3 días desde que inició el plan
+            // Si diasDesdeQueInicio es 0, 1, 2 o 3 -> ENTRA. 
+            // Si es 4 o más -> BLOQUEADO.
+            if ($sub->estado_id == 981 && $diasDesdeQueInicio <= 3) {
+                $tieneAcceso = true;
+                break;
+            }
+        }
+
+        // 5. Bloqueo si ninguna suscripción cumplió las reglas
+        if (!$tieneAcceso) {
+            return redirect()->route('scsuscripciones.index')
+            ->with('warning', 'Servicio restringido por falta de pago. Su plazo de gracia de 3 días ha expirado.');
         }
 
         return $next($request);

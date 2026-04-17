@@ -11,7 +11,7 @@ use App\Http\Controllers\{
     CfbloqueosagendasController,AddetallescitasController,CfempleadosserviciosController,
     FtserialesController,CfsedesController,UsersController,
     CfhorariosController, CfpromocionesController, CfcuponesController,
-    CfmaestrasController, ScsuscripcionesController, ScpagosController};
+    CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
@@ -63,7 +63,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::resource('ftseriales', FtserialesController::class);
     Route::resource('cfpromociones', CfpromocionesController::class);
     Route::resource('cfcupones', CfcuponesController::class);
-    Route::resource('scsuscripciones', ScsuscripcionesController::class);
+    //Route::resource('scsuscripciones', ScsuscripcionesController::class);
     Route::resource('scpagos', ScpagosController::class);
 
     Route::post('asignarServicio', [CfempleadosController::class, 'asignarServicio'])->name('cfempleados.asignarservicio');
@@ -86,8 +86,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         Route::get('/clientes/buscar', [AdclientesController::class, 'buscar'])->name('api.clientes.buscar');
     });
 
-    Route::put('adclientes/{cliente}/perfil', [AdclientesController::class, 'updatePerfil'])
-        ->name('adclientes.updateperfil');
+    Route::put('adclientes/{cliente}/perfil', [AdclientesController::class, 'updatePerfil'])->name('adclientes.updateperfil');
     Route::put('adclientes/{cliente}/sedes/{sede}/toggle-permiso', [AdclientesController::class, 'toggleSedePermiso'])->name('adclientes.toggle-permiso');
     Route::put('adclientes/{cliente}/sedes/{sede}/set-default', [AdclientesController::class, 'setSedePredeterminada'])->name('adclientes.set-default'); 
 
@@ -99,46 +98,46 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::patch('/ftterminales/{id}/estado', [FtterminalesController::class, 'updateEstado'])->name('ftterminales.updateEstado');
     
     // Ruta para obtener el JSON con el desglose de ventas (Pagos -> Facturas -> Turno)
-    Route::get('/ftturnos/{id}/resumen', [FtturnosController::class, 'resumen'])
-    ->name('ftturnos.resumen');
+    Route::get('/ftturnos/{id}/resumen', [FtturnosController::class, 'resumen'])->name('ftturnos.resumen');
     
     // Ruta para ejecutar el cierre definitivo del turno (cambio de estado y fecha de cierre)
-    Route::patch('/ftturnos/{id}/cerrar', [FtturnosController::class, 'cerrar'])
-    ->name('ftturnos.cerrar');
+    Route::patch('/ftturnos/{id}/cerrar', [FtturnosController::class, 'cerrar'])->name('ftturnos.cerrar');
 
-    Route::patch('/cfpromociones/{cfpromocion}/toggle', [CfPromocionesController::class, 'toggle'])
-    ->name('cfpromociones.toggle');
+    Route::patch('/cfpromociones/{cfpromocion}/toggle', [CfPromocionesController::class, 'toggle'])->name('cfpromociones.toggle');
     Route::post('/cfcupones/asignarVip', [CfcuponesController::class, 'asignarVip'])->name('cfcupones.asignarVip');
     Route::post('/cfcupones/storeLote', [CfcuponesController::class, 'storeLote'])->name('cfcupones.storeLote');
     Route::post('/cfcupones/validar', [CfcuponesController::class, 'validar'])->name('cfcupones.validar');
     Route::get('/cfpromociones/{promocion}/cupones', [CfPromocionesController::class, 'getCupones'])->name('cfpromociones.cupones');
     Route::post('/cfcupones/generar-cupones-masivos', [CfcuponesController::class, 'generarCuponesMasivos'])->name('cfcupones.generar-cupones-masivos');
-
+    
     Route::prefix('comercios')->group(function () {
         // Vista Principal (Carga todo)
         Route::get('/', [ComerciosController::class, 'index'])->name('comercios.index');
         // Rutas para actualizaciones específicas (AJAX/Inertia)
         Route::post('/comercio', [ComerciosController::class, 'update'])->name('comercios.update');
     });
-
-    Route::put('users/{user}/perfil', [UsersController::class, 'updatePerfil'])
-        ->name('users.updateperfil');
+    
+    Route::put('users/{user}/perfil', [UsersController::class, 'updatePerfil'])->name('users.updateperfil');
     Route::put('users/{user}/sedes/{sede}/toggle-permiso', [UsersController::class, 'toggleSedePermiso'])->name('users.toggle-permiso');
     Route::put('users/{user}/sedes/{sede}/set-default', [UsersController::class, 'setSedePredeterminada'])->name('users.set-default'); 
-    Route::put('users/{user}/password', [UsersController::class, 'updatePassword'])
-    ->name('users.updatepassword');
-
+    Route::put('users/{user}/password', [UsersController::class, 'updatePassword'])->name('users.updatepassword');
+    
     Route::put('setperfilrol', [App\Http\Controllers\SgrolesperfilesController::class, 'setperfilrol'])->name('sgrolesperfiles.setperfilrol');
     Route::put('updatepermiso', [App\Http\Controllers\SgrolesperfilesController::class, 'updatepermiso'])->name('sgrolesperfiles.updatepermiso');
-
-
+    // Esta es la URL que el usuario puede refrescar sin errores
+    Route::post('/scsuscripciones/checkout', [ScsuscripcionesController::class, 'checkout'])->name('scsuscripciones.checkout');
 });
+
+Route::resource('scplanes', ScplanesController::class);
+Route::post('/scsuscripciones/gopay', [ScsuscripcionesController::class, 'gopay'])->name('scsuscripciones.gopay');
+Route::get('/scsuscripciones/pay/{referencia}', [ScsuscripcionesController::class, 'pay'])->name('scsuscripciones.pay');
+Route::get('/scsuscripciones', [ScsuscripcionesController::class, 'index'])->name('scsuscripciones.index');
 
 Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
     Route::get('dashboard', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('suscripcion')->where('persona_id', $user->persona_id)->first();
+        $comercio = Comercios::with('suscripciones')->where('persona_id', $user->persona_id)->first();
         
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
@@ -292,6 +291,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
         $tasaRetencion = $totalClientes > 0 ? round(($clientesRecurrentes / $totalClientes) * 100, 1) : 0;
 
         return Inertia::render('dashboard/index', [
+            'comercio' => $comercio,
             'citas' => $citas,
             'cumpleanosHoy' => $cumpleanosHoy,
             'facturas' => $facturas,
