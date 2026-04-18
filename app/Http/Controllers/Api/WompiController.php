@@ -34,7 +34,7 @@ class WompiController extends Controller
         $firma = hash('sha256', $cadenaConcatenada);
 
         return response()->json([
-            'publicKey' => '123456789',
+            'publicKey' => config('app.wompi_public_key'),
             'currency' => $moneda,
             'amountInCents' => $montoEnCentavos,
             'reference' => $referencia,
