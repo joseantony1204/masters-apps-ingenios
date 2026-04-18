@@ -489,7 +489,7 @@ export default function Landing({ comercio, servicios }: any) {
                     <button 
                       onClick={() => activeStep === 'fecha' ? setShowModal(true) : setActiveStep('especialistas')}
                       disabled={activeStep === 'fecha' && !selectedHora}
-                      className="btn btn-primary px-4 py-3 fw-bold shadow-sm d-flex align-items-center border-0 transition-all" 
+                      className="btn btn-primary px-4 py-3 rounded-1 fw-bold shadow-sm d-flex align-items-center border-0 transition-all" 
                       style={{ height: '55px', backgroundColor: '#5bc0de' }}>
                       {activeStep === 'fecha' ? 'Confirmar' : 'Continuar'} 
                       <i className="ti ti-arrow-right ms-2"></i>
