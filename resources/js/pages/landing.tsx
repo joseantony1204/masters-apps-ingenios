@@ -394,7 +394,7 @@ export default function Landing({ comercio, servicios }: any) {
                         <h6 className="fw-bold mb-2 text-uppercase text-muted" style={{ fontSize: '10px' }}>Tu Orden</h6>
                         
                         {/* Card Integrada de Resumen */}
-                        <div className="bg-white border rounded-4 p-3 mb-4 shadow-sm">
+                        <div className="bg-white border rounded-3 p-3 mb-4 shadow-sm">
                             <div className="d-flex align-items-center mb-3">
                                 <div className="me-3 bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style={{ width: '48px', height: '48px' }}>
                                     {selectedEmployee?.nombre.charAt(0)}
@@ -454,7 +454,7 @@ export default function Landing({ comercio, servicios }: any) {
                                   <div key={idx} className="col-4">
                                       <div 
                                           onClick={() => setSelectedHora(bloque)} 
-                                          className={`py-3 rounded-4 border text-center fw-bold transition-all ${
+                                          className={`py-3 rounded-3 border text-center fw-bold transition-all ${
                                               // Validamos contra la propiedad .hora del objeto guardado en el estado
                                               selectedHora?.hora === bloque.hora 
                                               ? 'bg-primary text-white border-primary shadow' 
@@ -466,7 +466,7 @@ export default function Landing({ comercio, servicios }: any) {
                                   </div>
                               ))
                           ) : (
-                              <div className="col-12 text-center py-5 bg-light rounded-4 border border-dashed text-muted">
+                              <div className="col-12 text-center py-5 bg-light rounded-3 border border-dashed text-muted">
                                   No hay horarios
                               </div>
                           )}
@@ -489,7 +489,7 @@ export default function Landing({ comercio, servicios }: any) {
                     <button 
                       onClick={() => activeStep === 'fecha' ? setShowModal(true) : setActiveStep('especialistas')}
                       disabled={activeStep === 'fecha' && !selectedHora}
-                      className="btn btn-primary px-4 py-3 rounded-4 fw-bold shadow-sm d-flex align-items-center border-0 transition-all" 
+                      className="btn btn-primary px-4 py-3 rounded-3 fw-bold shadow-sm d-flex align-items-center border-0 transition-all" 
                       style={{ height: '55px', backgroundColor: '#5bc0de' }}>
                       {activeStep === 'fecha' ? 'Confirmar' : 'Continuar'} 
                       <i className="ti ti-arrow-right ms-2"></i>
@@ -535,7 +535,7 @@ export default function Landing({ comercio, servicios }: any) {
                               <div className="animate__animated animate__fadeIn">
                                   <div className="mb-3">
                                       <label className="small fw-bold text-muted mb-1">No. DOCUMENTO</label>
-                                      <div className="input-group shadow-sm rounded-4 overflow-hidden border">
+                                      <div className="input-group shadow-sm rounded-3 overflow-hidden border">
                                           <span className="input-group-text bg-white border-0 text-muted">
                                               {isChecking ? (
                                                   <div className="spinner-border spinner-border-sm text-primary"></div>
@@ -565,11 +565,11 @@ export default function Landing({ comercio, servicios }: any) {
                                       <div className="row g-2 animate__animated animate__fadeInDown">
                                           <div className="col-6 mb-3">
                                               <label className="small fw-bold text-muted mb-1">NOMBRE</label>
-                                              <input type="text" className="form-control rounded-4" value={nombreNuevo} onChange={(e)=>setNombreNuevo(e.target.value)} />
+                                              <input type="text" className="form-control rounded-3" value={nombreNuevo} onChange={(e)=>setNombreNuevo(e.target.value)} />
                                           </div>
                                           <div className="col-6 mb-3">
                                               <label className="small fw-bold text-muted mb-1">APELLIDO</label>
-                                              <input type="text" className="form-control rounded-4" value={apellidoNuevo} onChange={(e)=>setApellidoNuevo(e.target.value)} />
+                                              <input type="text" className="form-control rounded-3" value={apellidoNuevo} onChange={(e)=>setApellidoNuevo(e.target.value)} />
                                           </div>
                                       </div>
                                   )}
@@ -579,7 +579,7 @@ export default function Landing({ comercio, servicios }: any) {
                                           Celular para verificación
                                       </label>
                                       
-                                      <div className="input-group shadow-sm rounded-4 overflow-visible border" style={{ background: '#fff' }}>
+                                      <div className="input-group shadow-sm rounded-3 overflow-visible border" style={{ background: '#fff' }}>
                                           {/* Contenedor del Dropdown manejado por React */}
                                           <div className="position-relative">
                                               <button 
@@ -670,7 +670,7 @@ export default function Landing({ comercio, servicios }: any) {
                                   <button 
                                       onClick={enviarVerificacion}
                                       disabled={!telefono || !nombreNuevo || isChecking}
-                                      className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg border-0"
+                                      className="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-lg border-0"
                                       style={{ backgroundColor: '#24D2DB' }}>
                                       {isChecking ? <span className="spinner-border spinner-border-sm"></span> : 'Siguiente: Verificar celular'}
                                   </button>
@@ -710,7 +710,7 @@ export default function Landing({ comercio, servicios }: any) {
                                   <button 
                                       onClick={manejarConfirmacionFinal}
                                       disabled={otp.length < 4 || isChecking}
-                                      className="btn btn-dark w-100 py-3 rounded-4 fw-bold shadow-lg border-0">
+                                      className="btn btn-dark w-100 py-3 rounded-3 fw-bold shadow-lg border-0">
                                       {isChecking ? <span className="spinner-border spinner-border-sm"></span> : 'Confirmar y Agendar'}
                                   </button>
                                   
