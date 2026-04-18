@@ -109,11 +109,18 @@ class WompiController extends Controller
         return response()->json(['status' => 'success'], 200);
     }
 
-    private function extraerIdDeReferencia($referencia) {
-        // Ajusta esto según como estés construyendo la referencia en el método 'preparePayment'
-        // Si tu referencia es "PAY_IDPAGO_TIMESTAMP", entonces:
-        $parts = explode('_', $referencia);
-        return $parts[1] ?? null; 
+    private function extraerIdDeReferencia($referencia)
+    {
+        // Si tu referencia es "PAY69E153416A2DE177", esto extrae lo que esté después de la "E" o limpia el prefijo
+        // Suponiendo que usas un prefijo fijo como "PAY" + un hash + el ID real
+        // Una forma común es usar un separador como un guion "PAY-HASH-ID"
+        
+        // Si simplemente concatenaste el ID al final, podrías usar una lógica de búsqueda:
+        if (preg_match('/(\d+)$/', $referencia, $matches)) {
+            return $matches[1]; // Retorna el número encontrado al final
+        }
+
+        return $referencia; // O retorna la ref tal cual si el ID es la misma referencia
     }
 
     private function notificarPagoExitoso($sub, $pago)

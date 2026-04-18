@@ -21,7 +21,7 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
                 signature: {
                     integrity: data.signature 
                 },
-                //redirectUrl: route('api.wompi.resultado'), // <--- CORREGIDO 'r'edirectUrl
+                redirectUrl: route('api.wompi.resultado'), // <--- CORREGIDO 'r'edirectUrl
             });
     
             checkout.open((result: any) => {

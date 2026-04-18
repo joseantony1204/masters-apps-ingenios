@@ -22,5 +22,5 @@ Route::post('/whatsapp/send', [WhatsAppController::class, 'send'])->name('api.wh
 Route::post('/scsuscripciones/webhook-epayco', [ScsuscripcionesController::class, 'webhookWompi'])->name('api.scsuscripciones.webhook');
 
 Route::get('/wompi/prepare/{suscripcionId}/pagoId/{pagoId}', [WompiController::class, 'preparePayment'])->middleware(['auth'])->name('api.wompi.prepare');; // Protegido pero accesible
-Route::get('/wompi/resultado', [WompiController::class, 'resultado'])->name('api.wompi.resultado');; // Protegido pero accesible
-Route::post('/wompi/webhook', [WompiController::class, 'handleWebhook']);
+Route::get('/wompi/resultado', [WompiController::class, 'resultado'])->name('api.wompi.resultado'); // Protegido pero accesible
+Route::post('/wompi/webhook', [WompiController::class, 'handleWebhook'])->name('api.wompi.webhook');
