@@ -336,7 +336,7 @@ export default function Landing({ comercio, servicios }: any) {
                         <div className="d-grid gap-3">
                             {servicios.filter((s: any) => s.categoria_id === activeCat).map((service: any) => (
                                 <div key={service.id} onClick={() => { setSelectedService(service); setActiveStep('especialistas'); }}
-                                    className="p-3 d-flex align-items-center bg-white shadow-sm border rounded-2 transition-all hover-border-primary cursor-pointer">
+                                    className="p-3 d-flex align-items-center bg-white shadow-sm border rounded-3 transition-all hover-border-primary cursor-pointer">
                                     <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
                                         <i className="ti ti-scissors text-primary fs-4"></i>
                                     </div>
@@ -355,7 +355,7 @@ export default function Landing({ comercio, servicios }: any) {
                 {activeStep === 'especialistas' && (
                     <div className="animate__animated animate__fadeInRight">
                         <h6 className="fw-bold mb-2 text-uppercase text-muted" style={{ fontSize: '10px' }}>Tu Selección</h6>
-                        <div className="p-3 mb-4 bg-white border rounded-4 d-flex align-items-center shadow-sm">
+                        <div className="p-3 mb-4 bg-white border rounded-3 d-flex align-items-center shadow-sm">
                             <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
                                 <i className="ti ti-scissors text-primary fs-5"></i>
                             </div>
@@ -370,7 +370,7 @@ export default function Landing({ comercio, servicios }: any) {
                         <div className="d-grid gap-3">
                             {selectedService?.empleados.map((emp: any) => (
                                 <div key={emp.id} onClick={() => manejarSeleccionEspecialista(emp)}
-                                    className="p-3 bg-white border rounded-4 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
+                                    className="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
                                     <div className="avatar me-3 bg-light text-primary fw-bold d-flex align-items-center justify-content-center rounded-circle border" style={{ width: '45px', height: '45px' }}>
                                         {emp.nombre.charAt(0)}
                                     </div>
