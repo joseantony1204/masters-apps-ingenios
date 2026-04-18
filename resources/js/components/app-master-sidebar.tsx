@@ -149,12 +149,12 @@ export default function AppMasterSidebar() {
                             );
                         })}
 
-                        <li className={`pc-item ${currentRoute === 'cfmaestra.index' ? 'active' : ''}`}>
+                        {/*<li className={`pc-item ${currentRoute === 'cfmaestra.index' ? 'active' : ''}`}>
                             <Link href={route('cfmaestra.index')} className="pc-link">
                                 <span className="pc-micon"><i className="ti ti-brand-chrome"></i></span>
                                 <span className="pc-mtext">Maestra</span>
                             </Link>
-                        </li>
+                        </li>*/}
 
                         {/*<li key={rol.ruta} className={`pc-item ${isActive ? 'active' : ''}`}>
                             <Link href={rol.ruta} className="pc-link">
@@ -163,12 +163,7 @@ export default function AppMasterSidebar() {
                             </Link>
                         </li>*/}
 
-                        <li className={`pc-item ${route().current('cfmaestras.show',1) ? 'active' : ''}`}>
-                            <Link href={route('cfmaestras.show',1)} className="pc-link">
-                                <span className="pc-micon"><i className={`ti ti || 'ti-circle'}`}></i></span>
-                                <span className="pc-mtext">ok</span>
-                            </Link>
-                        </li>
+                       
 
                         <li className="pc-item">
                             <button 
