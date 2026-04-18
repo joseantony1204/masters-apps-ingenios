@@ -13,40 +13,37 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
             const response = await axios.get(url);    
             const data = response.data;
     
-            // Limpiamos cualquier rastro de duda en los tipos
             const checkout = new window.WidgetCheckout({
                 publicKey: data.publicKey,
                 currency: data.currency,
                 amountInCents: data.amountInCents,
                 reference: data.reference,
-                // ASÍ ES COMO DEBE IR SEGÚN LA DOCUMENTACIÓN:
                 signature: {
                     integrity: data.signature 
                 },
-                redirectUrl: route('scsuscripciones.resultado'), // <--- CORREGIDO 'r'edirectUrl
+                // Esta URL es el respaldo si el usuario no cierra el widget
+                redirectUrl: route('scsuscripciones.resultado'), 
             });
     
             checkout.open((result: any) => {
-                // El callback suele ser para lógica inmediata, 
-                // pero el cierre de la transacción real lo esperamos por Webhook.
-                console.log("Resultado Wompi:", result);
-                if (result.transaction.status === 'APPROVED') {
+                const transaction = result.transaction;
+                
+                if (transaction.status === 'APPROVED') {
+                    // 1. Usar Toast en lugar de alert para no bloquear el UI
                     toast.success('¡Pago aprobado con éxito!');
                     
-                    // FORZAR REDIRECCIÓN CON INERTIA
-                    // Agregamos un pequeño delay para que el usuario vea el Toast
+                    // 2. Redirección inmediata con Inertia para limpiar el overlay del widget
                     setTimeout(() => {
                         router.visit(route('scsuscripciones.resultado'));
-                    }, 1500);
-                } else if (result.transaction.status === 'DECLINED') {
-                    toast.error('El pago fue rechazado. Intenta con otro medio.');
-                } else if (result.transaction.status === 'ERROR') {
-                    toast.error('Ocurrió un error técnico con el pago.');
+                    }, 1000);
+                } else if (transaction.status === 'DECLINED') {
+                    toast.error('El pago fue rechazado.');
                 }
             });
             
         } catch (error) {
             console.error("Error preparando el pago", error);
+            toast.error('Error al conectar con la pasarela de pagos.');
         }
     };
 
