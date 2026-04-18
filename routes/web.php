@@ -82,10 +82,6 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::put('cfempleados/{empleado}/horarios', [CfempleadosController::class, 'updateHorarios'])->name('cfempleados.update-horarios');
        
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/clientes/buscar', [AdclientesController::class, 'buscar'])->name('api.clientes.buscar');
-    });
-
     Route::put('adclientes/{cliente}/perfil', [AdclientesController::class, 'updatePerfil'])->name('adclientes.updateperfil');
     Route::put('adclientes/{cliente}/sedes/{sede}/toggle-permiso', [AdclientesController::class, 'toggleSedePermiso'])->name('adclientes.toggle-permiso');
     Route::put('adclientes/{cliente}/sedes/{sede}/set-default', [AdclientesController::class, 'setSedePredeterminada'])->name('adclientes.set-default'); 
