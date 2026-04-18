@@ -1,7 +1,7 @@
 <?php
 namespace App\Observers;
 
-use App\Models\{Ftfacturas, AdCitas, Adclientes, Personas}; 
+use App\Models\{Ftfacturas, Adcitas, Adclientes, Personas}; 
 use App\Services\CouponService;
 use Carbon\Carbon;
 
@@ -22,7 +22,7 @@ class FtfacturasObserver
         
         if ($factura->model_type == 921) {
             // Caso Cita: Cita -> Cliente -> Persona/Comercio
-            $cita = AdCitas::with('cliente')->find($factura->model_type_id);
+            $cita = Adcitas::with('cliente')->find($factura->model_type_id);
             if ($cita && $cita->cliente) {
                 $personaId = $cita->cliente->persona_id;
                 $comercioId = $cita->cliente->comercio_id;
