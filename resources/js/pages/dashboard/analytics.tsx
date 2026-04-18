@@ -161,7 +161,7 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
 
     const qrRef = useRef<HTMLDivElement>(null);
     // URL dinámica basada en el username o ID del comercio
-    const shopUrl = `http://192.168.0.21/masters-apps-ingenios/public/landing?token=${token}`;
+    const shopUrl = `http://vantifypro.co/landing?token=${token}`;
     const handleCrearFactura = () => router.visit(route('ftfacturas.create'));
 
     const { openModalCliente } = useClienteModal();
