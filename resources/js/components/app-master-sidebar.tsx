@@ -122,7 +122,7 @@ export default function AppMasterSidebar() {
                                 >
                                     {/* 4. Agregamos el onClick aquí */}
                                     <a href="#" className="pc-link" onClick={(e) => toggleMenu(e, modulo.id)}>
-                                        <span className="pc-micon"><i className="ti ti-menu"></i></span>
+                                        <span className="pc-micon"><i className={`ti ${modulo?.icon || 'ti-circle'}`}></i></span>
                                         <span className="pc-mtext">{modulo?.nombre}</span>
                                         <span className="pc-arrow">
                                             <i className={`ti ${isMenuOpen ? 'ti-chevron-down' : 'ti-chevron-right'}`}></i>

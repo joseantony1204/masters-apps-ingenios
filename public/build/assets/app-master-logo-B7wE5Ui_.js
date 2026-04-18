@@ -1,1 +1,0 @@
-import{j as o}from"./app-CfPURt3a.js";const g="/build/assets/logo-dark-BY_AbJIa.svg";function l({className:s="",alt:a="Logo"}){return o.jsx(o.Fragment,{children:o.jsx("img",{src:g,className:`img-fluid logo-lg ${s}`,alt:a,loading:"lazy"})})}export{l as A};

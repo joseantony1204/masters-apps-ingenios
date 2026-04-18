@@ -119,7 +119,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const colors = ['primary', 'info', 'success', 'danger', 'warning'];
     const user = auth.user.personas.comercios;
     const token = user.token;
-    //console.log("mostrando: ",user);
+    console.log("mostrando: ",auth.user);
     //console.log("mostrando token: ",user.personas.comercios.token);
 
     // 1. Función para formatear fecha en zona horaria local (Colombia)
