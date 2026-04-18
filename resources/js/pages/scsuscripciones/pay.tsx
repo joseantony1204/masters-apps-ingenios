@@ -30,7 +30,7 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
                 // pero el cierre de la transacción real lo esperamos por Webhook.
                 console.log("Resultado Wompi:", result);
                 if (result.transaction.status === 'APPROVED') {
-                    toast.success('Pago recibido. Estamos activando tu plan...');
+                    toast.success('Pago recibido. Estamos activando tu plan...!');
                 }
             });
             
