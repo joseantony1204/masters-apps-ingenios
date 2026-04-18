@@ -2,6 +2,7 @@ import AppMainLayout from '@/layouts/app-main-layout';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { router } from '@inertiajs/react';
 
 export default function Pay({ pago, plan, comercio, publicKey }: any) {
 
@@ -30,7 +31,17 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
                 // pero el cierre de la transacción real lo esperamos por Webhook.
                 console.log("Resultado Wompi:", result);
                 if (result.transaction.status === 'APPROVED') {
-                    toast.success('Pago recibido. Estamos activando tu plan...!');
+                    toast.success('¡Pago aprobado con éxito!');
+                    
+                    // FORZAR REDIRECCIÓN CON INERTIA
+                    // Agregamos un pequeño delay para que el usuario vea el Toast
+                    setTimeout(() => {
+                        router.visit(route('scsuscripciones.resultado'));
+                    }, 1500);
+                } else if (result.transaction.status === 'DECLINED') {
+                    toast.error('El pago fue rechazado. Intenta con otro medio.');
+                } else if (result.transaction.status === 'ERROR') {
+                    toast.error('Ocurrió un error técnico con el pago.');
                 }
             });
             
