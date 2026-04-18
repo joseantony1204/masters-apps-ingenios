@@ -128,6 +128,7 @@ Route::resource('scplanes', ScplanesController::class);
 Route::post('/scsuscripciones/gopay', [ScsuscripcionesController::class, 'gopay'])->name('scsuscripciones.gopay');
 Route::get('/scsuscripciones/pay/{referencia}', [ScsuscripcionesController::class, 'pay'])->name('scsuscripciones.pay');
 Route::get('/scsuscripciones', [ScsuscripcionesController::class, 'index'])->name('scsuscripciones.index');
+Route::get('/scsuscripciones/resultado', [ScsuscripcionesController::class, 'resultado'])->name('scsuscripciones.resultado');
 
 Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
     Route::get('dashboard', function () {

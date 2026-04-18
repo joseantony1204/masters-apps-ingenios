@@ -1,6 +1,7 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export default function Pay({ pago, plan, comercio, publicKey }: any) {
 
@@ -21,7 +22,7 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
                 signature: {
                     integrity: data.signature 
                 },
-                redirectUrl: route('api.wompi.resultado'), // <--- CORREGIDO 'r'edirectUrl
+                redirectUrl: route('scsuscripciones.resultado'), // <--- CORREGIDO 'r'edirectUrl
             });
     
             checkout.open((result: any) => {
@@ -29,7 +30,7 @@ export default function Pay({ pago, plan, comercio, publicKey }: any) {
                 // pero el cierre de la transacción real lo esperamos por Webhook.
                 console.log("Resultado Wompi:", result);
                 if (result.transaction.status === 'APPROVED') {
-                    alert('¡Pago aprobado!');
+                    toast.success('Pago recibido. Estamos activando tu plan...');
                 }
             });
             
