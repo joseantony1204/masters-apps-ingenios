@@ -113,7 +113,15 @@ return [
     'whatsapptoken' => env('WHATSAPP_TOKEN','EAASLwZAqwDvABRLHm5uMu8nCUzpZBf7XQ3Hv8oOc5XrzLTtkv8CY24MzbP5SE5drYV3N78ifFeZCBi5NbL3Mw9kzrAom39YZBVy8F7xWi7CddXHgG9bP3lyVvWbvMmzSIFVWTwnRjPwGnjHkpvdSK8SC81pB4DZAMzA7TkMtjFwZBPbVJriRRcZA1Y3ROV9DSXfcyhD3qVgkk2K5EarorAj6gnmPRoQHZCN96voe9rbZAYiOnt99vUI9O2dfL3HvrnEiXxPLjEFRGmvO9Jm4KfoT8RGfbYP7uzBBKcXB1rAZDZD'),
     'whatsapphonenumberid' => env('WHATSAPP_PHONE_NUMBER_ID','3242791258'),
     'whatsappversion' => env('WHATSAPP_API_VERSION','v25.0'),
-   
+
+
+    /**
+     * Token WOMPI
+     */
+    'wompi_public_key' => env('WOMPI_PUBLIC_KEY','pub_test_Xrlbsy0ejSWCnDdiniKOUw2vYrG0WAQH'),
+    'wompi_integrity_secret' => env('WOMPI_INTEGRITY_SECRET','test_integrity_FFvtzRzboF4U690OoKZ057kiCvzfUieQ'),
+    'wompi_currency' => env('WOMPI_CURRENCY','COP'),
+    'wompi_events_secret' => env('WOMPI_EVENTS_SECRET','test_events_7u3PKnf16cRVrTdMc9kZxw2GMj5ew1Dd'),
   
     /*
     |--------------------------------------------------------------------------

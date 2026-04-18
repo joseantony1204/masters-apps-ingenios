@@ -22,10 +22,10 @@ class WompiController extends Controller
         
         // 2. Referencia
         $referencia = $pago->referencia_pasarela;
-        $moneda = env('WOMPI_CURRENCY', 'COP'); // Usa el del ENV directamente
+        $moneda = config('app.wompi_currency');
         
         // 3. Secreto de integridad
-        $secreto = env('WOMPI_INTEGRITY_SECRET');
+        $secreto = config('app.wompi_integrity_secret');
 
         // 4. CONCATENACIÓN (Importante: el monto debe ser string de número entero)
         // Orden: Referencia + MontoCentavos + Moneda + Secreto
@@ -34,7 +34,7 @@ class WompiController extends Controller
         $firma = hash('sha256', $cadenaConcatenada);
 
         return response()->json([
-            'publicKey' => env('WOMPI_PUBLIC_KEY'),
+            'publicKey' => config('app.wompi_public_key'),
             'currency' => $moneda,
             'amountInCents' => $montoEnCentavos,
             'reference' => $referencia,
