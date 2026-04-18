@@ -705,9 +705,9 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                     <h3 className="fw-bold text-dark mb-1">
                                         ¡Bienvenido a Vantify Pro, {auth.user.nombreComercio || auth.user.name}! 🚀
                                     </h3>
-                                    <p className="text-muted mb-3 small">
+                                    {/*<p className="text-muted mb-3 small">
                                         Tu comercio ha crecido un <span className="text-success fw-bold">15% más</span> esta semana.
-                                    </p>
+                                    </p>*/}
 
                                     {/* ACCIONES MOVIDAS AQUÍ PARA NO TAPAR EL FONDO */}
                                     <div className="d-flex align-items-center gap-2 flex-wrap">

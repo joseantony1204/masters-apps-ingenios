@@ -22,8 +22,8 @@ return new class extends Migration
             $table->boolean('visible')->default(1);
             $table->string('observacion')->nullable();
             
-            $table->timestamp('created_at', $precision = 0);
-            $table->unsignedBigInteger('created_by')->default(2);
+            $table->timestamp('created_at', $precision = 0)->nullable();
+            $table->unsignedBigInteger('created_by')->default(2)->nullable();
             $table->timestamp('updated_at', $precision = 0)->useCurrentOnUpdate()->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamp('deleted_at', $precision = 0)->nullable();
@@ -45,7 +45,7 @@ return new class extends Migration
                                         ->onDelete('cascade')
                                         ->onUpdate('cascade');
             
-            $table->timestamp('created_at', $precision = 0);
+            $table->timestamp('created_at', $precision = 0)->nullable();
             $table->unsignedBigInteger('created_by')->default(2);
             $table->timestamp('updated_at', $precision = 0)->useCurrentOnUpdate()->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

@@ -82,7 +82,7 @@ return new class extends Migration
                                         ->onDelete('cascade')
                                         ->onUpdate('cascade');
             
-            $table->timestamp('created_at', $precision = 0);
+            $table->timestamp('created_at', $precision = 0)->nullable();
             $table->unsignedBigInteger('created_by')->default(2);
             $table->timestamp('updated_at', $precision = 0)->useCurrentOnUpdate()->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

@@ -17,7 +17,8 @@ export default defineConfig({
     server: {
         host: '0.0.0.0', // Permite conexiones externas
         hmr: {
-            host: '192.168.0.21', // LA IP DE TU MAC
+            //host: '192.168.0.21', // LA IP DE TU MAC
+            host: '127.0.0.1', // LA IP DE TU MAC
         },
         cors: {
             origin: '*', // Permite que cualquier origen acceda a los scripts de desarrollo

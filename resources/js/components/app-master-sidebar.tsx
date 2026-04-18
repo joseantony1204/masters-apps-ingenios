@@ -39,6 +39,18 @@ export default function AppMasterSidebar() {
         });
     }, [currentRoute, user]);
 
+    useEffect(() => {
+        // Cerrar sidebar en móviles al navegar
+        const unbind = router.on('finish', () => {
+            if (window.innerWidth < 1025) {
+                document.querySelector('.pc-sidebar')?.classList.remove('pc-sidebar-hide');
+                document.querySelector('.pc-sidebar')?.classList.remove('mob-sidebar-active');
+                document.querySelector('.pc-menu-overlay')?.remove();
+            }
+        });
+        return () => unbind();
+    }, []);
+
     // 3. Función para alternar el menú
     const toggleMenu = (e: React.MouseEvent, moduloId: number) => {
         e.preventDefault();
@@ -122,16 +134,18 @@ export default function AppMasterSidebar() {
                                         {modulo.roles.map((rol) => {
                                             const isActive = rol.ruta_name === currentRoute;
                                             return (
-                                                <li key={rol.ruta} className={`pc-item ${isActive ? 'active' : ''}`}>
-                                                    <Link href={rol.ruta} className="pc-link">
-                                                        <span className="pc-micon"><i className={rol.icon}></i></span>
-                                                        <span className="pc-mtext">{rol?.nombre}</span>
-                                                    </Link>
-                                                </li>
+                                                
+                                                <li key={rol.ruta} className={`pc-item ${route().current(rol.ruta_name) ? 'active' : ''}`}>
+                                                <Link href={route(rol.ruta_name)} className="pc-link">
+                                                    <span className="pc-micon"><i className={`ti ${rol.icon || 'ti-circle'}`}></i></span>
+                                                    <span className="pc-mtext">{rol.nombre}</span>
+                                                </Link>
+                                            </li>
                                             );
                                         })}
                                     </ul>
                                 </li>
+                                
                             );
                         })}
 
@@ -139,6 +153,20 @@ export default function AppMasterSidebar() {
                             <Link href={route('cfmaestra.index')} className="pc-link">
                                 <span className="pc-micon"><i className="ti ti-brand-chrome"></i></span>
                                 <span className="pc-mtext">Maestra</span>
+                            </Link>
+                        </li>
+
+                        {/*<li key={rol.ruta} className={`pc-item ${isActive ? 'active' : ''}`}>
+                            <Link href={rol.ruta} className="pc-link">
+                                <span className="pc-micon"><i className={rol.icon}></i></span>
+                                <span className="pc-mtext">{rol?.nombre}</span>
+                            </Link>
+                        </li>*/}
+
+                        <li className={`pc-item ${route().current('cfmaestras.show',1) ? 'active' : ''}`}>
+                            <Link href={route('cfmaestras.show',1)} className="pc-link">
+                                <span className="pc-micon"><i className={`ti ti || 'ti-circle'}`}></i></span>
+                                <span className="pc-mtext">ok</span>
                             </Link>
                         </li>
 
