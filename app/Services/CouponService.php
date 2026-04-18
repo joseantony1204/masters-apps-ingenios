@@ -2,7 +2,7 @@
 namespace App\Services;
 
 use App\Models\Cfcupones;
-use App\Models\CfPromociones;
+use App\Models\Cfpromociones;
 use Illuminate\Support\Str;
 
 class CouponService
@@ -10,7 +10,7 @@ class CouponService
     public function generateForPersona($personaId, $categoria, $comercioId)
     {
         // 1. Buscamos la promoción activa de esa categoría
-        $promo = CfPromociones::where('categoria', $categoria)
+        $promo = Cfpromociones::where('categoria', $categoria)
                                ->where('comercio_id', $comercioId)
                                ->where('estado', 1)
                                ->first();
