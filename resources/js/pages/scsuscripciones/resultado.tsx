@@ -10,9 +10,26 @@ export default function Resultado({ mensaje, transactionId }: Props) {
     return (
         <AppMainLayout>
             <Head title="Resultado del Pago" />
+
+            <div className="page-header">
+                <div className="page-block">
+                    <div className="row align-items-center">
+                        <div className="col-md-12">
+                            <ul className="breadcrumb">
+                                <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
+                                <li className="breadcrumb-item"><a href={route('scsuscripciones.index')}> Suscripciones</a></li>
+                                <li className="breadcrumb-item" aria-current="page">Pagos</li>
+                            </ul>
+                        </div>
+                        <div className="col-md-12">
+                            <div className="page-header-title"><h2 className="mb-0">Resultado del pago</h2></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <div className="row justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
-                <div className="col-md-6 col-lg-5">
+                <div className="col-xxl-6 col-xl-7 col-lg-8">
                     <div className="card border-0 shadow-lg p-5 text-center">
                         {/* Icono animado de éxito */}
                         <div className="avtar avtar-xl bg-light-success mx-auto mb-4">

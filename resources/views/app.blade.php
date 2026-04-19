@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
-    <!-- [Head] start -->
-
     <head>
+ 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
-    <!-- [Meta] -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+        <!-- [Meta] -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
 
         <!-- [Favicon] icon -->
         <link rel="icon" href="{{ asset('assets/images/favicon.svg') }}" type="image/svg+xml"> <!-- [Google Font] Family -->
