@@ -42,17 +42,6 @@ class WompiController extends Controller
         ]);
     }
 
-    public function resultado(Request $request)
-    {
-        // Wompi envía el id de la transacción en la URL como 'id'
-        $transactionId = $request->query('id');
-
-        return Inertia::render('scsuscripciones/resultado', [
-            'transactionId' => $transactionId,
-            'mensaje' => 'Estamos procesando tu pago. En unos minutos tu plan estará activo.'
-        ]);
-    }
-
     public function handleWebhook(Request $request)
     {
         $payload = $request->all();
@@ -67,16 +56,21 @@ class WompiController extends Controller
         }
 
         $transaction = $payload['data']['transaction']; // <--- ESTO ES LO QUE FALTABA
-        $timestamp = $payload['sent_at'];
+        $sentAt = $payload['sent_at'];
         $secret = config('app.wompi_events_secret'); // Asegúrate que esté en config/app.php o usa env('WOMPI_EVENTS_SECRET')
         
         // 2. Validar Checksum (Firma de Eventos)
-        // El orden oficial es: transaction.id + transaction.status + transaction.amount_in_cents + sent_at + secret
-        $stringParaFirmar = $transaction['id'] . $transaction['status'] . $transaction['amount_in_cents'] . $timestamp . $secret;
+        // ORDEN OFICIAL: id + status + amount_in_cents + sent_at + secret
+        $stringParaFirmar = $transaction['id'] . 
+        $transaction['status'] . 
+        $transaction['amount_in_cents'] . 
+        $sentAt . 
+        $secret;
         $hashLocal = hash('sha256', $stringParaFirmar);
         
         if ($hashLocal !== $payload['signature']['checksum']) {
-            Log::error("Firma Inválida", [
+            Log::error("Firma Inválida Webhook", [
+                'cadena_usada' => $stringParaFirmar,
                 'local' => $hashLocal, 
                 'wompi' => $payload['signature']['checksum']
             ]);
@@ -87,8 +81,7 @@ class WompiController extends Controller
         if ($transaction['status'] === 'APPROVED') {
             
             // Buscamos el pago usando la referencia que viene dentro de transaction
-            $pagoId = $this->extraerIdDeReferencia($transaction['reference']);
-            $pago = Scpagos::find($pagoId);
+            $pago = Scpagos::where('referencia_pasarela', $transaction['reference'])->first();
 
             if ($pago) {
                 // Si el pago ya está marcado como aprobado, no hacemos nada más (evita duplicidad)
@@ -101,7 +94,7 @@ class WompiController extends Controller
                     'estado_id' => 974, // APROBADO
                     'fecha' => now(),
                     'metodo_id' => 933, // Wompi/Nequi
-                    'transaccion_id' => $pago->suscripcion_id
+                    'suscripcion_id' => $pago->suscripcion_id
                 ]);
 
                 // Actualizar Suscripción
