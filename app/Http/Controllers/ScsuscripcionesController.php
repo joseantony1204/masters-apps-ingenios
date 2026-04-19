@@ -192,10 +192,12 @@ class ScsuscripcionesController extends Controller
 
     public function resultado(Request $request)
     {
-        // Aquí puedes consultar el estado del pago a ePayco vía API 
-        // usando el $_GET['ref_payco'] para mostrar un mensaje bonito.
+        // Wompi envía el ID de la transacción por la URL (query string)
+        $transactionId = $request->query('id');
+
         return inertia('scsuscripciones/resultado', [
-            'ref_payco' => $request->ref_payco
+            'transactionId' => $transactionId,
+            'mensaje' => 'Tu transacción ha sido recibida con éxito. Estamos validando el estado con tu entidad financiera.'
         ]);
     }
 }
