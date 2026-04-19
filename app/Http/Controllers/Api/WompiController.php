@@ -45,39 +45,51 @@ class WompiController extends Controller
     public function handleWebhook(Request $request)
     {
         $payload = $request->all();
-
-        // 1. Log de entrada para verificar que la comunicación llega
         Log::info("Wompi Webhook Recibido", ['payload' => $payload]);
-        
-        // VALIDACIÓN DE ESTRUCTURA (Según tu log, los datos están en data -> transaction)
-        if (!isset($payload['data']['transaction'])) {
-            Log::error("Wompi Webhook: Estructura de datos no reconocida");
-            return response()->json(['message' => 'Invalid structure'], 400);
+
+        // 1. Extraer los datos necesarios del payload
+        $data = $payload['data'];
+        $properties = $payload['signature']['properties'];
+        $timestamp = $payload['timestamp']; // <--- REQUERIDO: Es el entero UNIX (ej: 1776598574)
+        $checksumRecibido = $payload['signature']['checksum'];
+        $secret = config('app.wompi_events_secret');
+
+        // 2. PASO 1: Concatenar dinámicamente según 'properties'
+        $cadenaConcatenada = "";
+        foreach ($properties as $property) {
+            // Buscamos dentro de data.transaction usando la ruta del property
+            // Por ejemplo: 'transaction.id' -> data['transaction']['id']
+            $path = explode('.', $property);
+            $value = $data;
+            foreach ($path as $segment) {
+                $value = $value[$segment] ?? '';
+            }
+            $cadenaConcatenada .= $value;
         }
 
-        $transaction = $payload['data']['transaction']; // <--- ESTO ES LO QUE FALTABA
-        $sentAt = $payload['sent_at'];
-        $secret = config('app.wompi_events_secret'); // Asegúrate que esté en config/app.php o usa env('WOMPI_EVENTS_SECRET')
-        $monto = (string) $transaction['amount_in_cents'];
-        // 2. Validar Checksum (Firma de Eventos)
-        // ORDEN OFICIAL: id + status + amount_in_cents + sent_at + secret
-        $stringParaFirmar = $transaction['id'] . 
-        $transaction['status'] . 
-        $monto . 
-        $sentAt . 
-        $secret;
-        $hashLocal = hash('sha256', $stringParaFirmar);
-        
-        if ($hashLocal !== $payload['signature']['checksum']) {
+        // 3. PASO 2: Concatena el campo timestamp (el entero)
+        $cadenaConcatenada .= $timestamp;
+
+        // 4. PASO 3: Concatena tu secreto de eventos
+        $cadenaConcatenada .= $secret;
+
+        // 5. PASO 4: Generar el hash SHA256
+        $hashLocal = hash('sha256', $cadenaConcatenada);
+
+        // 6. PASO 5: Comparar
+        if ($hashLocal !== $checksumRecibido) {
             Log::error("Firma Inválida Webhook", [
-                'cadena_usada' => $stringParaFirmar,
-                'local' => $hashLocal, 
-                'wompi' => $payload['signature']['checksum']
+                'cadena_construida' => $cadenaConcatenada,
+                'local' => $hashLocal,
+                'wompi' => $checksumRecibido
             ]);
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
+        // --- SI LLEGA AQUÍ, LA FIRMA ES VÁLIDA ---
+
         // 3. Procesar solo si es APPROVED
+        $transaction = $data['transaction'];
         if ($transaction['status'] === 'APPROVED') {
             
             // Buscamos el pago usando la referencia que viene dentro de transaction
