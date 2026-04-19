@@ -57,17 +57,22 @@ class WompiController extends Controller
     {
         $payload = $request->all();
 
-        // LOG DE ENTRADA: Esto te dirá si la petición llegó
+        // 1. Log de entrada para verificar que la comunicación llega
         Log::info("Wompi Webhook Recibido", ['payload' => $payload]);
         
-        // 1. Validar Checksum de Wompi
-        // Estructura del JSON según tu envío: data es el objeto principal
-        $data = $payload['data']; 
+        // VALIDACIÓN DE ESTRUCTURA (Según tu log, los datos están en data -> transaction)
+        if (!isset($payload['data']['transaction'])) {
+            Log::error("Wompi Webhook: Estructura de datos no reconocida");
+            return response()->json(['message' => 'Invalid structure'], 400);
+        }
+
+        $transaction = $payload['data']['transaction']; // <--- ESTO ES LO QUE FALTABA
         $timestamp = $payload['sent_at'];
-        $secret = config('app.wompi_events_secret');
+        $secret = config('app.wompi_events_secret'); // Asegúrate que esté en config/app.php o usa env('WOMPI_EVENTS_SECRET')
         
-        // Concatenación oficial para eventos: id + status + amount_in_cents + sent_at + secret
-        $stringParaFirmar = $data['id'] . $data['status'] . $data['amount_in_cents'] . $timestamp . $secret;
+        // 2. Validar Checksum (Firma de Eventos)
+        // El orden oficial es: transaction.id + transaction.status + transaction.amount_in_cents + sent_at + secret
+        $stringParaFirmar = $transaction['id'] . $transaction['status'] . $transaction['amount_in_cents'] . $timestamp . $secret;
         $hashLocal = hash('sha256', $stringParaFirmar);
         
         if ($hashLocal !== $payload['signature']['checksum']) {
@@ -78,37 +83,49 @@ class WompiController extends Controller
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
-        // 2. Procesar solo si es APPROVED
-        if ($data['status'] === 'APPROVED') {
+        // 3. Procesar solo si es APPROVED
+        if ($transaction['status'] === 'APPROVED') {
             
-            // Tu referencia es: PAY69E153416A2DE1776374593
-            // Si estás guardando la referencia de Wompi en tu tabla Scpagos, búscala así:
-            $pago = Scpagos::where('id', $this->extraerIdDeReferencia($data['reference']))->first();
+            // Buscamos el pago usando la referencia que viene dentro de transaction
+            $pagoId = $this->extraerIdDeReferencia($transaction['reference']);
+            $pago = Scpagos::find($pagoId);
 
             if ($pago) {
+                // Si el pago ya está marcado como aprobado, no hacemos nada más (evita duplicidad)
+                if ($pago->estado_id == 974) {
+                    return response()->json(['status' => 'already_processed'], 200);
+                }
+
                 // Actualizar Pago
                 $pago->update([
                     'estado_id' => 974, // APROBADO
                     'fecha' => now(),
                     'metodo_id' => 933, // Wompi/Nequi
-                    'transaccion_id' => $data['id'] // Guardamos el ID de Wompi por seguridad
+                    'transaccion_id' => $pago->suscripcion_id
                 ]);
 
                 // Actualizar Suscripción
                 $sub = Scsuscripciones::with('comercio', 'plan')->find($pago->suscripcion_id);
                 
                 if ($sub) {
+                    // Si la suscripción ya está activa, sumamos a la fecha actual, si no, desde hoy
+                    $fechaBase = ($sub->fecha_vencimiento && $sub->fecha_vencimiento > now()) 
+                                ? \Carbon\Carbon::parse($sub->fecha_vencimiento) 
+                                : now();
+
                     $sub->update([
                         'estado_id' => 980, // ACTIVA
-                        'fecha_inicio' => now(),
-                        'fecha_vencimiento' => now()->addDays($sub->plan->codigo)
+                        'fecha_inicio' => $sub->estado_id == 980 ? $sub->fecha_inicio : now(),
+                        'fecha_vencimiento' => $fechaBase->addDays((int)$sub->plan->codigo)
                     ]);
 
-                    Log::info("Wompi: Pago procesado y suscripción activa para: " . $sub->comercio->nombre);
+                    Log::info("Wompi OK: Suscripción activada para: " . $sub->comercio->nombre);
 
-                    // 3. ENVIAR NOTIFICACIÓN WHATSAPP
-                    //$this->notificarPagoExitoso($sub, $pago);
+                    // 4. ENVIAR NOTIFICACIÓN WHATSAPP (Descomenta cuando estés listo)
+                    // $this->notificarPagoExitoso($sub, $pago);
                 }
+            } else {
+                Log::warning("Wompi: No se encontró el registro de pago para la referencia: " . $transaction['reference']);
             }
         }
 
@@ -122,9 +139,9 @@ class WompiController extends Controller
         // Una forma común es usar un separador como un guion "PAY-HASH-ID"
         
         // Si simplemente concatenaste el ID al final, podrías usar una lógica de búsqueda:
-        if (preg_match('/(\d+)$/', $referencia, $matches)) {
-            return $matches[1]; // Retorna el número encontrado al final
-        }
+        //if (preg_match('/(\d+)$/', $referencia, $matches)) {
+        //    return $matches[1]; // Retorna el número encontrado al final
+        //}
 
         return $referencia; // O retorna la ref tal cual si el ID es la misma referencia
     }
