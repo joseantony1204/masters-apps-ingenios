@@ -12,7 +12,7 @@ export default function Resultado({ mensaje, transactionId }: Props) {
              <Head title="Resultado del Pago" />
             <div className="row justify-content-center py-5 text-center">
                 <div className="col-md-6">
-                    <div className="card border-0 shadow-lg p-5 rounded-4">
+                    <div className="card border-0 shadow-lg p-5">
                         <div className="avtar avtar-xl bg-light-success mx-auto mb-4">
                             <i className="ti ti-circle-check f-40 text-success"></i>
                         </div>

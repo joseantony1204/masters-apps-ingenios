@@ -56,19 +56,25 @@ class WompiController extends Controller
     public function handleWebhook(Request $request)
     {
         $payload = $request->all();
+
+        // LOG DE ENTRADA: Esto te dirá si la petición llegó
+        Log::info("Wompi Webhook Recibido", ['payload' => $payload]);
         
         // 1. Validar Checksum de Wompi
         // Estructura del JSON según tu envío: data es el objeto principal
         $data = $payload['data']; 
         $timestamp = $payload['sent_at'];
-        $secret = env('WOMPI_EVENTS_SECRET');
+        $secret = config('app.wompi_events_secret');
         
         // Concatenación oficial para eventos: id + status + amount_in_cents + sent_at + secret
         $stringParaFirmar = $data['id'] . $data['status'] . $data['amount_in_cents'] . $timestamp . $secret;
         $hashLocal = hash('sha256', $stringParaFirmar);
         
         if ($hashLocal !== $payload['signature']['checksum']) {
-            Log::error("Webhook Wompi: Firma inválida. Referencia: " . ($data['reference'] ?? 'N/A'));
+            Log::error("Firma Inválida", [
+                'local' => $hashLocal, 
+                'wompi' => $payload['signature']['checksum']
+            ]);
             return response()->json(['message' => 'Invalid signature'], 403);
         }
 
