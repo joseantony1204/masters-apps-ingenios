@@ -58,12 +58,12 @@ class WompiController extends Controller
         $transaction = $payload['data']['transaction']; // <--- ESTO ES LO QUE FALTABA
         $sentAt = $payload['sent_at'];
         $secret = config('app.wompi_events_secret'); // Asegúrate que esté en config/app.php o usa env('WOMPI_EVENTS_SECRET')
-        
+        $monto = (string) $transaction['amount_in_cents'];
         // 2. Validar Checksum (Firma de Eventos)
         // ORDEN OFICIAL: id + status + amount_in_cents + sent_at + secret
         $stringParaFirmar = $transaction['id'] . 
         $transaction['status'] . 
-        $transaction['amount_in_cents'] . 
+        $monto . 
         $sentAt . 
         $secret;
         $hashLocal = hash('sha256', $stringParaFirmar);
@@ -123,20 +123,6 @@ class WompiController extends Controller
         }
 
         return response()->json(['status' => 'success'], 200);
-    }
-
-    private function extraerIdDeReferencia($referencia)
-    {
-        // Si tu referencia es "PAY69E153416A2DE177", esto extrae lo que esté después de la "E" o limpia el prefijo
-        // Suponiendo que usas un prefijo fijo como "PAY" + un hash + el ID real
-        // Una forma común es usar un separador como un guion "PAY-HASH-ID"
-        
-        // Si simplemente concatenaste el ID al final, podrías usar una lógica de búsqueda:
-        //if (preg_match('/(\d+)$/', $referencia, $matches)) {
-        //    return $matches[1]; // Retorna el número encontrado al final
-        //}
-
-        return $referencia; // O retorna la ref tal cual si el ID es la misma referencia
     }
 
     private function notificarPagoExitoso($sub, $pago)
