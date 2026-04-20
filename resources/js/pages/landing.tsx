@@ -324,10 +324,23 @@ export default function Landing({ comercio, servicios }: any) {
                         <div className="d-flex overflow-auto gap-3 mb-4 pb-2 no-scrollbar">
                             {categorias.map((cat: any) => (
                                 <div key={cat.id} onClick={() => setActiveCat(cat.id)} className="text-center" style={{ minWidth: '75px', cursor: 'pointer' }}>
-                                    <div className={`mb-2 mx-auto d-flex align-items-center justify-content-center rounded-circle border transition-all ${activeCat === cat.id ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-white'}`} style={{ width: '55px', height: '55px' }}>
-                                        <i className={`ti ti-layout-grid fs-4 ${activeCat === cat.id ? 'text-primary' : 'text-muted'}`}></i>
+                                    <div 
+                                        className={`mb-2 mx-auto d-flex align-items-center justify-content-center rounded-circle border transition-all ${
+                                            activeCat === cat.id ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-white'
+                                        }`} 
+                                        style={{ width: '55px', height: '55px' }}
+                                    >
+                                        {/* Aquí inyectamos el icono de la base de datos o uno por defecto */}
+                                        <i className={`${cat.observacion || 'ti ti-layout-grid'} fs-4 ${
+                                            activeCat === cat.id ? 'text-primary' : 'text-muted'
+                                        }`}></i>
                                     </div>
-                                    <span className={`small fw-bold ${activeCat === cat.id ? 'text-primary' : 'text-muted'}`} style={{ fontSize: '11px' }}>{cat.nombre}</span>
+                                    <span 
+                                        className={`small fw-bold d-block ${activeCat === cat.id ? 'text-primary' : 'text-muted'}`} 
+                                        style={{ fontSize: '11px', lineHeight: '1.2' }}
+                                    >
+                                        {cat.nombre}
+                                    </span>
                                 </div>
                             ))}
                         </div>
