@@ -25,7 +25,7 @@ class ProductosController extends Controller
         $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
 
         $query = Productos::with([
-            'categoria:id,nombre',
+            'categoria:id,nombre,observacion',
             'unidad:id,nombre',
             'estado:id,nombre',
             'tipo:id,nombre',

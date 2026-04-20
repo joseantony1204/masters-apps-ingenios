@@ -24,7 +24,7 @@ import {
     ResponsiveContainer, 
     Cell, 
     CartesianGrid 
-} from 'recharts';
+} from 'recharts'; 
 
 // 2. Importamos Chart.js normalmente
 import { Line } from 'react-chartjs-2';

@@ -252,6 +252,25 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 982, 'codigo' => NULL, 'nombre' => 'SUSPENDIDA', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'warning'],
             [ 'id' => 983, 'codigo' => NULL, 'nombre' => 'CANCELADA', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'danger'],
 
+            $categorias = [
+                [ 'id' => 945, 'codigo' => NULL, 'nombre' => 'Depilacion corporal', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-razor-electric'], // Icono de afeitadora/depiladora
+                [ 'id' => 946, 'codigo' => NULL, 'nombre' => 'Peinados', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-hair-dryer'], // Secador representativo de peinado
+                [ 'id' => 947, 'codigo' => NULL, 'nombre' => 'Maquillaje', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-brush'], // Brocha de maquillaje
+                [ 'id' => 948, 'codigo' => NULL, 'nombre' => 'Cejas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-eye'], // Ojo/mirada para cejas
+                [ 'id' => 949, 'codigo' => NULL, 'nombre' => 'Limpieza facial', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-face-id'], // Rostro enfocado
+                [ 'id' => 950, 'codigo' => NULL, 'nombre' => 'Tratamientos capilares', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-droplet-filled-2'], // Gota de tratamiento/aceite
+                [ 'id' => 951, 'codigo' => NULL, 'nombre' => 'Alisados', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-ironing-3'], // Plancha (metáfora de alisado)
+                [ 'id' => 952, 'codigo' => NULL, 'nombre' => 'Masajes', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-spa'], // Flor de loto/spa para masajes
+                [ 'id' => 953, 'codigo' => NULL, 'nombre' => 'Promoción', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-gift'], // Regalo/oferta
+                [ 'id' => 954, 'codigo' => NULL, 'nombre' => 'Barba', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-mustache'], // Bigote/barba (Corregido, antes tenía palette)
+                [ 'id' => 955, 'codigo' => NULL, 'nombre' => 'Experiencia y venta', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-shopping-cart'], // Carrito de compras
+                [ 'id' => 890, 'codigo' => NULL, 'nombre' => 'Cortes', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-cut'], // Tijeras (Mantenido)
+                [ 'id' => 891, 'codigo' => NULL, 'nombre' => 'Pestañas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-sparkles'], // Destellos/belleza (Corregido, antes decía 'Barba')
+                [ 'id' => 892, 'codigo' => NULL, 'nombre' => 'Color cabello', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-palette'], // Paleta de colores (Mantenido)
+                [ 'id' => 893, 'codigo' => NULL, 'nombre' => 'Uñas', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-hand-finger'], // Mano/dedo (Mantenido)
+                [ 'id' => 894, 'codigo' => NULL, 'nombre' => 'Depilacion facial', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-tweezers'], // Pinzas para depilación facial (Mejorado, antes tenía scissors)
+            ];
+
   
         ];
         foreach (array_chunk($dataMaestra,1000) as $data){
