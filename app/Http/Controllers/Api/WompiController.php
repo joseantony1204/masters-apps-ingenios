@@ -90,6 +90,21 @@ class WompiController extends Controller
 
         // 3. Procesar solo si es APPROVED
         $transaction = $data['transaction'];
+        $metodoWompi = $transaction['payment_method_type'];
+        // Mapeo de Wompi a tus IDs de base de datos
+        $mapaMetodos = [
+            'NEQUI' => 1050,
+            'DAVIPLATA'  => 1051,
+            'CARD'  => 930, // Supongamos que 934 es Tarjeta en tu BD
+            'PSE'   => 1052, // Supongamos que 935 es PSE en tu BD
+            'BANCOLOMBIA_TRANSFER' => 1053, // Botón Bancolombia
+            'BANCOLOMBIA_QR' => 1054,
+            'SU_PLUS_PAY' => 1055, // ID para Su+ Pay
+            'PCOL'       => 1056, // ID para Puntos Colombia
+        ];
+        // Buscamos el ID, si no existe usamos uno por defecto (ej: 933 o un "Genérico")
+        $metodoIdFinal = $mapaMetodos[$metodoWompi] ?? 933;
+
         if ($transaction['status'] === 'APPROVED') {
             
             // Buscamos el pago usando la referencia que viene dentro de transaction
@@ -105,7 +120,7 @@ class WompiController extends Controller
                 $pago->update([
                     'estado_id' => 974, // APROBADO
                     'fecha' => now(),
-                    'metodo_id' => 933, // Wompi/Nequi
+                    'metodo_id' => $metodoIdFinal, 
                     'suscripcion_id' => $pago->suscripcion_id
                 ]);
 
