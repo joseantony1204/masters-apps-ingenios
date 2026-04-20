@@ -209,6 +209,8 @@ class AdcitasController extends Controller
             'horainicio' => 'required',
             'horafinal' => 'required',
             'precio' => 'required',
+            'cliente_identificacion' => 'required|unique:personas,identificacion',
+            'cliente_telefono' => 'required|unique:users,telefonomovil',
             'cliente_nombre' => 'required|string', // Para el nombre del nuevo o actual
             'cliente_id' => 'nullable', // Puede venir vacío si es nuevo
         ]);
@@ -314,7 +316,8 @@ class AdcitasController extends Controller
             });
 
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()]);
+            //return response()->json(['message' => $e->getMessage()]);
+            return back()->withErrors(['error' => 'Error al crear la cita: ' . $e->getMessage()]);
         }
     }
 

@@ -3,7 +3,6 @@ import { Head, Link, useForm} from '@inertiajs/react';
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // Asegúrate de instalarlo: npm install qrcode.react
 import { useState, useRef, useEffect } from 'react';
-import { useClienteModal } from '@/hooks/use-cliente-context';
 import { router } from '@inertiajs/react';
 import CitasModalPos from '@/components/global/citas-modal-pos';
 import CitasModalCancelar from '@/components/global/citas-modal-cancelar';
@@ -200,21 +199,24 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
             val: totalCitasMes, 
             growth: calcularGrowth(totalCitasMes, totalCitasMesAnterior), 
             icon: 'ti-calendar-event', 
-            color: '#0d6efd' 
+            color: '#0d6efd',
+            description: 'Comparado con el mes anterior' 
         },
         { 
             label: 'CITAS HOY', 
             val: totalCitasHoy, 
             growth: calcularGrowth(totalCitasHoy, totalCitasAyer), 
             icon: 'ti-star', 
-            color: '#198754' 
+            color: '#198754',
+            description: 'Comparado con el dia de ayer' 
         },
         { 
             label: 'INGRESOS HOY', 
             val: `$${ingresosHoy.toLocaleString()}`, 
             growth: calcularGrowth(ingresosHoy, ingresosAyer), 
             icon: 'ti-currency-dollar', 
-            color: '#0dcaff' 
+            color: '#0dcaff',
+            description: 'Comparado con el dia de ayer' 
         },
     ];
 
@@ -228,15 +230,6 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     // URL dinámica basada en el username o ID del comercio
     const shopUrl = `https://vantifypro.co/landing?token=${token}`;
     const handleCrearFactura = () => router.visit(route('ftfacturas.create'));
-
-    const { openModalCliente } = useClienteModal();
-    const registrarYVender = () => {
-        // Abrimos la modal y pasamos un callback opcional
-        openModalCliente((nuevoCliente) => {
-            console.log("Cliente guardado exitosamente:", nuevoCliente);
-            // Aquí puedes redirigir a ventas o actualizar un estado local
-        });
-    };
 
     // Función para descargar el QR
     const downloadQR = () => {
@@ -793,8 +786,9 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                             <h2 className="fw-bold mb-0" style={{ fontSize: '26px', color: '#1e293b', letterSpacing: '-0.5px' }}>
                                                 {item.val}
                                             </h2>
-                                            <p className="text-muted mt-2 mb-0" style={{ fontSize: '11px' }}>
-                                                <span className="fw-bold">Comparado</span> con el mes anterior
+                                            <p className={`badge rounded-pill ${item.growth.startsWith('+') ? 'bg-light-success text-success' : 'bg-light-danger text-danger'}`} style={{ fontSize: '11px' }}>
+                                            <i className={`ti ${item.growth.startsWith('+') ? 'ti-trending-up' : 'ti-trending-down'} me-1`}></i>
+                                                <span className="fw-bold">{item.description}</span> 
                                             </p>
                                         </div>
                                     </div>
@@ -1661,12 +1655,13 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                             <label className="form-label fw-semibold small text-muted text-uppercase">N° Identificación</label>
                                             <input 
                                                 type="text" 
-                                                className="form-control bg-light-warning border-warning-subtle" 
+                                                className={`form-control ${formReserva.errors.cliente_identificacion ? 'is-invalid' : ''}`}
                                                 placeholder="Identificación del nuevo cliente"
                                                 value={formReserva.data.cliente_identificacion || ''}
                                                 onChange={e => formReserva.setData('cliente_identificacion', e.target.value)}
                                                 required
                                             />
+                                            {formReserva.errors.cliente_identificacion && <div className="invalid-feedback" role="alert"><strong>{formReserva.errors.cliente_identificacion}</strong></div>}
                                         </div>
                                     )}
 
@@ -1674,12 +1669,13 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                         <label className="form-label fw-semibold small text-muted text-uppercase">Teléfono</label>
                                         <input 
                                             type="tel" 
-                                            className="form-control" 
+                                            className={`form-control ${formReserva.errors.cliente_telefono ? 'is-invalid' : ''}`}
                                             value={formReserva.data.cliente_telefono}
                                             onChange={e => formReserva.setData('cliente_telefono', e.target.value)}
                                             placeholder="Ej: 3001234567"
                                             required={!formReserva.data.cliente_id} // Requerido si es nuevo
                                         />
+                                         {formReserva.errors.cliente_telefono && <div className="invalid-feedback" role="alert"><strong>{formReserva.errors.cliente_telefono}</strong></div>}
                                     </div>
                                     <div className="col-md-6">
                                         <label className="form-label fw-semibold small text-muted text-uppercase">Email</label>

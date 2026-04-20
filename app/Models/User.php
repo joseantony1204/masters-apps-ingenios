@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
 		'username' => 'required',
         'perfil_id' => 'required',
 		'persona_id' => 'required',
+		'telefonomovil' => 'required|unique:users,telefonomovil',
 		'estado_id' => 'required',
     ];
 
@@ -186,7 +187,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return "Usuario Sistema";
         }
 
-        return optional($persona->personasnaturales)->nombreCompleto
+        return optional($persona->personasnaturales)->nombreApellido
             ?? optional($persona->comercios)->nombre 
             ?? "Nombre no definido";
     }

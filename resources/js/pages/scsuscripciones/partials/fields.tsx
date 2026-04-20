@@ -1,4 +1,3 @@
-import { Scsuscripciones } from '@/types';
 
 interface Props {
     data: any;

@@ -759,12 +759,13 @@ export default function Index({ citas, estadosList, serviciosList, empleadosList
                                         <label className="form-label fw-semibold small text-muted text-uppercase">N° Identificación</label>
                                         <input 
                                             type="text" 
-                                            className="form-control bg-light-warning border-warning-subtle" 
+                                            className={`form-control ${formReserva.errors.cliente_identificacion ? 'is-invalid' : ''}`}
                                             placeholder="Identificación del nuevo cliente"
                                             value={formReserva.data.cliente_identificacion || ''}
                                             onChange={e => formReserva.setData('cliente_identificacion', e.target.value)}
                                             required
                                         />
+                                        {formReserva.errors.cliente_identificacion && <div className="invalid-feedback" role="alert"><strong>{formReserva.errors.cliente_identificacion}</strong></div>}
                                     </div>
                                 )}
 
@@ -772,12 +773,13 @@ export default function Index({ citas, estadosList, serviciosList, empleadosList
                                     <label className="form-label fw-semibold small text-muted text-uppercase">Teléfono</label>
                                     <input 
                                         type="tel" 
-                                        className="form-control" 
+                                        className={`form-control ${formReserva.errors.cliente_telefono ? 'is-invalid' : ''}`} 
                                         value={formReserva.data.cliente_telefono}
                                         onChange={e => formReserva.setData('cliente_telefono', e.target.value)}
                                         placeholder="Ej: 3001234567"
                                         required={!formReserva.data.cliente_id} // Requerido si es nuevo
                                     />
+                                    {formReserva.errors.cliente_telefono && <div className="invalid-feedback" role="alert"><strong>{formReserva.errors.cliente_telefono}</strong></div>}
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-semibold small text-muted text-uppercase">Email</label>

@@ -27,25 +27,44 @@ export default function AppMasterHeader() {
         };
     }, [isUserMenuOpen]);
 
-    const handleLogout = (e: React.MouseEvent) => {
-        e.preventDefault();
-        cleanup();
-        router.post(route('logout'));
-    };
+   
+
+    // Modifica estas funciones dentro de AppMasterHeader.tsx
 
     const toggleSidebar = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // BLOQUEA el conflicto con scripts externos
         document.body.classList.toggle('pc-sidebar-hide');
     };
 
     const toggleMobileMenu = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // BLOQUEA el conflicto con scripts externos
         document.body.classList.toggle('mob-sidebar-active');
+        
+        // Si la plantilla no crea el overlay automáticamente, lo gestionamos nosotros:
+        if (document.body.classList.contains('mob-sidebar-active')) {
+            if (!document.querySelector('.pc-menu-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.className = 'pc-menu-overlay';
+                overlay.onclick = () => document.body.classList.remove('mob-sidebar-active');
+                document.body.appendChild(overlay);
+            }
+        }
     };
+
 
     const toggleUserMenu = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // EVITA que el script de la plantilla reciba el evento y cierre el menú
         setIsUserMenuOpen(!isUserMenuOpen);
+    };
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsUserMenuOpen(false); // Cerramos manualmente antes de salir
+        router.post(route('logout'));
     };
 
     return (
@@ -95,26 +114,20 @@ export default function AppMasterHeader() {
                             <a
                                 className="pc-head-link dropdown-toggle arrow-none me-0"
                                 href="#"
-                                role="button"
-                                onClick={toggleUserMenu}
+                                onClick={toggleUserMenu} // Solo React maneja esto
                             >
-                                <img 
-                                    src={user?.foto || photo_default} 
-                                    alt="user-image" 
-                                    className="user-avtar" 
-                                    style={{ objectFit: 'cover' }}
-                                />
-                                <span>{user?.nombreCompleto || user?.username}</span>
+                                <img src={user?.foto || photo_default} className="user-avtar" alt="user" />
+                                <span>{user?.nombreCompleto}</span>
                             </a>
                             
+                            {/* El menú aparece solo si isUserMenuOpen es true */}
                             <div 
                                 className={`dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown ${isUserMenuOpen ? 'show' : ''}`} 
                                 style={{ 
-                                    position: 'absolute', 
-                                    inset: '0px 0px auto auto', 
-                                    margin: '0px', 
-                                    transform: isUserMenuOpen ? 'translate3d(-20px, 70px, 0px)' : 'none',
-                                    display: isUserMenuOpen ? 'block' : 'none' 
+                                    display: isUserMenuOpen ? 'block' : 'none',
+                                    position: 'absolute',
+                                    inset: '0px 0px auto auto',
+                                    transform: 'translate3d(-20px, 70px, 0px)'
                                 }}
                             >
                                 

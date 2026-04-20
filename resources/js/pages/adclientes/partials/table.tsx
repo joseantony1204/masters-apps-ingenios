@@ -41,8 +41,8 @@ export default function Table({ clientes }: Props) {
         try {
             const response = await axios.post(route('api.whatsapp.send'), {
                 telefono: cliente.telefonomovil,
-                template: "hello_world",
-                params: []
+                template: "appointment_confirmed",
+                params: [cliente.nombres, '20 abril 2026','Corte cabello','HGABHSJMNAJHS']
             });
 
             // Opcional: Podrías marcar en el estado local que este cliente ya recibió el mensaje
