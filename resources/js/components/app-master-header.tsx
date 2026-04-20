@@ -1,14 +1,31 @@
+import { Link, router, usePage } from '@inertiajs/react';
+import { useState, useEffect, useRef } from 'react'; 
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import photo_default from '/public/assets/images/user/default.png';  
-import { Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react'; // Importamos el hook para el estado
 
 export default function AppMasterHeader() {
     const cleanup = useMobileNavigation();
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Estado para el menú
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Estado para el menú del usuario
     
+    // Referencia para detectar clics fuera del menú
+    const menuRef = useRef<HTMLLIElement>(null);
+
     const { auth } = usePage().props as any;
     const user = auth?.user;
+
+    // Efecto para cerrar el menú al hacer clic fuera de él
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (isUserMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isUserMenuOpen]);
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -26,7 +43,6 @@ export default function AppMasterHeader() {
         document.body.classList.toggle('mob-sidebar-active');
     };
 
-    // Nueva función para el menú del usuario
     const toggleUserMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsUserMenuOpen(!isUserMenuOpen);
@@ -38,14 +54,14 @@ export default function AppMasterHeader() {
                 <div className="me-auto pc-mob-drp">
                     <ul className="list-unstyled">
                       
-                        {/* ICONO PARA ESCRITORIO (Desaparece en móviles por CSS de la plantilla) */}
+                        {/* ICONO PARA ESCRITORIO */}
                         <li className="pc-h-item pc-sidebar-collapse">
                             <a href="#" className="pc-head-link ms-0" id="sidebar-hide" onClick={toggleSidebar}>
                                 <i className="ti ti-menu-2"></i>
                             </a>
                         </li>
 
-                        {/* ICONO PARA MÓVIL (Aparece solo en dispositivos pequeños) */}
+                        {/* ICONO PARA MÓVIL */}
                         <li className="pc-h-item pc-sidebar-popup">
                             <a href="#" className="pc-head-link ms-0" id="mobile-collapse" onClick={toggleMobileMenu}>
                                 <i className="ti ti-menu-2"></i>
@@ -64,18 +80,23 @@ export default function AppMasterHeader() {
 
                 <div className="ms-auto">
                     <ul className="list-unstyled">
-                        {/* Notificaciones (Opcional, lo dejé igual) */}
+                        {/* Notificaciones */}
                         <li className="dropdown pc-h-item">
                             <a className="pc-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#" role="button">
                                 <i className="ti ti-mail"></i>
                             </a>
                         </li>
-                        <li className={`dropdown pc-h-item header-user-profile ${isUserMenuOpen ? 'show' : ''}`}>
+
+                        {/* PERFIL DE USUARIO CON LÓGICA DE CIERRE EXTERNO */}
+                        <li 
+                            ref={menuRef}
+                            className={`dropdown pc-h-item header-user-profile ${isUserMenuOpen ? 'show' : ''}`}
+                        >
                             <a
                                 className="pc-head-link dropdown-toggle arrow-none me-0"
                                 href="#"
                                 role="button"
-                                onClick={toggleUserMenu} // Manejador de clic de React
+                                onClick={toggleUserMenu}
                             >
                                 <img 
                                     src={user?.foto || photo_default} 
@@ -86,9 +107,16 @@ export default function AppMasterHeader() {
                                 <span>{user?.nombreCompleto || user?.username}</span>
                             </a>
                             
-                            {/* El menú ahora reacciona a la clase 'show' basada en el estado de React */}
-                            <div className={`dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown ${isUserMenuOpen ? 'show' : ''}`} 
-                                 style={{ position: 'absolute', inset: '0px 0px auto auto', margin: '0px', transform: isUserMenuOpen ? 'translate3d(-20px, 70px, 0px)' : 'none' }}>
+                            <div 
+                                className={`dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown ${isUserMenuOpen ? 'show' : ''}`} 
+                                style={{ 
+                                    position: 'absolute', 
+                                    inset: '0px 0px auto auto', 
+                                    margin: '0px', 
+                                    transform: isUserMenuOpen ? 'translate3d(-20px, 70px, 0px)' : 'none',
+                                    display: isUserMenuOpen ? 'block' : 'none' 
+                                }}
+                            >
                                 
                                 <div className="dropdown-header">
                                     <div className="d-flex mb-1">
@@ -103,7 +131,7 @@ export default function AppMasterHeader() {
                                             <h6 className="mb-1">{user?.nombreCompleto || user?.username}</h6>
                                             <span className="f-12">{user?.personas?.email}</span>
                                         </div>
-                                        <button onClick={handleLogout} className="btn btn-icon btn-link-danger">
+                                        <button onClick={handleLogout} className="btn btn-icon btn-link-danger border-0 bg-transparent">
                                             <i className="ti ti-power"></i>
                                         </button>
                                     </div>
@@ -128,11 +156,11 @@ export default function AppMasterHeader() {
                                             <i className="ti ti-user"></i>
                                             <span>Mi Perfil</span>
                                         </a>
-                                        <a href="#!" className="dropdown-item">
+                                        <Link href={route('scsuscripciones.index')} className="dropdown-item">
                                             <i className="ti ti-wallet"></i>
                                             <span>Facturación</span>
-                                        </a>
-                                        {/* LOGOUT FINAL ABAJO */}
+                                        </Link>
+                                        <div className="dropdown-divider"></div>
                                         <button onClick={handleLogout} className="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
                                             <i className="ti ti-power"></i>
                                             <span>Cerrar Sesión</span>
