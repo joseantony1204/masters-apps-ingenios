@@ -118,10 +118,10 @@ return [
     /**
      * Token WOMPI
      */
-    'wompi_public_key' => env('WOMPI_PUBLIC_KEY','pub_test_Xrlbsy0ejSWCnDdiniKOUw2vYrG0WAQH'),
-    'wompi_integrity_secret' => env('WOMPI_INTEGRITY_SECRET','test_integrity_FFvtzRzboF4U690OoKZ057kiCvzfUieQ'),
+    'wompi_public_key' => env('WOMPI_PUBLIC_KEY','pub_prod_w5QyjkQ7CxUfhX41s1PYKbo4mtqaNZUW'),
+    'wompi_integrity_secret' => env('WOMPI_INTEGRITY_SECRET','prod_integrity_q6Tfnvy1fpq9a9sFtlCxyBgADfwv13Yb'),
     'wompi_currency' => env('WOMPI_CURRENCY','COP'),
-    'wompi_events_secret' => env('WOMPI_EVENTS_SECRET','test_events_7u3PKnf16cRVrTdMc9kZxw2GMj5ew1Dd'),
+    'wompi_events_secret' => env('WOMPI_EVENTS_SECRET','prod_events_JOk8Z6uwhjuZ7OJE1QDQySq73kpzThqk'),
   
     /*
     |--------------------------------------------------------------------------
