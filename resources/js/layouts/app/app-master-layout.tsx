@@ -25,6 +25,7 @@ export default function AppMasterLayout({ children, breadcrumbs = [] }: PropsWit
 
         // 3. Reset del scroll al cambiar de página (Importante en SPAs)
         //window.scrollTo(0, 0);
+        document.body.classList.remove('mob-sidebar-active');
 
     }, [children]);
 
