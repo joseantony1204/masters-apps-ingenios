@@ -8,7 +8,8 @@
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
-        "types": "tsc --noEmit"
+        "types": "tsc --noEmit",
+        "deploy": "npm run build && git add . && git commit -m \"Subiendo compilados $(date)\" && git pull origin main"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",

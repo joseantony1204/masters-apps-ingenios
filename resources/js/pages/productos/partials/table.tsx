@@ -67,7 +67,7 @@ export default function Table({ productos }: Props) {
                             <td>
                                 <div className="d-flex align-items-center">
                                     <div className="avtar avtar-info avtar-s rounded-circle me-3">
-                                        <i className={`ti ${item.tipo?.id === 855 ? item.categoria?.observacion : 'ti-package'} fs-4`}></i>
+                                        <i className={`ti ${item.tipo?.id === 855 ? item.categoria?.observacion ? item.categoria?.observacion : 'ti-package' : 'ti-package'} fs-4`}></i>
                                     </div>
                                     <div>
                                         <h6 className="mb-0 fw-bold">{item.nombre}</h6>
