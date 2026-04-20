@@ -3,7 +3,6 @@ import { Head, useForm} from '@inertiajs/react';
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // Asegúrate de instalarlo: npm install qrcode.react
 import { useState, useRef, useEffect } from 'react';
-import { useClienteModal } from '@/hooks/use-cliente-context';
 import { router } from '@inertiajs/react';
 import CitasModalPos from '@/components/global/citas-modal-pos';
 import CitasModalCancelar from '@/components/global/citas-modal-cancelar';
@@ -163,15 +162,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
     // URL dinámica basada en el username o ID del comercio
     const shopUrl = `https://vantifypro.co/landing?token=${token}`;
     const handleCrearFactura = () => router.visit(route('ftfacturas.create'));
-
-    const { openModalCliente } = useClienteModal();
-    const registrarYVender = () => {
-        // Abrimos la modal y pasamos un callback opcional
-        openModalCliente((nuevoCliente) => {
-            console.log("Cliente guardado exitosamente:", nuevoCliente);
-            // Aquí puedes redirigir a ventas o actualizar un estado local
-        });
-    };
 
     // Función para descargar el QR
     const downloadQR = () => {
