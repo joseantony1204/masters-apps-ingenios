@@ -29,7 +29,7 @@ export default function Landing({ comercio, servicios }: any) {
 
     // Mapeo de Iconos
     const stepIcons: any = {
-        'servicios': 'ti-scissors',
+        'servicios': 'ti ti-layout-grid',
         'especialistas': 'ti-users',
         'fecha': 'ti-calendar-event'
     };
@@ -347,19 +347,30 @@ export default function Landing({ comercio, servicios }: any) {
 
                         <h6 className="fw-bold mb-3 text-uppercase text-muted" style={{ fontSize: '10px', letterSpacing: '1px' }}>Servicios Disponibles</h6>
                         <div className="d-grid gap-3">
-                            {servicios.filter((s: any) => s.categoria_id === activeCat).map((service: any) => (
-                                <div key={service.id} onClick={() => { setSelectedService(service); setActiveStep('especialistas'); }}
-                                    className="p-3 d-flex align-items-center bg-white shadow-sm border rounded-3 transition-all hover-border-primary cursor-pointer">
-                                    <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                                        <i className="ti ti-scissors text-primary fs-4"></i>
+                            {servicios.filter((s: any) => s.categoria_id === activeCat).map((service: any) => {
+                                // Buscamos el icono de la categoría activa para mostrarlo en el servicio
+                                const iconoCategoria = categorias.find((c: any) => c.id === activeCat)?.observacion || 'ti ti-cut';
+
+                                return (
+                                    <div 
+                                        key={service.id} 
+                                        onClick={() => { setSelectedService(service); setActiveStep('especialistas'); }}
+                                        className="p-3 mb-2 d-flex align-items-center bg-white shadow-sm border rounded-3 transition-all hover-border-primary cursor-pointer"
+                                    >
+                                        <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+                                            {/* Usamos el icono dinámico encontrado arriba */}
+                                            <i className={`${iconoCategoria} text-primary fs-4`}></i>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <div className="d-flex justify-content-between align-items-center">
+                                                <h6 className="fw-bold mb-0 text-dark">{service.nombre}</h6>
+                                            </div>
+                                            <small className="text-muted">Múltiples especialistas disponibles</small>
+                                        </div>
+                                        <i className="ti ti-chevron-right text-muted ms-2"></i>
                                     </div>
-                                    <div className="flex-grow-1">
-                                        <h6 className="fw-bold mb-0 text-dark">{service.nombre}</h6>
-                                        <small className="text-muted">Múltiples especialistas</small>
-                                    </div>
-                                    <i className="ti ti-chevron-right text-muted"></i>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -367,37 +378,71 @@ export default function Landing({ comercio, servicios }: any) {
                 {/* PASO 2: ESPECIALISTAS + RESUMEN SERVICIO */}
                 {activeStep === 'especialistas' && (
                     <div className="animate__animated animate__fadeInRight">
-                        <h6 className="fw-bold mb-2 text-uppercase text-muted" style={{ fontSize: '10px' }}>Tu Selección</h6>
-                        <div className="p-3 mb-4 bg-white border rounded-3 d-flex align-items-center shadow-sm">
-                            <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
-                                <i className="ti ti-scissors text-primary fs-5"></i>
-                            </div>
-                            <div className="flex-grow-1">
-                                <h6 className="fw-bold mb-0 text-dark">{selectedService?.nombre}</h6>
-                                <small className="text-muted">Servicio seleccionado</small>
-                            </div>
-                            <button onClick={() => setActiveStep('servicios')} className="btn btn-sm btn-light rounded-pill px-3 fw-bold text-primary" style={{ fontSize: '10px' }}>Cambiar</button>
-                        </div>
+                        {/* Lógica para obtener el icono dinámico de la categoría */}
+                        {(() => {
+                            const selectedIcon = categorias.find((c: any) => c.id === selectedService?.categoria_id)?.observacion || 'ti ti-layout-grid';
+                            
+                            return (
+                                <>
+                                    <h6 className="fw-bold mb-2 text-uppercase text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>Tu Selección</h6>
+                                    <div className="p-3 mb-4 bg-white border rounded-3 d-flex align-items-center shadow-sm">
+                                        <div className="me-3 bg-primary-subtle rounded-3 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
+                                            {/* Icono dinámico inyectado aquí */}
+                                            <i className={`${selectedIcon} text-primary fs-5`}></i>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '14px' }}>{selectedService?.nombre}</h6>
+                                            <small className="text-muted">Servicio seleccionado</small>
+                                        </div>
+                                        <button 
+                                            onClick={() => setActiveStep('servicios')} 
+                                            className="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-primary" 
+                                            style={{ fontSize: '10px' }}
+                                        >
+                                            Cambiar
+                                        </button>
+                                    </div>
 
-                        <h6 className="fw-bold mb-3 text-uppercase text-muted" style={{ fontSize: '10px' }}>Selecciona un Especialista</h6>
-                        <div className="d-grid gap-3">
-                            {selectedService?.empleados.map((emp: any) => (
-                                <div key={emp.id} onClick={() => manejarSeleccionEspecialista(emp)}
-                                    className="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
-                                    <div className="avatar me-3 bg-light text-primary fw-bold d-flex align-items-center justify-content-center rounded-circle border" style={{ width: '45px', height: '45px' }}>
-                                        {emp.nombre.charAt(0)}
+                                    <h6 className="fw-bold mb-3 text-uppercase text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>Selecciona un Especialista</h6>
+                                    <div className="d-grid gap-3">
+                                        {selectedService?.empleados.map((emp: any) => (
+                                            <div key={emp.id} onClick={() => manejarSeleccionEspecialista(emp)}
+                                                className="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
+                                                
+                                                {/* Avatar con iniciales o imagen */}
+                                                <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm" 
+                                                    style={{ width: '48px', height: '48px', fontSize: '16px' }}>
+                                                    {emp.nombre.charAt(0)}
+                                                </div>
+
+                                                <div className="flex-grow-1">
+                                                    <h6 className="fw-bold mb-1 text-dark" style={{ fontSize: '14px' }}>{emp.nombre}</h6>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <span className="badge bg-light text-muted border-0 fw-normal">
+                                                            <i className="ti ti-clock me-1 text-primary"></i>
+                                                            {emp.duracion} min
+                                                        </span>
+                                                        <span className="badge bg-light text-muted border-0 fw-normal">
+                                                            <i className="ti ti-star-filled me-1 text-warning" style={{ fontSize: '10px' }}></i>
+                                                            4.9
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-end">
+                                                    <div className="fw-bold text-primary" style={{ fontSize: '15px' }}>
+                                                        ${Number(emp.precio).toLocaleString()}
+                                                    </div>
+                                                    <span className="text-primary-emphasis small fw-bold bg-primary-subtle px-2 py-1 rounded-pill" style={{ fontSize: '9px' }}>
+                                                        ELEGIR <i className="ti ti-chevron-right ms-1"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="flex-grow-1">
-                                        <h6 className="fw-bold mb-0">{emp.nombre}</h6>
-                                        <small className="text-muted"><i className="ti ti-clock me-1"></i>{emp.duracion} min</small>
-                                    </div>
-                                    <div className="text-end">
-                                        <div className="fw-bold text-primary">${Number(emp.precio).toLocaleString()}</div>
-                                        <span className="text-primary small fw-bold">Elegir</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 )}
 
