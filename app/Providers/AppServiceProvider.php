@@ -6,8 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use App\Models\User;
-use Illuminate\Support\Facades\URL;
+use App\Models\{User,Ftfacturas};
+use Illuminate\Support\Facades\Event; // <-- IMPORTANTE
+use App\Events\AdcitasEvent;
+use App\Listeners\SendWhatsAppCitaCreated;
+use \App\Observers\FtfacturasObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
                 }),
             ] : null,
         ]);
-        \App\Models\Ftfacturas::observe(\App\Observers\FtfacturasObserver::class);
+        Ftfacturas::observe(FtfacturasObserver::class);
     }
 }
 

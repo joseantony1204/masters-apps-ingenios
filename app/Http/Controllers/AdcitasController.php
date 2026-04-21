@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\{Auth,DB,Hash};
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Events\AdcitasEvent;
+use App\Jobs\SendWhatsAppReminderJob;
+use Illuminate\Support\Facades\Log;
 
 class AdcitasController extends Controller
 {
@@ -322,7 +324,21 @@ class AdcitasController extends Controller
                     'estado_id' => 913,
                 ] + $audt);
 
-                event(new AdcitasEvent($cita));
+                if($cita)
+                    event(new AdcitasEvent($cita));
+                    $fechaCita = Carbon::parse($cita->fecha . ' ' . $cita->horainicio);
+                    $ahora = now();
+                    $momentoEnvio = $fechaCita->copy()->subMinutes(30);
+                    
+                    // Si falta más de media hora para la cita, programamos el Job
+                    if ($momentoEnvio->isAfter($ahora)) {
+                        $segundosDeEspera = $ahora->diffInSeconds($momentoEnvio);
+                    
+                        SendWhatsAppReminderJob::dispatch($cita->id)
+                            ->delay($segundosDeEspera);
+                            
+                        Log::info("Recordatorio programado para la cita #{$cita->id} en {$segundosDeEspera} segundos.");
+                    }
                 return back()->with('success', 'La cita fue creada con exitosamente.');
 
             });

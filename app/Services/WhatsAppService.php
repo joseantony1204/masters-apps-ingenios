@@ -17,7 +17,7 @@ class WhatsAppService
     {
         $this->token = config('app.whatsapptoken'); // Asegúrate de tenerlo en config/app.php
         $this->version = config('app.whatsappversion', 'v25.0');
-        $this->defaultPhoneId = '1065635596636262'; // ID por defecto 
+        $this->defaultPhoneId = config('app.whatsapphonenumberid', '1065635596636262');//'1065635596636262'; // ID por defecto 
 
         $this->client = new Client([
             'base_uri' => "https://graph.facebook.com/{$this->version}/", // Solo la raíz
@@ -58,7 +58,7 @@ class WhatsAppService
             "type" => "template",
             "template" => [
                 "name" => $templateName,
-                "language" => ["code" => "en_US"],
+                "language" => ["code" => "es"],
                 "components" => [
                     [
                         "type" => "body",

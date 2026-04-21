@@ -7,6 +7,7 @@ use App\Models\{Adcitas,Comercios, Addetallescitas, Personas};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 use Illuminate\Support\Str;
+use App\Events\AdcitasEvent;
 
 class AdcitasController extends Controller
 {
@@ -64,11 +65,14 @@ class AdcitasController extends Controller
 
                 // 6. Limpiar el OTP para que no se pueda reutilizar
                 $persona->update(['codigo_sms' => NULL]);
+                if($cita)
+                    event(new AdcitasEvent($cita));
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Reserva creada correctamente',
                     'data' => $cita
                 ], 201);
+                
 
             });
 
