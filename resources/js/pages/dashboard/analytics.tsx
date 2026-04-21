@@ -64,6 +64,8 @@ interface Props {
     clientesHoy : any;
     tasaRetencion : any;
     turnoActivo : any;
+    topClientes: any[];
+    clientesFrecuencia: any[];
 }
 
 interface DataGrafico {
@@ -72,7 +74,7 @@ interface DataGrafico {
 }
 import { useReservaCita } from '@/hooks/use-reserva-cita';
 
-export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada}: Props) {
+export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada, topClientes, clientesFrecuencia}: Props) {
     
     const [citaDetalle, setCitaDetalle] = useState<any>(null);
     const [citaCancelar, setCitaCancelar] = useState<any>(null);
@@ -80,6 +82,7 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
     const [horaActual, setHoraActual] = useState(new Date());
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
+    const [clienteExpandido, setClienteExpandido] = useState<number | null>(null);
 
     // Función para asignar colores aleatorios a los avatares
     const colors = ['primary', 'info', 'success', 'danger', 'warning'];
@@ -619,13 +622,231 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                 </div>
             </div>
 
+            {/* --- SECCIÓN DE INTELIGENCIA DE CLIENTES --- */}
             <div className="row g-4 mb-4">
-                <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-                    <div className="card-body p-4">
-                        {/* Header del card */}
-                        <div style={{ height: '300px' }}>
-                            <Line data={dataGrafico} options={opciones} />
+                
+                <div className="col-lg-8">
+                    {/* HEADER COORDINADO */}
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h5 className="fw-extrabold text-dark mb-0" style={{ letterSpacing: '-0.5px' }}>Radar de Retorno</h5>
+                            <p className="text-muted small mb-0">Análisis predictivo basado en frecuencia real</p>
                         </div>
+                        <div className="badge bg-light-primary text-primary px-3 py-2 rounded-pill small fw-bold shadow-sm">
+                            <i className="ti ti-sparkles me-1"></i> Inteligencia Vantify
+                        </div>
+                    </div>
+
+                    {/* TABLA CON ALMA DE RADAR */}
+                    <div className="card border-0 shadow-sm" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                        <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                            <table className="table table-hover align-middle mb-0">
+                                <thead className="bg-light">
+                                    <tr className="text-muted small" style={{ letterSpacing: '0.5px' }}>
+                                        <th className="ps-4 border-0 py-3">CLIENTE</th>
+                                        <th className="text-center border-0 py-3">FRECUENCIA</th>
+                                        <th className="border-0 py-3">PREDICCIÓN</th>
+                                        <th className="pe-4 border-0 py-3 text-end">ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {clientesFrecuencia.map((item) => {
+                                        const isExpanded = clienteExpandido === item.id;
+                                        const accentColor = item.atrasado ? '#ef4444' : '#10b981';
+                                        const bgColor = item.atrasado ? '#fef2f2' : '#f0fdf4';
+
+                                        return (
+                                            <React.Fragment key={item.id}>
+                                                {/* FILA MAESTRA */}
+                                                <tr 
+                                                    onClick={() => setClienteExpandido(isExpanded ? null : item.id)}
+                                                    style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                                                    className={isExpanded ? 'table-light' : ''}
+                                                >
+                                                    <td className="ps-4 py-3">
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar avatar-sm rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" 
+                                                                style={{ width: '38px', height: '38px', backgroundColor: bgColor, color: accentColor }}>
+                                                                {item.nombre.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div className="fw-bold text-dark mb-0">{item.nombre}</div>
+                                                                <div className="text-muted x-small">ID: {item.identificacion}</div>
+                                                                <div className="text-muted x-small">TL: {item.telefonomovil}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className="badge rounded-pill fw-bold" style={{ backgroundColor: '#f1f3f5', color: '#495057', fontSize: '11px' }}>
+                                                            Cada {item.promedio} días
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="me-2">
+                                                                <div className={`fw-extrabold ${item.atrasado ? 'text-danger' : 'text-success'}`} style={{ fontSize: '14px' }}>
+                                                                    {item.prediccion}
+                                                                </div>
+                                                                <div className="text-muted" style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase' }}>
+                                                                    {item.atrasado ? 'Atrasado' : 'A tiempo'}
+                                                                </div>
+                                                            </div>
+                                                            <span className={`dot-status ${item.atrasado ? 'bg-danger' : 'bg-success'}`} 
+                                                                style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' }}></span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="pe-4 text-end">
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <button 
+                                                                className={`btn btn-sm rounded-pill px-3 border-0 fw-bold ${isExpanded ? 'btn-dark' : 'btn-light-primary'}`}
+                                                                style={{ fontSize: '11px' }}
+                                                            >
+                                                                <i className={`ti ${isExpanded ? 'ti-eye-off' : 'ti-history'} me-1`}></i> Historial
+                                                            </button>
+                                                            <button 
+                                                                className="btn btn-success btn-sm rounded-pill shadow-sm px-3 fw-bold border-0"
+                                                                style={{ fontSize: '11px' }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const link = `https://wa.me/?text=Hola ${item.nombre}, agendamos tu servicio para el ${item.prediccion}?`;
+                                                                    window.open(link, '_blank');
+                                                                }}
+                                                            >
+                                                                <i className="ti ti-brand-whatsapp me-1"></i> WhatsApp
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                {/* DESPLEGABLE CON LÍNEA DE TIEMPO HORIZONTAL (Del 2do diseño) */}
+                                                {isExpanded && (
+                                                    <tr className="animate__animated animate__fadeIn">
+                                                        <td colSpan={4} className="p-0 border-0">
+                                                            <div className="bg-light bg-opacity-50 px-5 py-4">
+                                                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                                                    <h6 className="fw-bold small text-muted text-uppercase mb-0" style={{ letterSpacing: '1px' }}>
+                                                                        Línea de tiempo de visitas
+                                                                    </h6>
+                                                                    <span className="badge bg-white text-dark border shadow-sm small px-2">Últimas {item.historial?.length} citas</span>
+                                                                </div>
+
+                                                                <div className="position-relative py-4">
+                                                                    {/* Línea horizontal de fondo */}
+                                                                    <div className="position-absolute w-100 bg-secondary bg-opacity-10" 
+                                                                        style={{ height: '3px', top: '50%', transform: 'translateY(-50%)', left: 0, zIndex: 0 }}></div>
+                                                                    
+                                                                    <div className="d-flex justify-content-between position-relative" style={{ zIndex: 1 }}>
+                                                                        {item.historial?.map((cita: any, idx: number) => (
+                                                                            <div key={idx} className="text-center position-relative" style={{ width: '100px' }}>
+                                                                                {/* El punto de la línea */}
+                                                                                <div className="bg-primary rounded-circle mx-auto mb-2 shadow-sm border border-3 border-white" 
+                                                                                    style={{ width: '18px', height: '18px' }}></div>
+                                                                                
+                                                                                {/* La tarjeta de la cita */}
+                                                                                <div className="bg-white shadow-sm border rounded-3 p-2 mx-auto" style={{ width: '85px' }}>
+                                                                                    <span className="d-block fw-extrabold text-dark" style={{ fontSize: '10px' }}>{cita.fecha}</span>
+                                                                                    <span className="text-success fw-bold text-uppercase" style={{ fontSize: '8px' }}>Éxito</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Gráfico Top Clientes */}
+                <div className="col-lg-4">
+                    <div className="card border-0 shadow-lg h-100 text-white" 
+                        style={{ 
+                            borderRadius: '24px', 
+                            background: 'linear-gradient(135deg, #051937 0%, #004d7a 100%)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                        }}>
+                        
+                        <div className="card-header bg-transparent border-0 pt-4 px-4">
+                            <h5 className="mb-0 fw-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>
+                                Élite VIP
+                            </h5>
+                            <p className="text-white-50 x-small mb-0 fw-bold">LOS CLIENTES MÁS ACTIVOS</p>
+                        </div>
+
+                        <div className="card-body">
+                            {/* TOP 3 - DISEÑO RADIAL */}
+                            <div className="d-flex justify-content-around align-items-center mb-4 pt-2">
+                                {topClientes.slice(0, 3).map((cliente, index) => (
+                                    <div key={index} className="text-center position-relative">
+                                        <div style={{ width: index === 0 ? '90px' : '70px', height: index === 0 ? '90px' : '70px' }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={[
+                                                            { value: cliente.visitas },
+                                                            { value: Math.max(...topClientes.map(c => c.visitas)) - cliente.visitas + 2 }
+                                                        ]}
+                                                        innerRadius="75%"
+                                                        outerRadius="100%"
+                                                        paddingAngle={0}
+                                                        dataKey="value"
+                                                        startAngle={90}
+                                                        endAngle={450}
+                                                        stroke="none"
+                                                    >
+                                                        <Cell fill="#24D2DB" style={{ filter: index === 0 ? 'drop-shadow(0 0 5px #24D2DB)' : 'none' }} />
+                                                        <Cell fill="rgba(255,255,255,0.05)" />
+                                                    </Pie>
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            {/* VALOR EN EL CENTRO */}
+                                            <div className="position-absolute top-50 start-50 translate-middle text-center">
+                                                <span className={`fw-extrabold d-block ${index === 0 ? 'fs-5' : 'small'}`} style={{ color: '#24D2DB' }}>
+                                                    {cliente.visitas}
+                                                </span>
+                                                <span style={{ fontSize: '8px', opacity: 0.6 }}>VTS</span>
+                                            </div>
+                                        </div>
+                                        <p className="mt-2 mb-0 fw-bold small text-truncate" style={{ maxWidth: '80px' }}>
+                                            {index === 0 && <i className="ti ti-crown text-warning d-block mb-1"></i>}
+                                            {cliente.nombre.split(' ')[0]}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* RESTO DEL TOP (4-10) - LISTA MINIMALISTA */}
+                            <div className="mt-2" style={{ maxHeight: '180px', overflowY: 'auto', paddingRight: '5px' }}>
+                                {topClientes.slice(3, 8).map((cliente, index) => (
+                                    <div key={index} 
+                                        className="d-flex align-items-center p-2 mb-2 rounded-3" 
+                                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <span className="text-white-50 fw-bold me-3 small">#{index + 4}</span>
+                                        <div className="flex-grow-1">
+                                            <h6 className="mb-0 small fw-bold text-white-50">{cliente.nombre}</h6>
+                                        </div>
+                                        <div className="text-end">
+                                            <span className="fw-extrabold" style={{ color: '#24D2DB', fontSize: '12px' }}>{cliente.visitas}</span>
+                                            <span className="ms-1 x-small opacity-50">vts</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/*<div className="card-footer border-0 bg-transparent pb-4 px-4">
+                            <button className="btn btn-sm w-100 rounded-pill py-2 fw-bold" 
+                                    style={{ background: 'rgba(36, 210, 219, 0.1)', color: '#24D2DB', border: '1px dashed rgba(36, 210, 219, 0.5)' }}>
+                                VER RANKING COMPLETO
+                            </button>
+                        </div>*/}
                     </div>
                 </div>
             </div>
@@ -753,6 +974,16 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                 </div>
             </div>
 
+            <div className="row g-4 mb-4">
+                <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                    <div className="card-body p-4">
+                        {/* Header del card */}
+                        <div style={{ height: '300px' }}>
+                            <Line data={dataGrafico} options={opciones} />
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             {/* --- MODAL PARA EL QR --- */}
             <div className="modal fade" id="qrModal" tabIndex={-1} aria-hidden="true">
@@ -1051,9 +1282,6 @@ export default function Dashboard({ auth, citas, facturas, cumpleanosHoy, estado
                     reservaCita.cerrarModal();
                 }}
             />
-            
-        
-
         </AppMainLayout>
     );
 }

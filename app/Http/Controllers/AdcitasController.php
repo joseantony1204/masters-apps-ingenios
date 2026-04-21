@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Events\AdcitasEvent;
 
 class AdcitasController extends Controller
 {
@@ -202,18 +203,28 @@ class AdcitasController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validación de datos
-        $request->validate([
+        // 1. Reglas básicas que siempre se cumplen
+        $rules = [
             'fecha' => 'required|date',
             'servicioasignado_id' => 'required',
             'horainicio' => 'required',
             'horafinal' => 'required',
             'precio' => 'required',
-            'cliente_identificacion' => 'required|unique:personas,identificacion',
-            'cliente_telefono' => 'required|unique:users,telefonomovil',
-            'cliente_nombre' => 'required|string', // Para el nombre del nuevo o actual
-            'cliente_id' => 'nullable', // Puede venir vacío si es nuevo
-        ]);
+            'cliente_nombre' => 'required|string',
+            'cliente_id' => 'nullable',
+        ];
+
+        // 2. Validación Condicional: Solo si es un cliente NUEVO
+        if (!$request->cliente_id) {
+            $rules['cliente_identificacion'] = 'required|unique:personas,identificacion';
+            $rules['cliente_telefono'] = 'required|unique:users,telefonomovil';
+        } else {
+            // Si el cliente ya existe, solo pedimos que los campos estén pero sin el unique
+            //$rules['cliente_identificacion'] = 'required';
+            $rules['cliente_telefono'] = 'required';
+        }
+
+        $request->validate($rules);
 
         try {
             return DB::transaction(function () use ($request) {
@@ -311,6 +322,7 @@ class AdcitasController extends Controller
                     'estado_id' => 913,
                 ] + $audt);
 
+                event(new AdcitasEvent($cita));
                 return back()->with('success', 'La cita fue creada con exitosamente.');
 
             });

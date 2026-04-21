@@ -441,7 +441,74 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
         $facturas = $ftfacturas->orderBy('ftfacturas.fecha', 'DESC')->get();
 
-        
+        // --- 1. Top 10 Clientes VIP (Más facturaciones/citas cerradas) ---
+        $topClientes = Adclientes::with('persona.personasnaturales')
+            ->join('adcitas', 'adclientes.id', '=', 'adcitas.cliente_id')
+            ->where('adcitas.estado_id', 915) // Suponiendo 915 = Finalizada/Cerrada/Asistida
+            ->select('adclientes.id', 'adclientes.persona_id', DB::raw('count(adcitas.id) as total_visitas'))
+            ->groupBy('adclientes.id','adclientes.persona_id')
+            ->orderByDesc('total_visitas')
+            ->take(10)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'nombre' => $item->persona->personasnaturales->nombre . ' ' . $item->persona->personasnaturales->apellido,
+                    'visitas' => $item->total_visitas,
+                ];
+            });
+
+        $clientesFrecuencia = Adclientes::with(['persona.personasnaturales', 'citas' => function($q) {
+            // Ordenamos por fecha descendente para que la primera sea la más reciente
+            //$q->orderBy('fecha', 'desc'); 
+            $q->where('estado_id', 915)->orderBy('fecha', 'desc');
+        }])->get()
+        ->map(function($cliente) {
+            // IMPORTANTE: Solo tomamos citas que tengan una fecha válida
+            $citas = $cliente->citas->whereNotNull('fecha');
+            $promedio = 0;
+            $proximaFecha = null;
+    
+            if ($citas->count() >= 2) {
+                $diferencias = [];
+                // Convertimos a array para usar índices numéricos con seguridad
+                $citasArray = $citas->values(); 
+                
+                for ($i = 0; $i < $citasArray->count() - 1; $i++) {
+                    $f1 = \Carbon\Carbon::parse($citasArray[$i]->fecha);
+                    $f2 = \Carbon\Carbon::parse($citasArray[$i+1]->fecha);
+                    // Usamos abs() para asegurar días positivos
+                    $diferencias[] = abs($f1->diffInDays($f2));
+                }
+                $promedio = round(collect($diferencias)->avg());
+                
+                $ultimaCita = \Carbon\Carbon::parse($citasArray->first()->fecha);
+                $proximaFecha = $ultimaCita->addDays($promedio);
+            }
+    
+            // En tu controlador, añade 'historial' al mapeo:
+            return [
+                'id' => $cliente->id,
+                'identificacion' => $cliente->persona->identificacion,
+                'nombre' => $cliente->persona->personasnaturales->nombreapellido,
+                'telefonomovil' => $cliente->persona->telefonomovil,
+                'promedio' => $promedio,
+                'ultima_visita' => $citas->first() ? $citas->first()->fecha : 'N/A',
+                'prediccion' => $proximaFecha ? $proximaFecha->format('Y-m-d') : 'Faltan datos',
+                'atrasado' => $proximaFecha ? $proximaFecha->isPast() : false,
+                // En el map del controlador:
+                //'estado_fidelidad' => $item->atrasado ? 'En Riesgo' : ($item->promedio <= 7 ? 'Fanático' : 'Recurrente'),
+                
+                'historial' => $citas->take(5)->map(fn($c) => [ // Enviamos las últimas 5 citas
+                    'fecha' => $c->fecha,
+                    'estado' => $c->estado_id // O el nombre del estado si lo tienes
+                ]),
+                
+            ];
+        })
+        // El filter elimina a clientes con menos de 2 citas (porque su promedio es 0)
+        ->filter(fn($c) => $c['promedio'] > 0) 
+        ->values();
+
         return Inertia::render('dashboard/analytics', [
             'citas' => $citas,
             'facturas' => $facturas,
@@ -450,6 +517,8 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
             'turnoActivo' => $turnoActivo,
             'turnosList'  => $turnosAbiertos,
             'sedePredeterminada' => $sedePredeterminada,
+            'topClientes' => $topClientes,
+            'clientesFrecuencia' => $clientesFrecuencia
         ]);
     })->name('dashboard.analytics');
 });

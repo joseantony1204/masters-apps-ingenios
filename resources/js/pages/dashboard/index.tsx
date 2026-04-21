@@ -72,6 +72,12 @@ interface DataGrafico {
     name: string;
     total: number;
 }
+declare global {
+    interface Window {
+        Echo: any;
+    }
+}
+
 import { useReservaCita } from '@/hooks/use-reserva-cita';
 
 export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada}: Props) {
@@ -83,6 +89,65 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
     
+    // Al principio de index.tsx (fuera del componente)
+
+    // 1. Crea este estado al inicio de tu componente Dashboard
+    const [citaResaltadaId, setCitaResaltadaId] = useState<number | null>(null);
+    const [bloqueoReverb, setBloqueoReverb] = useState(false);
+    useEffect(() => {
+        // Solo actuamos si Echo está disponible
+        if (typeof window !== 'undefined' && window.Echo) {
+            
+            console.log("📡 Conectando al canal de actualizaciones...");
+            const channel = window.Echo.channel('dashboard-updates');
+
+            channel.listen('.actualizar.dashboard', (e: any) => {
+                console.log("✅ Evento recibido:", e);
+            
+                // Si el bloqueo está activo, ignoramos la señal de Reverb 
+                // porque nosotros ya tenemos los datos frescos del 'post'
+                if (bloqueoReverb) {
+                    console.log("🚫 Bloqueo activo: Evitando colisión de peticiones.");
+                    return; 
+                }
+            
+                // Si el ID viene en el evento, lo resaltamos
+                if (e.cita && e.cita.id) {
+                    setCitaResaltadaId(e.cita.id);
+                    setTimeout(() => setCitaResaltadaId(null), 15000);
+                }
+            
+                // Lanzamos el toast elegante
+                toast.custom((t) => (
+                    <div className={`${t.visible ? 'animate__animated animate__fadeInRight' : 'animate__animated animate__fadeOutRight'} bg-white border rounded-3 p-3 shadow-lg d-flex align-items-center`} style={{ minWidth: '300px', borderLeft: '5px solid #10b981' }}>
+                        <div className="bg-success-subtle rounded-circle p-2 me-3">
+                            <i className="ti ti-check text-success fs-4"></i>
+                        </div>
+                        <div className="flex-grow-1">
+                            <p className="mb-0 fw-bold text-dark">¡Agenda actualizada!</p>
+                            <p className="mb-0 small text-muted">Se han sincronizado los últimos cambios.</p>
+                        </div>
+                    </div>
+                ), { id: 'sync-cita' });
+            
+                router.visit(window.location.pathname, {
+                    only: ['citas', 'facturas'],
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true
+                });
+            });
+    
+            // --- ESTO ES LO QUE EVITA QUE SALGA MUCHAS VECES ---
+            return () => {
+                console.log("🛑 Limpiando canal para evitar duplicados...");
+                window.Echo.leave('dashboard-updates');
+            };
+        }
+    }, [bloqueoReverb]); // Añade bloqueoReverb aquí // Importante: el array vacío asegura que esto solo corra una vez al montar
+
+    
+
     {/*}
     const calcularDias = (fecha: any) => { 
         console.log(fecha)
@@ -392,6 +457,44 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     };
     const submitReserva = (e: React.FormEvent) => {
         e.preventDefault();
+    
+        if (!formReserva.data.cliente_nombre) {
+            alert("Por favor, selecciona un cliente o crea uno.");
+            return;
+        }
+    
+        // ACTIVAMOS EL BLOQUEO
+        setBloqueoReverb(true);
+    
+        formReserva.post(route('adcitas.store'), {
+            onSuccess: () => {
+                const modalElement = document.getElementById('modalReserva');
+                if (modalElement) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+                    
+                    setTimeout(() => {
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                        document.body.classList.remove('modal-open');
+                    }, 100);
+                }
+                formReserva.reset();
+                
+                // QUITAMOS EL BLOQUEO después de un segundo para dar tiempo a Reverb
+                setTimeout(() => setBloqueoReverb(false), 1000);
+            },
+            onError: () => {
+                setBloqueoReverb(false); // Si hay error, liberamos el bloqueo
+            },
+            onFinish: () => {
+                 // Por si acaso, asegurar que se desbloquee
+                 setTimeout(() => setBloqueoReverb(false), 2000);
+            }
+        });
+    };
+    
+    const submitReservass = (e: React.FormEvent) => {
+        e.preventDefault();
 
         // Validación básica antes de enviar
         if (!formReserva.data.cliente_nombre) {
@@ -401,20 +504,69 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     
         formReserva.post(route('adcitas.store'), {
             onSuccess: () => {
-                // Si se guarda con éxito:
-                // 1. Cerramos el modal
+                // CERRAR MODAL PRIMERO
                 const modalElement = document.getElementById('modalReserva');
                 if (modalElement) {
                     const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    modalInstance?.hide();
+                    if (modalInstance) modalInstance.hide();
+                    
+                    // Limpieza forzada de Bootstrap
+                    setTimeout(() => {
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                    }, 100);
                 }
-                // 2. Limpiamos el formulario
+                // 3. Resetear el formulario
                 formReserva.reset();
-                // 3. Opcional: Refrescar el calendario principal
-                // router.reload(); 
+                
             },
+            forceFormData: true,
             onError: (errors) => {
                 console.error("Errores al validar la cita:", errors);
+            }
+        });
+    };
+
+    const submitReservas = () => {
+        // Validación básica antes de enviar
+        if (!formReserva.data.cliente_nombre) {
+            alert("Por favor, selecciona un cliente o crea uno.");
+            return;
+        }
+        formReserva.post(route('adcitas.store'), {
+            onSuccess: () => {
+                // 1. Obtener el elemento del modal por su ID
+                const modalElement = document.getElementById('modalReserva');
+                
+                if (modalElement) {
+                    // 2. Intentar cerrarlo mediante la instancia de Bootstrap
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+    
+                    // 3. ¡EL TRUCO FINAL! Forzar la limpieza del fondo oscuro (backdrop)
+                    // A veces Bootstrap no lo quita si el DOM cambia muy rápido
+                    setTimeout(() => {
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove(); // Elimina el div gris
+                        }
+                        document.body.classList.remove('modal-open'); // Permite hacer scroll de nuevo
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, 100);
+                }
+    
+                // 4. Resetear el formulario para la próxima cita
+                formReserva.reset();
+                
+                // Opcional: Mostrar un mensaje extra
+                //toast.success('Cita confirmada correctamente');
+            },
+            onError: (errors) => {
+                console.error("Error al guardar:", errors);
             }
         });
     };
@@ -597,7 +749,15 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     });
 
     // 2. Ordenamos la lista filtrada
-    const citasOrdenadas = [...citasFiltradas].sort((a: any, b: any) => a.horainicio.localeCompare(b.horainicio));
+    const citasOrdenadas = [...citasFiltradas].sort((a, b) => {
+        // 1. Si una es la "nuevaCitaId", va de primero
+        if (a.id === citaResaltadaId) return -1;
+        if (b.id === citaResaltadaId) return 1;
+        a.horainicio.localeCompare(b.horainicio)
+        // 2. Por defecto, podrías ordenar por ID descendente (la última creada)
+        return b.id - a.id; 
+    });
+    //const citasOrdenadas = [...citasFiltradas].sort((a: any, b: any) => a.horainicio.localeCompare(b.horainicio));
 
     // 3. Aplicamos la paginación sobre los resultados ya filtrados y ordenados
     const totalPaginas = Math.ceil(citasOrdenadas.length / citasPorPagina);
@@ -903,9 +1063,36 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
 
                                             const esInactiva = ['RE', 'CA'].includes(cita.estado_codigo?.toUpperCase());
                                             const esPagada = ['AS'].includes(cita.estado_codigo?.toUpperCase());
+                                            const esReciente = cita.id === citaResaltadaId;
                                             return (
-                                                <tr key={cita.id} className={esInactiva ? 'opacity-75 bg-light' : ''}>
-                                                     <td className="text-left pe-4">
+                                                <tr 
+                                                    key={cita.id} 
+                                                    className={`
+                                                        ${esInactiva ? 'opacity-75 bg-light' : ''} 
+                                                        ${esReciente ? 'animate__animated animate__fadeIn' : ''} 
+                                                    `}
+                                                    style={{
+                                                        transition: 'all 0.8s ease', // Transición suave para cuando desaparezca el efecto
+                                                        // Color de fondo muy suave (Azul tipo seda o Verde menta suave)
+                                                        backgroundColor: esReciente ? '#f0f7ff' : (esInactiva ? '#f8f9fa' : 'transparent'),
+                                                        // Un borde lateral más discreto
+                                                        borderLeft: esReciente ? '3px solid #7dd3fc' : '3px solid transparent'
+                                                    }}
+                                                >
+                                                    <td className="ps-4">
+                                                        {esReciente && (
+                                                            <span 
+                                                                className="badge rounded-pill mb-1 animate__animated animate__pulse animate__infinite" 
+                                                                style={{ 
+                                                                    fontSize: '8px', 
+                                                                    backgroundColor: '#e0f2fe', // Fondo celeste pastel
+                                                                    color: '#0369a1',           // Texto azul profundo
+                                                                    border: '1px solid #bae6fd'
+                                                                }}
+                                                            >
+                                                                ¡NUEVA CITA!
+                                                            </span>
+                                                        )}
                                                         <div className="d-flex align-items-center">
                                                             <div className="avatar avatar-sm bg-light-primary text-primary rounded-circle me-2 d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px', fontSize: '12px' }}>
                                                                         {cita.round || 'E'}
@@ -1395,74 +1582,112 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
 
                 {/* COLUMNA DERECHA: Más delgada y estilizada (4 o 5) */}
                 <div className="col-lg-4">
-                    <div className="card border-0 shadow-lg h-100 bg-dark text-white" 
+                    <div className="card border-0 shadow-lg h-100 text-white" 
                         style={{ 
-                            background: 'linear-gradient(145deg, #1a1a1a 0%, #000000 100%)',
-                            borderRadius: '16px' 
+                            background: 'linear-gradient(135deg, #051937 0%, #004d7a 100%)',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            overflow: 'hidden'
                         }}>
                         <div className="card-body d-flex flex-column justify-content-between p-4">
                             
-                            {/* PARTE SUPERIOR */}
+                            {/* PARTE SUPERIOR: Header con Acento Cian */}
                             <div>
                                 <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <div className="avtar avtar-m bg-primary bg-opacity-10 text-primary rounded-circle" 
-                                        style={{ boxShadow: '0 0 15px rgba(24, 144, 255, 0.3)' }}>
+                                    <div className="avtar avtar-m rounded-circle d-flex align-items-center justify-content-center" 
+                                        style={{ 
+                                            background: 'rgba(36, 210, 219, 0.15)', 
+                                            color: '#24D2DB',
+                                            width: '50px',
+                                            height: '50px',
+                                            border: '1px solid rgba(36, 210, 219, 0.3)',
+                                            boxShadow: '0 0 15px rgba(36, 210, 219, 0.2)'
+                                        }}>
                                         <i className="ti ti-users fs-3"></i>
                                     </div>
-                                    {/* DINÁMICO: Clientes registrados hoy */}
-                                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
-                                        <i className="ti ti-trending-up me-1"></i> +{clientesHoy} hoy
+                                    {/* Badge con efecto Neón */}
+                                    <span className="badge rounded-pill px-3 py-2 fw-bold" 
+                                        style={{ 
+                                            backgroundColor: 'rgba(36, 210, 219, 0.1)', 
+                                            color: '#24D2DB',
+                                            fontSize: '11px',
+                                            border: '1px solid rgba(36, 210, 219, 0.2)'
+                                        }}>
+                                        <i className="ti ti-arrow-up-right me-1"></i> +{clientesHoy} hoy
                                     </span>
                                 </div>
 
-                                <h6 className="text-white-50 small mb-1 text-uppercase fw-bold" style={{ letterSpacing: '1px' }}>
-                                    Comunidad de Clientes
+                                <h6 className="text-white-50 small mb-1 text-uppercase fw-extrabold" style={{ letterSpacing: '1.5px' }}>
+                                    Comunidad Total
                                 </h6>
-                                {/* DINÁMICO: Total de clientes con formato de miles */}
-                                <h2 className="fw-extrabold mb-2 text-white" style={{ fontSize: '36px', letterSpacing: '-1px' }}>
+                                
+                                {/* El número principal en blanco puro para máximo contraste */}
+                                <h2 className="fw-extrabold mb-2 text-white" style={{ fontSize: '42px', letterSpacing: '-1.5px' }}>
                                     {totalClientes.toLocaleString()}
                                 </h2>
-                                <p className="text-white-50 x-small mb-0">
-                                    <span className="text-primary fw-bold">Activos en el sistema</span>
-                                </p>
+                                
+                                <div className="d-flex align-items-center mt-2">
+                                    <div className="d-flex me-2">
+                                        {[1, 2, 3].map((_, i) => (
+                                            <div key={i} className="rounded-circle border border-2 border-dark" 
+                                                style={{ 
+                                                    width: '22px', height: '22px', 
+                                                    background: '#24D2DB', 
+                                                    marginLeft: i === 0 ? 0 : '-10px',
+                                                    boxShadow: '0 0 10px rgba(36, 210, 219, 0.3)'
+                                                }}></div>
+                                        ))}
+                                    </div>
+                                    <p className="text-white-50 small mb-0 fw-medium">
+                                        <span style={{ color: '#24D2DB', fontWeight: 'bold' }}>Crecimiento constante</span>
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* PARTE INFERIOR: Métricas de Retención */}
-                            <div className="mt-4 pt-4 border-top border-white border-opacity-10">
-                                <div className="d-flex justify-content-between align-items-end mb-2">
+                            {/* PARTE INFERIOR: Métricas de Retención con Glow */}
+                            <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div className="d-flex justify-content-between align-items-end mb-3">
                                     <div>
-                                        <span className="d-block small opacity-50 text-uppercase fw-bold" style={{ fontSize: '10px' }}>
-                                            Tasa de Retención
+                                        <span className="d-block text-white-50 text-uppercase fw-bold mb-1" style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                                            Tasa de Fidelización
                                         </span>
-                                        {/* DINÁMICO: % de fidelidad */}
-                                        <span className="fs-5 fw-bold text-primary">{tasaRetencion}%</span>
+                                        <div className="d-flex align-items-baseline">
+                                            <span className="fs-3 fw-extrabold text-white">{tasaRetencion}%</span>
+                                            <span className="ms-2 small text-white-50">/ {metaQ2}%</span>
+                                        </div>
                                     </div>
                                     <div className="text-end">
-                                        <span className="d-block small opacity-50 text-uppercase fw-bold" style={{ fontSize: '10px' }}>
-                                            Meta Q2
-                                        </span>
-                                        <span className="small">{metaQ2}%</span>
+                                        <div className="p-2 rounded-circle bg-white bg-opacity-10">
+                                            <i className="ti ti-chart-pie text-cyan" style={{ color: '#24D2DB' }}></i>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                {/* Progress Bar Dinámica */}
-                                <div className="progress bg-white bg-opacity-10" style={{ height: '6px', borderRadius: '10px' }}>
+                                {/* Barra de Progreso Cian Eléctrico */}
+                                <div className="progress shadow-none" style={{ height: '8px', borderRadius: '20px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
                                     <div 
                                         className="progress-bar" 
                                         style={{ 
-                                            width: `${tasaRetencion}%`, // Ajusta el ancho al valor real
-                                            backgroundColor: '#24D2DB',
-                                            boxShadow: '0 0 10px rgba(36, 210, 219, 0.5)',
-                                            borderRadius: '10px',
-                                            transition: 'width 1s ease-in-out' // Animación suave
+                                            width: `${tasaRetencion}%`,
+                                            background: 'linear-gradient(90deg, #24D2DB 0%, #00acc1 100%)',
+                                            borderRadius: '20px',
+                                            boxShadow: '0 0 15px rgba(36, 210, 219, 0.5)', // El brillo de la barra
+                                            transition: 'width 1.5s cubic-bezier(0.65, 0, 0.35, 1)'
                                         }}
                                     ></div>
                                 </div>
-                                <p className="text-white-50 x-small mt-2 mb-0 italic">
-                                    {tasaRetencion >= metaQ2 
-                                        ? "* ¡Felicidades! Has alcanzado la meta del trimestre." 
-                                        : "* Vas por buen camino para alcanzar la meta del trimestre."}
-                                </p>
+                                
+                                {/* Mensaje de Meta estilo Glass */}
+                                <div className="mt-4 p-3 rounded-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div className="d-flex align-items-center">
+                                        <i className="ti ti-sparkles me-2" style={{ color: '#24D2DB' }}></i>
+                                        <p className="x-small mb-0 fw-bold text-white-50">
+                                            {tasaRetencion >= metaQ2 
+                                                ? "¡Meta trimestral superada!" 
+                                                : "A " + (metaQ2 - tasaRetencion).toFixed(1) + "% de la meta del Q2"}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                         </div>

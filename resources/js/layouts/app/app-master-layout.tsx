@@ -1,6 +1,6 @@
 import { type BreadcrumbItem } from '@/types';
 import { useEffect, type PropsWithChildren } from 'react';
-
+import { Toaster } from 'react-hot-toast'; // <--- 1. Importa esto
 import AppMasterHeader from '@/components/app-master-header';
 import AppMasterSidebar from '@/components/app-master-sidebar';
 import AppMasterContent from '@/components/app-master-content';
@@ -40,6 +40,36 @@ export default function AppMasterLayout({ children, breadcrumbs = [] }: PropsWit
             {/* Contenedor de contenido dinámico */}
             <AppMasterContent>
                 {/* Aquí podrías insertar un componente de Breadcrumbs global si lo necesitas */}
+                <Toaster
+                    position="top-right"
+                    reverseOrder={false}
+                    gutter={8}
+                    toastOptions={{
+                        // Estilo global para todos los toasts
+                        duration: 5000,
+                        style: {
+                        background: '#fff',
+                        color: '#334155', // Slate 700 (más suave que el negro)
+                        padding: '16px',
+                        borderRadius: '12px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        border: '1px solid #e2e8f0',
+                        maxWidth: '400px',
+                        },
+                        // Estilo específico para el de éxito
+                        success: {
+                        iconTheme: {
+                            primary: '#10b981', // Verde esmeralda moderno
+                            secondary: '#fff',
+                        },
+                        style: {
+                            borderLeft: '5px solid #10b981', // Barra lateral de color
+                        },
+                        },
+                    }}
+                />
                 {children}
             </AppMasterContent>
             
