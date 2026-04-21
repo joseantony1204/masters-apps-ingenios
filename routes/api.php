@@ -24,3 +24,8 @@ Route::post('/scsuscripciones/webhook-epayco', [ScsuscripcionesController::class
 Route::get('/wompi/prepare/{suscripcionId}/pagoId/{pagoId}', [WompiController::class, 'preparePayment'])->middleware(['auth'])->name('api.wompi.prepare');; // Protegido pero accesible
 Route::get('/wompi/resultado', [WompiController::class, 'resultado'])->name('api.wompi.resultado'); // Protegido pero accesible
 Route::post('/wompi/webhook', [WompiController::class, 'handleWebhook'])->name('api.wompi.webhook');
+
+/**
+*¡Felicidades, Antonio! Lograr que Reverb funcione en local con React y que la UI se comporte de forma elegante es un hito importante.
+*Pasar a producción requiere unos pasos específicos porque, a diferencia de tu MacBook, en el servidor Reverb debe correr como un "servicio" que nunca se detenga. Aquí tienes la hoja de ruta clara:
+ */
