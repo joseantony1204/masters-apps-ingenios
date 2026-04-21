@@ -536,7 +536,16 @@ export default function Landing({ comercio, servicios }: any) {
             {/* BOTÓN INFERIOR DE ACCIÓN */}
             {(selectedService && (selectedHora || activeStep === 'especialistas' || activeStep === 'fecha')) && (
                 <div className="fixed-bottom bg-white p-3 border-top d-flex justify-content-between align-items-center mx-auto shadow-lg" 
-                     style={{ maxWidth: '500px', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', zIndex: 2050 }}>
+                    style={{ 
+                    maxWidth: '500px', // Un poco más angosto para que se vea que flota
+                    borderTopLeftRadius: '35px', 
+                    borderTopRightRadius: '35px', 
+                    borderBottomLeftRadius: '35px', // Opcional: redondear abajo también
+                    borderBottomRightRadius: '35px', // Opcional
+                    zIndex: 2050,
+                    transform: 'translateY(25px)'
+                    }}
+                >
                     <div className="ps-2">
                         <div className="small text-muted fw-bold" style={{ fontSize: '10px' }}>TOTAL</div>
                         <div className="fw-bold fs-4 text-dark">
@@ -576,7 +585,7 @@ export default function Landing({ comercio, servicios }: any) {
                               boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
                               position: 'relative', 
                               zIndex: 3001,
-                              transform: 'translateY(-60px)'
+                              transform: 'translateY(-30px)'
                           }}>
                           
                           {/* Header del Modal */}

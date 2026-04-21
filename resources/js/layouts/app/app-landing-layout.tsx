@@ -27,7 +27,7 @@ export default function AppLandingLayout({ children, comercio }: AppLandingLayou
                         background: 'linear-gradient(180deg, #24D2DB 0%, #1FBCC5 100%)',
                         borderBottomLeftRadius: '40px',
                         borderBottomRightRadius: '40px',
-                        padding: '50px 25px 45px 25px',
+                        padding: '20px 25px 20px 25px',
                         boxShadow: '0 10px 30px rgba(36, 210, 219, 0.25)',
                         position: 'relative',
                         zIndex: 5
@@ -70,7 +70,7 @@ export default function AppLandingLayout({ children, comercio }: AppLandingLayou
                         <nav style={{
                             backgroundColor: '#FFFFFF',
                             margin: '0 0px',
-                            padding: '50px 10px 25px 10px',
+                            padding: '25px 10px 25px 10px',
                             borderTopLeftRadius: '30px',
                             borderTopRightRadius: '30px',
                             display: 'flex',
