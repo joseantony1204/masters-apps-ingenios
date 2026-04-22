@@ -41,7 +41,7 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                         <h4 className="offcanvas-title fw-bold text-white mb-1">📅 Reservar Cita</h4>
                         <p className="text-white-50 small mb-0">Sigue los pasos para agendar</p>
                     </div>
-                    <button type="button" className="btn-close btn-close-white" onClick={cerrarModal}></button>
+                    <button type="button" className="btn-close btn-close-white" onClick={cerrarModal}><i className="ti ti-x"></i></button>
                 </div>
 
                 <div className="offcanvas-body p-0 bg-light-subtle d-flex flex-column" style={{ overflowX: 'hidden' }}>
