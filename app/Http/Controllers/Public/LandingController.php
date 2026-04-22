@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Comercios, Productos, Adcitas};
+use App\Models\{Comercios, Productos, Adcitas, Cfempleados};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -103,6 +103,32 @@ class LandingController extends Controller
             'cita' => $resumen
         ]);
        
+    }
+
+    public function appointments(Request $request)
+    {
+        $token = $request->query('token');
+        $empleado = $request->query('empleado');
+        // 0. Buscamos el comercio y sus sedes
+        $comercio = Comercios::with(['sedes'])->where('token', $token)->firstOrFail();
+
+        // Cargamos el empleado con todas sus relaciones anidadas
+        $cfempleados = Cfempleados::with([
+            'persona.personasnaturales', 
+            // Cargamos los servicios con sus datos de la tabla pivote
+          
+            'detallescitas.cita.cliente.persona.personasnaturales', // Para el nombre del cliente'
+            'detallescitas.cita' => function($query) {
+                // Traemos la relación 'estado' dentro de citas para obtener el nombre
+                $query->with('estado')->orderBy('estado_id', 'asc');
+            },
+            'detallescitas.empleadoservicio.servicio', // Para el nombre del servicio
+        ])->findOrFail($empleado);
+
+        return Inertia::render('appointments', [
+            'comercio' => $comercio,
+            'citas' => $cfempleados
+        ]);
     }
 }
 ?>

@@ -232,12 +232,12 @@ class AdcitasController extends Controller
             return DB::transaction(function () use ($request) {
                 $userAuth = Auth::user();
                 $audt = ['created_by' => $userAuth->id, 'created_at' => now()]; 
+                // 1. Obtener Comercio y Sedes del Admin actual
+                $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
                 
                 // --- LÓGICA DE CLIENTE ---
                 $clienteId = $request->cliente_id;
                 if (!$clienteId) {
-                    // 1. Obtener Comercio y Sedes del Admin actual
-                    $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
 
                     // 2. Crear o actualizar Persona
                     $persona = Personas::updateOrCreate(
@@ -325,7 +325,7 @@ class AdcitasController extends Controller
                 ] + $audt);
 
                 if($cita)
-                    event(new AdcitasEvent($cita));
+                    event(new AdcitasEvent($cita,$comercio));
                     $fechaCita = Carbon::parse($cita->fecha . ' ' . $cita->horainicio);
                     $ahora = now();
                     $momentoEnvio = $fechaCita->copy()->subMinutes(30);

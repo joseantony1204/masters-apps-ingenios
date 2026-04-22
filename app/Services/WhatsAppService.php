@@ -44,13 +44,37 @@ class WhatsAppService
      * @param array $params Parámetros del body {{1}}, {{2}}, etc.
      * @param string|null $phoneId ID del número emisor (opcional)
      */
-    public function send($number, $templateName, array $params = [], $phoneId = null)
+
+    public function send($number, $templateName, array $params = [], $buttonParam = null, $phoneId = null)
     {
         $phoneId = $phoneId ?? $this->defaultPhoneId;
         $formattedNumber = $this->formatNumber($number);
 
-        // Generar una firma única para este mensaje para evitar duplicados en logs (Idempotencia visual)
-        $messageHash = md5($formattedNumber . $templateName . json_encode($params));
+        // Firma para logs incluyendo el parámetro del botón
+        $messageHash = md5($formattedNumber . $templateName . json_encode($params) . $buttonParam);
+
+        // 1. Definimos los componentes básicos (Body)
+        $components = [
+            [
+                "type" => "body",
+                "parameters" => collect($params)->map(fn($v) => ["type" => "text", "text" => (string)$v])->toArray()
+            ]
+        ];
+
+        // 2. Si hay un parámetro para el botón, lo añadimos al array de componentes
+        if ($buttonParam) {
+            $components[] = [
+                "type" => "button",
+                "sub_type" => "url",
+                "index" => "0", // Asume que es el primer botón de URL configurado en Meta
+                "parameters" => [
+                    [
+                        "type" => "text",
+                        "text" => (string)$buttonParam // El sufijo que se pegará a la URL base
+                    ]
+                ]
+            ];
+        }
 
         $body = [
             "messaging_product" => "whatsapp",
@@ -59,29 +83,23 @@ class WhatsAppService
             "template" => [
                 "name" => $templateName,
                 "language" => ["code" => "es"],
-                "components" => [
-                    [
-                        "type" => "body",
-                        "parameters" => collect($params)->map(fn($v) => ["type" => "text", "text" => (string)$v])->toArray()
-                    ]
-                ]
+                "components" => $components
             ]
         ];
 
         try {
-            // Log previo al envío (Cacheo de intención)
             Log::channel('stack')->info("Iniciando envío WhatsApp [Hash: $messageHash] a $formattedNumber");
 
             $response = $this->client->post("{$phoneId}/messages", [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->token,
+                    'Content-Type' => 'application/json',
                 ],
                 'json' => $body
             ]);
 
             $result = json_decode($response->getBody()->getContents(), true);
             
-            // Log de éxito
             Log::info("WhatsApp enviado con éxito. WAID: " . ($result['messages'][0]['id'] ?? 'N/A'));
 
             return [
@@ -91,9 +109,9 @@ class WhatsAppService
             ];
 
         } catch (ClientException $e) {
-            $error = json_decode($e->getResponse()->getBody()->getContents(), true);
-            // Capturamos errores específicos de Meta (ej: fuera de ventana de 24h)
-            Log::error("Error de Cliente Meta [$messageHash]: ", $error);
+            $responseBody = $e->getResponse()->getBody()->getContents();
+            $error = json_decode($responseBody, true);
+            Log::error("Error de Cliente Meta [$messageHash]: ", $error ?? [$responseBody]);
             return ['success' => false, 'error' => $error['error']['message'] ?? 'Error en la API de Meta'];
         } catch (\Exception $e) {
             Log::error("Excepción crítica WhatsApp [$messageHash]: " . $e->getMessage());

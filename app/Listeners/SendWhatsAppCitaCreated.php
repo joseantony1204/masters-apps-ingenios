@@ -13,6 +13,8 @@ class SendWhatsAppCitaCreated
     public function handle(AdcitasEvent $event)
     {
         $cita = $event->cita;
+        $comercio = $event->comercio;
+        $token = $comercio->token;
 
         // Aseguramos que cargamos las relaciones si no vienen (por si acaso)
         $cita->loadMissing(['detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales', 'cliente.persona.personasnaturales']);
@@ -35,6 +37,7 @@ class SendWhatsAppCitaCreated
         $telefonoCliente = $cita->cliente?->persona?->telefonomovil ?? null; // Ajusta según tu modelo
         $telefonoLimpio = preg_replace('/\D/', '', $telefonoCliente);
         $clienteConWhatsapp = "{$clienteNombre} - WhatsApp: +57{$telefonoLimpio}";
+        $buttonParam = "appointments?empleado={$detalle?->empleadoservicio?->empleado?->id}&token={$token}";
         // 1. VALIDACIÓN Y LOGS PARA EL EMPLEADO
         if ($telefonoEmpleado) {
             try {
@@ -47,9 +50,9 @@ class SendWhatsAppCitaCreated
                 ];
 
                 // IMPRIMIR EN LOG PARA VALIDAR
-                Log::info("WhatsApp Prep - Empleado:", ['telefono' => $telefonoEmpleado,'template' => 'proximacita','params'   => $params]);
+                Log::info("WhatsApp Prep - Empleado:", ['telefono' => $telefonoEmpleado, 'template' => 'proximacita','params' => $params, 'buttonParam' => $buttonParam]);
                 // ENVIAR REALMENTE
-                $this->whatsAppService->send($telefonoEmpleado, 'proximacita', $params);
+                //$this->whatsAppService->send($telefonoEmpleado, 'proximacita', $params, $buttonParam);
             } catch (\Exception $e) {
                 // Logueamos el error pero NO relanzamos la excepción 
                 // para que no rompa la transacción de la cita

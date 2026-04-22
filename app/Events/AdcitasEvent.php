@@ -13,9 +13,11 @@ class AdcitasEvent implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets; // Solo estos dos
 
     public $cita; 
-    public function __construct($cita)
+    public $comercio; 
+    public function __construct($cita,$comercio)
     {
         $this->cita = $cita;
+        $this->comercio = $comercio;
     }
 
     public function broadcastOn(): array

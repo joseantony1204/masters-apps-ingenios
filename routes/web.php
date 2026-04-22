@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
 // Ruta pública para el QR
 Route::get('/landing', [LandingController::class, 'index'])->name('public.landing');
+Route::get('/appointments', [LandingController::class, 'appointments'])->name('public.appointments');
 Route::get('/confirmada', [LandingController::class, 'confirmada'])->name('public.confirmada');
 
 

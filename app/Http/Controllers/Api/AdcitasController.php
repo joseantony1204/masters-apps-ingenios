@@ -66,7 +66,7 @@ class AdcitasController extends Controller
                 // 6. Limpiar el OTP para que no se pueda reutilizar
                 $persona->update(['codigo_sms' => NULL]);
                 if($cita)
-                    event(new AdcitasEvent($cita));
+                    event(new AdcitasEvent($cita,$comercio));
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Reserva creada correctamente',
