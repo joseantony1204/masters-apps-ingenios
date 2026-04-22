@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Ftimpuestos } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    ftimpuestos: Ftimpuestos;
+    ftimpuestos: any;
 }
 
 export default function Edit({ ftimpuestos}: Props) {

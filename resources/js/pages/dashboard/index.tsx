@@ -11,23 +11,6 @@ import * as bootstrap from 'bootstrap';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-// 1. Importamos Recharts con Alias para evitar el choque
-import { 
-    PieChart, 
-    Pie, 
-    Legend as RechartsLegend, // Alias aplicado
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    Tooltip as RechartsTooltip, // Alias aplicado
-    ResponsiveContainer, 
-    Cell, 
-    CartesianGrid 
-} from 'recharts'; 
-
-// 2. Importamos Chart.js normalmente
-import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -90,7 +73,78 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
     
     // Al principio de index.tsx (fuera del componente)
+    /**
+     * Calcula la diferencia de días entre hoy y la fecha de vencimiento
+     */
 
+    const calcularDias = (fechaVencimiento: string): number => {
+        if (!fechaVencimiento) return 99;
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        // Usamos el reemplazo para evitar errores de fecha en JS
+        const vencimiento = new Date(fechaVencimiento.replace(/-/g, '\/'));
+        vencimiento.setHours(0, 0, 0, 0);
+        const diferenciaMs = vencimiento.getTime() - hoy.getTime();
+        return Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    };
+
+    const handleGoPay = (plan: number, id: number) => {
+        router.post(route('scsuscripciones.gopay'), {
+            plan_id: plan,
+            id: id
+        });
+    };
+
+    const SubscriptionBanner = ({ suscripcion, diasRestantes, pendientePago, onPay, onClose }: any) => {
+        const esVencida = diasRestantes <= 0;
+        
+        // Configuración visual dinámica
+        const config = {
+            color: esVencida || pendientePago ? 'alert-danger' : 'alert-warning',
+            icon: esVencida || pendientePago ? 'ti-circle-x' : 'ti-alert-triangle',
+            bgIcon: esVencida || pendientePago ? 'bg-danger' : 'bg-warning',
+            titulo: esVencida ? 'Suscripción Vencida' : (pendientePago ? 'Pago Pendiente' : 'Próximo Vencimiento'),
+            // Mensaje detallado
+            mensaje: esVencida 
+                ? `Tu plan venció hace ${Math.abs(diasRestantes)} días.` 
+                : (pendientePago 
+                    ? "Suscripción activa pero sin registro de pago." 
+                    : `Tu suscripción vence en ${diasRestantes} días.`)
+        };
+    
+        return (
+            <div className={`alert ${config.color} d-flex justify-content-between align-items-center shadow-sm border-0 mb-0 position-relative`} 
+                 style={{ borderRadius: '16px', padding: '16px 24px' }}>
+                
+                {/* Botón de cerrar manual (X) */}
+                <button 
+                    onClick={onClose}
+                    className="btn-close position-absolute top-0 end-0 m-2" 
+                    style={{ fontSize: '0.8rem' }}
+                    aria-label="Close"
+                ></button>
+    
+                <div className="d-flex align-items-center">
+                    <div className={`${config.bgIcon} text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-3`} 
+                         style={{ width: '45px', height: '45px', minWidth: '45px' }}>
+                        <i className={`ti ${config.icon} fs-3`}></i>
+                    </div>
+                    <div className="text-start me-3">
+                        <h6 className="mb-0 fw-800 text-dark" style={{ fontSize: '15px' }}>{config.titulo}</h6>
+                        <p className="mb-0 small fw-bold text-muted">{config.mensaje}</p>
+                    </div>
+                </div>
+                
+                <button 
+                    onClick={() => onPay(suscripcion.plan_id, suscripcion.id)}
+                    className="btn btn-dark rounded-pill px-4 fw-800 shadow-sm btn-sm transition-all hover-scale"
+                >
+                    Pagar Ahora
+                </button>
+            </div>
+        );
+    };
+ 
     // 1. Crea este estado al inicio de tu componente Dashboard
     const [citaResaltadaId, setCitaResaltadaId] = useState<number | null>(null);
     const [bloqueoReverb, setBloqueoReverb] = useState(false);
@@ -146,30 +200,6 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
         }
     }, [bloqueoReverb]); // Añade bloqueoReverb aquí // Importante: el array vacío asegura que esto solo corra una vez al montar
 
-    
-
-    {/*}
-    const calcularDias = (fecha: any) => { 
-        console.log(fecha)
-    };
-
-    const SubscriptionBanner = ({ suscripcion }) => {
-        const diasRestantes =  calcularDias(suscripcion.fecha_vencimiento);
-    
-        if (diasRestantes > 5) return null;
-    
-        return (
-            <div className={`alert ${diasRestantes <= 0 ? 'alert-danger' : 'alert-warning'} d-flex justify-content-between`}>
-                <span>
-                    <i className="ti ti-alert-triangle me-2"></i>
-                    {diasRestantes <= 0 
-                        ? "Tu suscripción ha vencido. Tienes 10 días para pagar antes de la suspensión." 
-                        : `Tu suscripción vence en ${diasRestantes} días.`}
-                </span>
-                <button className="btn btn-sm btn-dark">Pagar Ahora</button>
-            </div>
-        );
-    };*/}
     
     const [dropdownAbierto, setDropdownAbierto] = useState<number | null>(null);
     // Función para cerrar el menú al hacer click afuera
@@ -872,10 +902,52 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     };
 
 
+    // 1. Extraemos la última suscripción (la más reciente)
+    const ultimaSuscripcion = comercio.suscripciones && comercio.suscripciones.length > 0 
+    ? [...comercio.suscripciones].sort((a, b) => 
+        new Date(b.fecha_vencimiento).getTime() - new Date(a.fecha_vencimiento).getTime()
+    )[0]
+    : null;
+
+    // 2. Calculamos los días restantes usando la función que ya tenemos
+    const diasParaVencer = ultimaSuscripcion ? calcularDias(ultimaSuscripcion.fecha_vencimiento) : 99;
+
+    // 3. Verificamos si hay deuda pendiente (estado 981 según tu JSON)
+    const pendientePago = ultimaSuscripcion?.estado_id === 981;
+
+    /** * LA VARIABLE CLAVE:
+    * Se muestra si: faltan 3 días o menos O si ya venció (dias <= 0) O si debe dinero.
+    */
+    const mostrarBanner = ultimaSuscripcion && (diasParaVencer <= 3 || pendientePago);
+
+    const [bannerVisible, setBannerVisible] = useState(true);
+    useEffect(() => {
+        // Si el banner debe mostrarse pero NO es crítico (todavía tiene días a favor),
+        // lo ocultamos automáticamente después de 10 segundos.
+        if (mostrarBanner && diasParaVencer > 0) {
+            const timer = setTimeout(() => {
+                setBannerVisible(false);
+            }, 10000);
+            return () => clearTimeout(timer);
+        }
+    }, [mostrarBanner, diasParaVencer]);
 
     return (
         <AppMainLayout>
             <Head title="Vantify - Dashboard Unificado" />
+
+            {/* Banner de Suscripción con auto-cierre */}
+            {mostrarBanner && bannerVisible && (
+              <div className="row mb-4 pt-3 animate__animated animate__fadeInDown">
+                    <SubscriptionBanner 
+                        suscripcion={ultimaSuscripcion} 
+                        diasRestantes={diasParaVencer}
+                        pendientePago={pendientePago}
+                        onPay={handleGoPay}
+                        onClose={() => setBannerVisible(false)} // Opción para cerrar manualmente
+                    />
+                </div>
+            )}
 
             {/* --- BANNER DE BIENVENIDA OPTIMIZADO --- */}
             <div className="row mb-4">

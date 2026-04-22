@@ -310,7 +310,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('dashboard/analytics', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        $comercio = Comercios::with('suscripciones')->where('persona_id', $user->persona_id)->first();
         
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
