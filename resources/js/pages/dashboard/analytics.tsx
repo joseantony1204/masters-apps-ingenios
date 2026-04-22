@@ -53,6 +53,7 @@ ChartJS.register(
 
 interface Props {
     auth : any
+    comercio : any
     citas: any[];
     cumpleanosHoy: any[];
     facturas: any[];
@@ -74,7 +75,7 @@ interface DataGrafico {
 }
 import { useReservaCita } from '@/hooks/use-reserva-cita';
 
-export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada, topClientes, clientesFrecuencia}: Props) {
+export default function Analitics({ auth, comercio, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada, topClientes, clientesFrecuencia}: Props) {
     
     const [citaDetalle, setCitaDetalle] = useState<any>(null);
     const [citaCancelar, setCitaCancelar] = useState<any>(null);
@@ -170,30 +171,68 @@ export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estado
     const downloadQR = () => {
         const svg = qrRef.current?.querySelector('svg');
         if (!svg) return;
-
+    
+        const nombreComercio = comercio?.nombre || "Mi Comercio";
         const svgData = new XMLSerializer().serializeToString(svg);
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         const img = new Image();
-
+    
         img.onload = () => {
-            canvas.width = 1500; // Alta resolución para impresión
-            canvas.height = 1500;
+            // Dimensiones optimizadas para posters/redes sociales
+            const width = 1200;
+            const height = 1600;
+            canvas.width = width;
+            canvas.height = height;
+    
             if (ctx) {
-                // Fondo blanco obligatorio para escaneo físico
+                // 1. Fondo Blanco Total
                 ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 100, 100, 1300, 1300);
+                ctx.fillRect(0, 0, width, height);
+    
+                // 2. Cabecera Estilizada (Azul Vantify)
+                ctx.fillStyle = "#0095ff";
+                ctx.fillRect(0, 0, width, 280);
+    
+                // 3. Nombre del Comercio (Ajuste automático de tamaño si es largo)
+                ctx.fillStyle = "white";
+                const fontSizeNombre = nombreComercio.length > 15 ? "70px" : "90px";
+                ctx.font = `bold ${fontSizeNombre} Montserrat, sans-serif`;
+                ctx.textAlign = "center";
+                ctx.fillText(nombreComercio.toUpperCase(), width / 2, 170);
+    
+                // 4. Dibujar el código QR (Más grande para mejor escaneo)
+                const qrSize = 950;
+                const qrX = (width - qrSize) / 2;
+                const qrY = 380;
+                ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    
+                // 5. Texto de Instrucción (CTA)
+                ctx.fillStyle = "#1e293b";
+                ctx.font = "bold 65px Montserrat, sans-serif";
+                ctx.fillText("¡ESCANÉAME PARA AGENDAR!", width / 2, 1420);
+    
+                // 6. URL OPTIMIZADA (Aquí está el truco para que no se corte)
+                ctx.fillStyle = "#64748b"; // Color gris suave profesional
+                ctx.font = "40px Montserrat, sans-serif";
+                
+                // Mostramos una versión simplificada visualmente
+                const urlSimplificada = `vantifypro.co/landing?token=${token.substring(0, 8)}...`;
+                ctx.fillText(urlSimplificada, width / 2, 1510);
+                
+                // 7. Línea Decorativa Inferior
+                ctx.fillStyle = "#0095ff";
+                ctx.fillRect((width - 200) / 2, 1550, 200, 8);
             }
+    
             const pngFile = canvas.toDataURL("image/png");
-            
             const downloadLink = document.createElement("a");
-            downloadLink.download = `QR-Vantify-Pro-${token}.png`;
+            downloadLink.download = `QR-${nombreComercio.replace(/\s+/g, '-')}.png`;
             downloadLink.href = pngFile;
             downloadLink.click();
         };
-
-        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    
+        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
     };
 
     // Función para compartir (Web Share API)
@@ -202,49 +241,59 @@ export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estado
             const svgElement = qrRef.current?.querySelector('svg');
             if (!svgElement) return;
     
+            const nombreComercio = comercio?.nombre || "Mi Comercio";
             const svgData = new XMLSerializer().serializeToString(svgElement);
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
             const img = new Image();
             
-            const svgSize = svgElement.getBoundingClientRect();
-            canvas.width = svgSize.width * 2;
-            canvas.height = svgSize.height * 2;
+            // Dimensiones consistentes con la descarga
+            canvas.width = 1200;
+            canvas.height = 1600;
     
             img.onload = async () => {
                 if (!ctx) return;
+    
+                // --- MISMO DISEÑO QUE DOWNLOAD ---
                 ctx.fillStyle = "white";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#0095ff";
+                ctx.fillRect(0, 0, canvas.width, 280);
+                ctx.fillStyle = "white";
+                const fontSize = nombreComercio.length > 15 ? "70px" : "90px";
+                ctx.font = `bold ${fontSize} Montserrat, sans-serif`;
+                ctx.textAlign = "center";
+                ctx.fillText(nombreComercio.toUpperCase(), canvas.width / 2, 170);
+                ctx.drawImage(img, 125, 380, 950, 950);
+                ctx.fillStyle = "#1e293b";
+                ctx.font = "bold 65px Montserrat, sans-serif";
+                ctx.fillText("¡ESCANÉAME PARA AGENDAR!", canvas.width / 2, 1420);
+                ctx.fillStyle = "#64748b";
+                ctx.font = "40px Montserrat, sans-serif";
+                const urlSimplificada = `vantifypro.co/landing?token=${token.substring(0, 12)}...`;
+                ctx.fillText(urlSimplificada, canvas.width / 2, 1510);
+                // ---------------------------------
     
-                // Intentar compartir como archivo
                 canvas.toBlob(async (blob) => {
                     if (!blob) return;
-                    const file = new File([blob], "mi-qr-vantify.png", { type: "image/png" });
+                    const file = new File([blob], `QR-${nombreComercio}.png`, { type: "image/png" });
     
-                    // VALIDACIÓN CRÍTICA: ¿Existe navigator.share y navigator.canShare?
                     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                         try {
                             await navigator.share({
                                 files: [file],
-                                title: 'Mi Código QR',
-                                text: 'Escanea mi código para agendar.',
+                                title: `QR de ${nombreComercio}`,
+                                text: `Escanea nuestro código para agendar tu cita en ${nombreComercio}.`,
                             });
-                        } catch (shareError) {
-                            // Si el usuario cancela o falla el envío de archivo, intentamos solo texto
-                            fallbackCopy();
-                        }
+                        } catch (e) { fallbackCopy(); }
                     } else {
-                        // PLAN B: Descargar la imagen automáticamente y copiar link
                         fallbackDownloadAndCopy(blob);
                     }
                 }, "image/png");
             };
     
             img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-    
         } catch (error) {
-            console.error('Error general:', error);
             fallbackCopy();
         }
     };
@@ -571,9 +620,6 @@ export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estado
                                     <h3 className="fw-bold text-dark mb-1">
                                         ¡Bienvenido a Vantify Pro, {auth.user.nombreComercio || auth.user.name}! 🚀
                                     </h3>
-                                    <p className="text-muted mb-3 small">
-                                        Tu comercio ha crecido un <span className="text-success fw-bold">15% más</span> esta semana.
-                                    </p>
 
                                     {/* ACCIONES MOVIDAS AQUÍ PARA NO TAPAR EL FONDO */}
                                     <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -988,35 +1034,94 @@ export default function Analitics({ auth, citas, facturas, cumpleanosHoy, estado
             {/* --- MODAL PARA EL QR --- */}
             <div className="modal fade" id="qrModal" tabIndex={-1} aria-hidden="true">
                 <div className="modal-dialog modal-dialog-centered">
-                    <div className="modal-content border-0 shadow-lg">
+                    <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '25px' }}>
                         <div className="modal-header border-0 pb-0">
-                            <h5 className="modal-title fw-bold text-primary">Impulsa tu comercio</h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div className="modal-body text-center py-5">
-                            <div ref={qrRef} style={{ display: 'inline-block', background: 'white', padding: '10px' }}>
-                                <QRCodeSVG value={shopUrl} size={256} />
+                        
+                        <div className="modal-body text-center pt-0 pb-4">
+                            <h4 className="fw-800 text-dark mb-4">Tu Código QR</h4>
+
+                            {/* VISTA PREVIA ESTILO TARJETA FÍSICA */}
+                            <div className="d-flex justify-content-center mb-4">
+                                <div 
+                                    className="qr-card-preview shadow-sm overflow-hidden"
+                                    style={{ 
+                                        width: '280px', 
+                                        borderRadius: '24px', 
+                                        backgroundColor: '#fff',
+                                        border: '1px solid #f1f5f9',
+                                        position: 'relative'
+                                    }}
+                                >
+                                    {/* Cabecera Azul */}
+                                    <div className="bg-primary p-3 text-center">
+                                        <div className="text-white fw-800 text-uppercase" style={{ fontSize: '13px', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {comercio?.nombre}
+                                        </div>
+                                    </div>
+
+                                    {/* Contenedor del QR Real (Este es el que usa qrRef) */}
+                                    <div ref={qrRef} className="p-4 d-flex justify-content-center bg-white">
+                                        <QRCodeSVG
+                                            value={shopUrl}
+                                            size={180}
+                                            level="H"
+                                        />
+                                    </div>
+
+                                    {/* Footer de la tarjeta */}
+                                    <div className="text-center pb-4 px-3">
+                                        <div className="fw-800 text-dark mb-1" style={{ fontSize: '11px' }}>¡ESCANÉAME PARA AGENDAR!</div>
+                                        <div className="text-muted fw-bold" style={{ fontSize: '9px', opacity: 0.7 }}>
+                                            vantifypro.co/...{token.substring(0, 8)}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Detalle decorativo lateral */}
+                                    <div style={{ position: 'absolute', bottom: '0', right: '0', width: '30px', height: '30px', background: 'rgba(0,149,255,0.05)', borderRadius: '100% 0 0 0' }}></div>
+                                </div>
                             </div>
 
+                            <p className="text-muted small px-4 mb-4">
+                                Descarga esta tarjeta para imprimirla o compártela directamente en tus redes sociales.
+                            </p>
                             
-                            <h6 className="fw-bold mb-1">¡Comparte tu perfil!</h6>
-                            <p className="text-muted small px-4 mb-4">Tus clientes podrán agendar y ver tus servicios escaneando este código.</p>
-                            
-                            <div className="d-flex justify-content-center gap-3">
-                                <button onClick={downloadQR} className="btn btn-primary px-4 rounded-pill">
-                                    <i className="ti ti-download me-1"></i> Descargar
+                            {/* BOTONES DE ACCIÓN */}
+                            <div className="d-grid gap-2 px-4">
+                                <button onClick={shareQR} className="btn btn-primary py-3 rounded-pill fw-bold shadow-blue border-0 d-flex align-items-center justify-content-center">
+                                    <i className="ti ti-share me-2 fs-5"></i> Compartir con Clientes
                                 </button>
-                                <button onClick={shareQR} className="btn btn-light px-4 rounded-pill border">
-                                    <i className="ti ti-share me-1"></i> Compartir
+                                <button onClick={downloadQR} className="btn btn-outline-light text-dark py-3 rounded-pill fw-bold border-2 d-flex align-items-center justify-content-center">
+                                    <i className="ti ti-download me-2 fs-5"></i> Descargar Imagen
                                 </button>
                             </div>
                         </div>
-                        <div className="modal-footer border-0 bg-light justify-content-center">
-                            <small className="text-muted">Powered by <strong>Vantify Pro</strong></small>
+
+                        <div className="modal-footer border-0 bg-light justify-content-center" style={{ borderBottomLeftRadius: '25px', borderBottomRightRadius: '25px' }}>
+                            <small className="text-muted fw-bold">Powered by <span className="text-primary">Vantify Pro</span></small>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                .fw-800 { font-weight: 800 !important; }
+                .qr-card-preview {
+                    transition: transform 0.3s ease;
+                }
+                .shadow-blue {
+                    box-shadow: 0 8px 15px -3px rgba(0, 149, 255, 0.4) !important;
+                }
+                .btn-outline-light {
+                    background: #fff;
+                    border-color: #f1f5f9;
+                }
+                .btn-outline-light:hover {
+                    background: #f8fafc;
+                    border-color: #e2e8f0;
+                }
+            `}} />
 
             {showPromoModal && (
                 <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

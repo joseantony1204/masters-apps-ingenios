@@ -511,6 +511,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         ->values();
 
         return Inertia::render('dashboard/analytics', [
+            'comercio' => $comercio,
             'citas' => $citas,
             'facturas' => $facturas,
             'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),

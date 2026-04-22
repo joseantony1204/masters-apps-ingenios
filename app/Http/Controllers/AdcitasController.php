@@ -218,7 +218,7 @@ class AdcitasController extends Controller
 
         // 2. Validación Condicional: Solo si es un cliente NUEVO
         if (!$request->cliente_id) {
-            $rules['cliente_identificacion'] = 'required|unique:personas,identificacion';
+            $rules['cliente_identificacion'] = 'required';
             $rules['cliente_telefono'] = 'required|unique:users,telefonomovil';
         } else {
             // Si el cliente ya existe, solo pedimos que los campos estén pero sin el unique

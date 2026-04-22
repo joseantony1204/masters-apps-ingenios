@@ -376,7 +376,6 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
     const handleCrearCliente = async (e: React.FormEvent) => {
         if (e) e.preventDefault();
         
-        // Usamos axios para tener control total del JSON de respuesta
         try {
             const response = await axios.post(route('api.personas.store'), nuevoClienteData);
             
@@ -386,38 +385,41 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                 // 1. Seleccionamos al cliente en la factura
                 handleSelectCliente(cliente, 922);
                 
-                // 2. Limpieza de interfaz
+                // 2. Limpieza de interfaz del formulario
                 setModoRegistro(false);
                 setTermino('');
                 resetNuevoCliente();
                 
-                // 3. Cerrar modal
+                // 3. CERRAR MODAL Y LIMPIAR BACKDROP (Solución al problema de pantalla oscura)
                 const modalElement = document.getElementById('modalSeleccionarCliente');
                 if (modalElement) {
-                    const bootstrapModal = (window as any).bootstrap.Modal.getInstance(modalElement);
-                    bootstrapModal?.hide();
+                    // Intentamos cerrar por instancia de Bootstrap
+                    const bootstrapModal = (window as any).bootstrap?.Modal?.getInstance(modalElement);
+                    if (bootstrapModal) {
+                        bootstrapModal.hide();
+                    }
+                    
+                    // FORZAR LIMPIEZA MANUAL (Esto es lo que evita que quede oscuro)
+                    setTimeout(() => {
+                        // Eliminamos todos los backdrops que hayan quedado huérfanos
+                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                        // Devolvemos el scroll al cuerpo de la página
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, 100); // Un pequeño delay para que termine la animación de cierre
                 }
-                
-                // Opcional: Notificación de éxito
-                //alert("Cliente creado y seleccionado");
             }
         } catch (error: any) {
             if (error.response && error.response.status === 422) {
                 const serverErrors = error.response.data.errors;
-                
-                // Limpiar errores previos (opcional pero recomendado)
-                // clearErrors(); // Si también lo desestructuras de useForm
-        
                 Object.keys(serverErrors).forEach(key => {
-                    // setError(campo, mensaje)
-                    // Usamos [0] porque Laravel devuelve un array de mensajes por campo
                     setError(key as any, serverErrors[key][0]); 
                 });
             } else {
                 console.error("Error inesperado:", error);
             }
         }    
-        
     };
 
     // Dentro de tu componente Fields
