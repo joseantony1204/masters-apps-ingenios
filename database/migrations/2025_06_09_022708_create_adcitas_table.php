@@ -52,6 +52,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->text('motivocancelar')->nullable();
             $table->text('cupon_id')->nullable()->comment('Para cuando el cliente se le haga un descuento');
+            $table->text('device')->nullable()->comment('Por donde se genero la cita QR o TERMINAL');
 
             $table->unsignedBigInteger('cliente_id');
             $table->foreign('cliente_id')->references('id')

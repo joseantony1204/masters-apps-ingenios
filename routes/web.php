@@ -11,7 +11,8 @@ use App\Http\Controllers\{
     CfbloqueosagendasController,AddetallescitasController,CfempleadosserviciosController,
     FtserialesController,CfsedesController,UsersController,
     CfhorariosController, CfpromocionesController, CfcuponesController,
-    CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController};
+    CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController,
+    ReportesController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
@@ -123,6 +124,9 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::put('updatepermiso', [App\Http\Controllers\SgrolesperfilesController::class, 'updatepermiso'])->name('sgrolesperfiles.updatepermiso');
     // Esta es la URL que el usuario puede refrescar sin errores
     Route::post('/scsuscripciones/checkout', [ScsuscripcionesController::class, 'checkout'])->name('scsuscripciones.checkout');
+
+    Route::get('/reportes/empleados/', [ReportesController::class, 'empleados'])->name('reportes.empleados');
+    Route::get('/reportes/citas/', [ReportesController::class, 'citas'])->name('reportes.citas');
 });
 
 Route::resource('scplanes', ScplanesController::class);
@@ -193,6 +197,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
             'adcitas.fecha',
             'adcitas.horainicio',
             'adcitas.horafinal',
+            'adcitas.device',
             'm.observacion AS estado_observacion',
             'm.codigo AS estado_codigo',
             'm.nombre AS estado_nombre',

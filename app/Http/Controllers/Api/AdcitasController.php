@@ -46,7 +46,7 @@ class AdcitasController extends Controller
                     'horainicio' => $request->horainicio,
                     'horafinal' => $request->horafinal,
                     'descripcion' => $request->observaciones,
-                    'cupon' => $request->cupon,
+                    'device' => "QR - cl: " . $request->cliente_id,
                     'estado_id' => 913,
                 ] + $audt);
 
@@ -71,9 +71,7 @@ class AdcitasController extends Controller
                     'status' => 'success',
                     'message' => 'Reserva creada correctamente',
                     'data' => $cita
-                ], 201);
-                
-
+                ], 201);  
             });
 
         } catch (\Exception $e) {

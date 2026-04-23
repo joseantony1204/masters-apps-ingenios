@@ -1227,7 +1227,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                                 <span 
                                                                     className={`badge bg-light-${cita.estado_observacion} text-${cita.estado_observacion}`} 
                                                                     style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
-                                                                    {cita.estado_nombre}
+                                                                    {cita.estado_nombre.toUpperCase()}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1241,10 +1241,15 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                                 </div>
                                                                 <div>
                                                                     <div className="fw-semibold">{detalle.empleadoservicio.servicio.nombre || 'Servicio N/A'}</div>
-                                                                    <span className="badge bg-light text-dark border fw-normal">
+                                                                    <div className="text-muted" style={{fontSize: '10px'}}>
                                                                         <i className="ti ti-clock me-1 text-primary"></i>
                                                                         {cita.horainicio.substring(0, 5)} - {cita.horafinal.substring(0, 5)}
-                                                                    </span>
+                                                                    </div>
+                                                                    <div className="text-muted" style={{fontSize: '10px'}}>
+                                                                        <i className="ti ti-devices-2 me-1 text-primary"></i>
+                                                                        {cita.device}
+                                                                    </div>
+                                                                    
                                                                     
                                                                 </div>
                                                                 <br></br>

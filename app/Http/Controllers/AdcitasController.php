@@ -308,7 +308,7 @@ class AdcitasController extends Controller
                     'horainicio' => $request->horainicio,
                     'horafinal' => $request->horafinal,
                     'descripcion' => $request->observaciones,
-                    'cupon' => $request->cupon,
+                    'device' => "AM -  us: " . $userAuth->id,
                     'estado_id' => 913,
                 ] + $audt);
 

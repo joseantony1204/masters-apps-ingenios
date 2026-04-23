@@ -186,6 +186,8 @@ class DisponibilidadController extends Controller
             return [
                 'id' => $servicio->id,
                 'nombre' => $servicio->nombre,
+                'categoria' => $servicio->categoria->nombre,
+                'icon' => $servicio->categoria->observacion,
                 'preciobase' => $servicio->preciosalida,
                 'duracion' => $servicio->duracion,
                 // Mapeamos los empleados para que el Front los pinte fácil

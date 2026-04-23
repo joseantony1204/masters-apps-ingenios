@@ -71,7 +71,7 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                                         >
                                             <div className="card-body p-3 d-flex align-items-center">
                                                 <div className="bg-light-primary rounded p-2 me-3">
-                                                    <i className="ti ti-cut text-primary fs-4"></i>
+                                                    <i className={`${s.icon} text-primary fs-4`}></i>
                                                 </div>
                                                 <div className="flex-grow-1">
                                                     <div className="fw-bold text-dark">{s.nombre}</div>

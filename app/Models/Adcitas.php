@@ -49,7 +49,7 @@ class Adcitas extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigo', 'fecha', 'horainicio', 'horafinal', 'descripcion', 'cupon_id', 'motivocancelar', 'cliente_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigo', 'fecha', 'horainicio', 'horafinal', 'descripcion', 'cupon_id', 'device', 'motivocancelar', 'cliente_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
     
     protected $appends = ['adcliente'];
 
@@ -95,6 +95,14 @@ class Adcitas extends Model
     public function detalle_con_producto()
     {
         return $this->hasMany(\App\Models\Addetallescitas::class, 'cita_id')->where('model_type', 920);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function factura()
+    {
+        return $this->hasOne(\App\Models\Ftfacturas::class, 'model_type_id');
     }
     
 }
