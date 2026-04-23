@@ -116,7 +116,7 @@ class ReportesController extends Controller
         // 3. Origen basado en la columna 'device' (Lógica: TM*, QR* o NULL)
         $origenes = [
             'WhatsApp / Otros' => $citas->filter(fn($c) => is_null($c->device))->count(),
-            'Manual (Terminal)' => $citas->filter(fn($c) => !is_null($c->device) && str_starts_with($c->device, 'AG'))->count(),
+            'Manual (Terminal)' => $citas->filter(fn($c) => !is_null($c->device) && str_starts_with($c->device, 'AM'))->count(),
             'Código QR' => $citas->filter(fn($c) => !is_null($c->device) && str_starts_with($c->device, 'QR'))->count(),
         ];
 
