@@ -128,7 +128,7 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                             </div>
                             <div className="col-md-3">
                                 <button onClick={handleFilter} className="btn btn-primary w-100 py-2 shadow-blue" style={{ borderRadius: '12px', background: `linear-gradient(135deg, ${brandBlue} 0%, ${brandIndigo} 100%)`, border: 'none', fontWeight: '700' }}>
-                                    REFRESCAR MÉTRICAS
+                                <i className="ti ti-filter me-2"></i>REFRESCAR MÉTRICAS
                                 </button>
                             </div>
                         </div>

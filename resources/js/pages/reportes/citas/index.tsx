@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from '
 
 export default function Index({ metricas, origenes, heatmapData, topClientes, filtros }: any) {
     const brandBlue = '#0095ff';
+    const brandIndigo = '#4f46e5';
     const COLORS = [brandBlue, '#10b981', '#f59e0b', '#ef4444'];
 
     // --- Lógica de Filtros ---
@@ -80,7 +81,7 @@ export default function Index({ metricas, origenes, heatmapData, topClientes, fi
                     <div className="card-body">
                         <div className="row g-3 align-items-end">
                             <div className="col-md-4">
-                                <label className="form-label small fw-800 text-muted ms-2">FECHA INICIAL</label>
+                                <label className="small fw-800 text-uppercase mb-2 text-primary">FECHA INICIAL</label>
                                 <input 
                                     type="date" 
                                     className="form-control border-0 bg-light" 
@@ -90,7 +91,7 @@ export default function Index({ metricas, origenes, heatmapData, topClientes, fi
                                 />
                             </div>
                             <div className="col-md-4">
-                                <label className="form-label small fw-800 text-muted ms-2">FECHA FINAL</label>
+                                <label className="small fw-800 text-uppercase mb-2 text-primary">FECHA FINAL</label>
                                 <input 
                                     type="date" 
                                     className="form-control border-0 bg-light" 
@@ -100,11 +101,7 @@ export default function Index({ metricas, origenes, heatmapData, topClientes, fi
                                 />
                             </div>
                             <div className="col-md-4">
-                                <button 
-                                    onClick={handleFilter}
-                                    className="btn btn-primary w-100 fw-bold shadow-blue" 
-                                    style={{ borderRadius: '12px', height: '45px', backgroundColor: brandBlue, border: 'none' }}
-                                >
+                                <button onClick={handleFilter} className="btn btn-primary w-100 py-2 shadow-blue" style={{ borderRadius: '12px', background: `linear-gradient(135deg, ${brandBlue} 0%, ${brandIndigo} 100%)`, border: 'none', fontWeight: '700' }}>
                                     <i className="ti ti-filter me-2"></i> ACTUALIZAR REPORTE
                                 </button>
                             </div>
