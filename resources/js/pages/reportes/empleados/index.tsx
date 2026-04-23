@@ -61,23 +61,43 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
     return (
         <AppMainLayout>
             <Head title="Vantify Intelligence - Dashboard" />
-            
-            <div className="py-4 px-3" style={{ background: 'linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%)', minHeight: '100vh' }}>
-                
-                {/* Header Dinámico */}
-                <div className="row align-items-center mb-4">
-                    <div className="col-md-7">
-                        <h2 className="fw-900 mb-1" style={{ color: '#1e293b', fontSize: '2rem', letterSpacing: '-0.5px' }}>
-                            Reporte de <span style={{ color: brandBlue }}>Productividad</span>
-                        </h2>
-                        <p className="text-muted fw-500">Analizando el rendimiento de {reporte.length} especialistas activos.</p>
-                    </div>
-                    <div className="col-md-5 text-end">
-                        <button onClick={exportAllToExcel} className="btn btn-white border-0 shadow-sm fw-bold px-4 py-2" style={{ borderRadius: '12px', color: brandBlue }}>
-                            <i className="ti ti-download me-2"></i> Exportar Todo
-                        </button>
+
+            <div className="page-header">
+                <div className="page-block">
+                    <div className="row align-items-center">
+                        <div className="col-md-12">
+                            <ul className="breadcrumb mb-3">
+                                <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
+                                <li className="breadcrumb-item"><a href={route('reportes.index')}> Reportes</a></li>
+                                <li className="breadcrumb-item" aria-current="page">Listado</li>
+                            </ul>
+                        </div>
+                        {/* Alineación perfecta: Título a la izquierda, Link a la derecha */}
+                        <div className="col-md-12 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 className="fw-900 mb-0" style={{ color: '#1e293b' }}>
+                                    Reporte de <span style={{ color: brandBlue }}>Productividad</span>
+                                </h2>
+                                <p className="text-muted fw-500">Analizando el rendimiento de {reporte.length} especialistas activos.</p>
+                            </div>
+                            
+                            {/* Link sin bordes alineado a la derecha */}
+                            <a 
+                                href={route('reportes.index')} 
+                                className="btn btn-link text-muted text-decoration-none d-flex align-items-center fw-800 p-0"
+                                style={{ fontSize: '14px', transition: 'color 0.2s' }}
+                                onMouseOver={(e) => e.currentTarget.style.color = brandBlue}
+                                onMouseOut={(e) => e.currentTarget.style.color = '#6c757d'}
+                            >
+                                <i className="ti ti-chevron-left fs-4 me-1"></i>
+                                Regresar a reportes
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </div>
+            
+            <div className="py-4 px-3" style={{ background: 'linear-gradient(180deg, #f8faff 0%, #f1f5f9 100%)', minHeight: '100vh' }}>
 
                 {/* Filtros Inteligentes (Efecto Elevado) */}
                 <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '20px', border: '1px solid rgba(255,255,255,0.8)' }}>

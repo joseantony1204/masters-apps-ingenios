@@ -125,6 +125,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     // Esta es la URL que el usuario puede refrescar sin errores
     Route::post('/scsuscripciones/checkout', [ScsuscripcionesController::class, 'checkout'])->name('scsuscripciones.checkout');
 
+    Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/empleados/', [ReportesController::class, 'empleados'])->name('reportes.empleados');
     Route::get('/reportes/citas/', [ReportesController::class, 'citas'])->name('reportes.citas');
 });

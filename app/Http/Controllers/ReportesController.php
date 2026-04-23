@@ -10,6 +10,12 @@ use Carbon\Carbon;
 
 class ReportesController extends Controller
 {
+    
+    public function index(Request $request)
+    {
+        return Inertia::render('reportes/index');
+    }
+
     public function empleados(Request $request)
     {
         $userAuth = Auth::user();

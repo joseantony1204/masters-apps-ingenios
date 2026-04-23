@@ -37,18 +37,43 @@ export default function Index({ metricas, origenes, heatmapData, topClientes, fi
     return (
         <AppMainLayout>
             <Head title="Agenda e Inteligencia - Vantify" />
-            
-            <div className="container-fluid py-4" style={{ backgroundColor: '#f8faff', minHeight: '100vh' }}>
-                
-                {/* Header Dinámico */}
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 className="fw-900 mb-0" style={{ color: '#1e293b' }}>
-                            Agenda & <span style={{ color: brandBlue }}>Conversión</span>
-                        </h2>
-                        <p className="text-muted fw-500">Análisis de ocupación y fidelización de clientes.</p>
+
+            <div className="page-header">
+                <div className="page-block">
+                    <div className="row align-items-center">
+                        <div className="col-md-12">
+                            <ul className="breadcrumb mb-3">
+                                <li className="breadcrumb-item"><a href={route('dashboard')}>Inicio</a></li>
+                                <li className="breadcrumb-item"><a href={route('reportes.index')}> Reportes</a></li>
+                                <li className="breadcrumb-item" aria-current="page">Listado</li>
+                            </ul>
+                        </div>
+                        {/* Alineación perfecta: Título a la izquierda, Link a la derecha */}
+                        <div className="col-md-12 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 className="fw-900 mb-0" style={{ color: '#1e293b' }}>
+                                    Agenda & <span style={{ color: brandBlue }}>Conversión</span>
+                                </h2>
+                                <p className="text-muted fw-500 mb-0">Análisis de ocupación y fidelización de clientes.</p>
+                            </div>
+                            
+                            {/* Link sin bordes alineado a la derecha */}
+                            <a 
+                                href={route('reportes.index')} 
+                                className="btn btn-link text-muted text-decoration-none d-flex align-items-center fw-800 p-0"
+                                style={{ fontSize: '14px', transition: 'color 0.2s' }}
+                                onMouseOver={(e) => e.currentTarget.style.color = brandBlue}
+                                onMouseOut={(e) => e.currentTarget.style.color = '#6c757d'}
+                            >
+                                <i className="ti ti-chevron-left fs-4 me-1"></i>
+                                Regresar a reportes
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </div>
+            
+            <div className="container-fluid py-4" style={{ backgroundColor: '#f8faff', minHeight: '100vh' }}>
 
                 {/* --- CARD DE FILTROS --- */}
                 <div className="card border-0 shadow-sm mb-5" style={{ borderRadius: '20px', padding: '10px' }}>
