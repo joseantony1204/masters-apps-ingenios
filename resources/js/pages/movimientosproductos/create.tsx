@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Movimientosproductos } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    movimientosproductos: Movimientosproductos;
+    movimientosproductos: any;
 }
 
 export default function Create({ movimientosproductos }: Props) {

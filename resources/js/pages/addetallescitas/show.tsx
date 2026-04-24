@@ -1,10 +1,10 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Table from './partials/table';
-import { Addetallescitas } from '@/types';
+
   
 interface Props {
-    addetallescitas: Addetallescitas;
+    addetallescitas: any;
 }
 
 export default function Show({ addetallescitas }: Props) {

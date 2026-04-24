@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Cfimpuestos } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    cfimpuestos: Cfimpuestos;
+    cfimpuestos: any;
 }
 
 export default function Edit({ cfimpuestos}: Props) {

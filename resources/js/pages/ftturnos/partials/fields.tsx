@@ -1,4 +1,4 @@
-import { Ftturnos } from '@/types';
+
 
 interface Props {
     data: any;

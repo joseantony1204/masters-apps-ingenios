@@ -1,4 +1,4 @@
-import { Movimientosproductos } from '@/types';
+
 
 interface Props {
     data: any;

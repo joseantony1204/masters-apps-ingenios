@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Addetallescitas  } from '@/types';
+
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    addetallescitas: Addetallescitas[];
+    addetallescitas: any[];
 }
 
 export default function Table({ addetallescitas }: Props) {

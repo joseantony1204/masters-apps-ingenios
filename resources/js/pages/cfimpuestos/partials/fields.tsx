@@ -1,4 +1,3 @@
-import { Cfimpuestos } from '@/types';
 
 interface Props {
     data: any;

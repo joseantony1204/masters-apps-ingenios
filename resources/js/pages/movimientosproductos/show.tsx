@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Table from './partials/table';
-import { Movimientosproductos } from '@/types';
   
 interface Props {
-    movimientosproductos: Movimientosproductos;
+    movimientosproductos: any;
 }
 
 export default function Show({ movimientosproductos }: Props) {

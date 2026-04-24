@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Ftturnos } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    ftturnos: Ftturnos;
+    ftturnos: any;
 }
 
 export default function Edit({ ftturnos}: Props) {

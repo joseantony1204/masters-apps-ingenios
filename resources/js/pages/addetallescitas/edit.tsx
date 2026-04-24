@@ -1,10 +1,10 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Addetallescitas } from '@/types';
+
 import { useForm } from '@inertiajs/react';
 interface Props {
-    addetallescitas: Addetallescitas;
+    addetallescitas: any;
 }
 
 export default function Edit({ addetallescitas}: Props) {

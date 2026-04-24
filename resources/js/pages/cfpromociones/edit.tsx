@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Fields from './partials/fields';
-import { Cfpromociones } from '@/types';
 import { useForm } from '@inertiajs/react';
 interface Props {
-    cfpromociones: Cfpromociones;
+    cfpromociones: any;
 }
 
 export default function Edit({ cfpromociones}: Props) {

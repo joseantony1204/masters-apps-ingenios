@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Cfpromociones  } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    cfpromociones: Cfpromociones[];
+    cfpromociones: any[];
 }
 
 export default function Table({ cfpromociones }: Props) {

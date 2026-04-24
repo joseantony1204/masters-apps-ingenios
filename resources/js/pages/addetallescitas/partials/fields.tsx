@@ -1,4 +1,4 @@
-import { Addetallescitas } from '@/types';
+
 
 interface Props {
     data: any;

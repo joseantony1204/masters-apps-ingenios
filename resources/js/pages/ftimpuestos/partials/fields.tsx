@@ -1,4 +1,4 @@
-import { Ftimpuestos } from '@/types';
+
 
 interface Props {
     data: any;

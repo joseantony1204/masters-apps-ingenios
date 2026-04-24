@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Table from './partials/table';
-import { Ftturnos } from '@/types';
   
 interface Props {
-    ftturnos: Ftturnos[];
+    ftturnos: any[];
 }
 
 

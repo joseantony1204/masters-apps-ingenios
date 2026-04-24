@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Table from './partials/table';
-import { Cfimpuestos } from '@/types';
   
 interface Props {
-    cfimpuestos: Cfimpuestos[];
+    cfimpuestos: any[];
 }
 
 

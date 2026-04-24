@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Ftturnos  } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    ftturnos: Ftturnos[];
+    ftturnos: any[];
 }
 
 export default function Table({ ftturnos }: Props) {

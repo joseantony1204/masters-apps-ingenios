@@ -1296,7 +1296,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                         <button 
                                                                 type="button"
                                                                 onClick={() => setCitaDetalle(cita)}
-                                                                className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                className={`btn btn-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
                                                                 style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, fontSize: '0.75rem', fontWeight: 600 }}
                                                                 disabled={esInactiva || esPagada}
                                                             >
@@ -1305,7 +1305,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                             
                                                             <button 
                                                                 type="button" 
-                                                                className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                className={`btn btn-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
                                                                 style={{ borderRadius: 0, borderLeft: 'none' }}
                                                                 onClick={() => handleFacturar(cita.id)}
                                                                 disabled={esInactiva || esPagada} 
@@ -1325,7 +1325,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                                 /* SI NO ESTÁ PAGADA NI CANCELADA: Mostrar Facturar y Cancelar */
                                                                 !esInactiva && (  
                                                                     <button 
-                                                                        className={`btn btn-outline-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
+                                                                        className={`btn btn-${cita.estado_observacion} btn-sm px-3 d-flex align-items-center gap-2`}
                                                                         onClick={() => {setCitaCancelar(cita)}}
                                                                     >
                                                                         <i className="ti ti-ban fs-5"></i>

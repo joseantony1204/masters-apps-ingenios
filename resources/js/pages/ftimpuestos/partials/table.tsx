@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Ftimpuestos  } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    ftimpuestos: Ftimpuestos[];
+    ftimpuestos: any[];
 }
 
 export default function Table({ ftimpuestos }: Props) {

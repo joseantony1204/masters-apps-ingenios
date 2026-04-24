@@ -1,10 +1,9 @@
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head } from '@inertiajs/react';
 import Table from './partials/table';
-import { Cfpromociones } from '@/types';
   
 interface Props {
-    cfpromociones: Cfpromociones;
+    cfpromociones: any;
 }
 
 export default function Show({ cfpromociones }: Props) {

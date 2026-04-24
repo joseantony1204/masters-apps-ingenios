@@ -1,4 +1,4 @@
-import { Cfpromociones } from '@/types';
+
 
 interface Props {
     data: any;

@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Cfimpuestos  } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 
 interface Props {
-    cfimpuestos: Cfimpuestos[];
+    cfimpuestos: any[];
 }
 
 export default function Table({ cfimpuestos }: Props) {
