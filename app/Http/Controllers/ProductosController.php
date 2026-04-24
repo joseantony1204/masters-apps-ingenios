@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductosRequest;
-use App\Models\{Productos,Cfmaestra,Cfimpuestos,Comercios};
+use App\Models\{Productos,Cfmaestra,Cfimpuestos,Comercios, Movimientosproductos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\{Auth};
+use Illuminate\Support\Facades\{Auth,DB};
 
 class ProductosController extends Controller
 {
@@ -41,6 +41,75 @@ class ProductosController extends Controller
         return Inertia::render('productos/index', [
             'productos' => $productos
         ]);
+    }
+
+    /**
+     * Muestra el historial detallado (Kardex) de un producto específico
+     */
+    public function kardex($id)
+    {
+        $producto = Productos::findOrFail($id);
+
+        $movimientos = Movimientosproductos::with('usuario')// 'usuario' es la relación con created_by
+            ->where('producto_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('productos/partials/kardex', [
+            'producto'    => $producto,
+            'movimientos' => $movimientos
+        ]);
+    }
+
+    /**
+     * Registra un movimiento (Entrada, Salida, Ajuste) y actualiza el stock
+     */
+    public function storeMovimiento(Request $request)
+    {
+        $request->validate([
+            'producto_id' => 'required|exists:productos,id',
+            'tipo' => 'required|in:entrada,salida,ajuste,venta',
+            'cantidad' => 'required|integer|min:1',
+            'motivo' => 'required|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $producto = Productos::findOrFail($request->producto_id);
+            $stockAnterior = $producto->stock ?? 0;
+
+            // Lógica de cálculo de stock resultante
+            if ($request->tipo === 'entrada') {
+                $nuevoStock = $stockAnterior + $request->cantidad;
+            } else {
+                // Para salida, ajuste o venta
+                $nuevoStock = $stockAnterior - $request->cantidad;
+            }
+
+            // 1. Crear el registro en el Kardex (Historial)
+            Movimientosproductos::create([
+                'producto_id'      => $request->producto_id,
+                'tipo'             => $request->tipo,
+                'cantidad'         => $request->cantidad,
+                'stock_resultante' => $nuevoStock,
+                'motivo'           => $request->motivo,
+                'created_by'       => Auth::id(),
+            ]);
+
+            // 2. Actualizar el stock físicamente en la tabla de productos
+            $producto->update([
+                'stock' => $nuevoStock
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Movimiento registrado exitosamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error al procesar el movimiento: ' . $e->getMessage());
+        }
     }
 
     /**

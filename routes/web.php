@@ -12,7 +12,7 @@ use App\Http\Controllers\{
     FtserialesController,CfsedesController,UsersController,
     CfhorariosController, CfpromocionesController, CfcuponesController,
     CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController,
-    ReportesController};
+    ReportesController, InventariosController, MovimientosproductosController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
@@ -46,6 +46,10 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::resource('adclientes', AdclientesController::class);
     Route::resource('cfempleados', CfempleadosController::class);
     Route::resource('productos', ProductosController::class);
+    Route::get('productos/kardex/{id}', [ProductosController::class, 'kardex'])->name('productos.kardex');
+    Route::post('productos/movimientos', [ProductosController::class, 'storeMovimiento'])->name('productos.movimiento');
+
+    Route::resource('movimientosproductos', MovimientosproductosController::class);
 
     // --- MÓDULO: AGENDA Y TURNOS ---
     Route::resource('adcitas', AdcitasController::class);
@@ -83,7 +87,6 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         ->name('cfempleados.validar-disponibilidad');
     Route::put('cfempleados/{empleado}/horarios', [CfempleadosController::class, 'updateHorarios'])->name('cfempleados.update-horarios');
        
-
     Route::put('adclientes/{cliente}/perfil', [AdclientesController::class, 'updatePerfil'])->name('adclientes.updateperfil');
     Route::put('adclientes/{cliente}/sedes/{sede}/toggle-permiso', [AdclientesController::class, 'toggleSedePermiso'])->name('adclientes.toggle-permiso');
     Route::put('adclientes/{cliente}/sedes/{sede}/set-default', [AdclientesController::class, 'setSedePredeterminada'])->name('adclientes.set-default'); 
@@ -128,6 +131,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/empleados/', [ReportesController::class, 'empleados'])->name('reportes.empleados');
     Route::get('/reportes/citas/', [ReportesController::class, 'citas'])->name('reportes.citas');
+
 });
 
 Route::resource('scplanes', ScplanesController::class);

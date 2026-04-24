@@ -244,12 +244,15 @@ class MaestrasSeeder extends Seeder
 
             [ 'id' => 977, 'codigo' => 'scplanes', 'nombre' => 'PLANES', 'padre' => 3, 'jerarquia' => 6, 'observacion' => 'ti ti-dots'],
             [ 'id' => 978, 'codigo' => 'index', 'nombre' => 'LISTAR', 'padre' => 4, 'jerarquia' => 977, 'observacion' => NULL],
-
+            
             [ 'id' => 979, 'codigo' => 'LIS_ESTADOSSUSCRIPCIONES', 'nombre' => 'ESTADOS DE SUSCRIPCIONES', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 980, 'codigo' => NULL, 'nombre' => 'ACTIVA', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'success'],
             [ 'id' => 981, 'codigo' => NULL, 'nombre' => 'PENDIENTE PAGO', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'info'],
             [ 'id' => 982, 'codigo' => NULL, 'nombre' => 'SUSPENDIDA', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'warning'],
             [ 'id' => 983, 'codigo' => NULL, 'nombre' => 'CANCELADA', 'padre' => 979, 'jerarquia' => NULL, 'observacion' => 'danger'],
+
+            [ 'id' => 984, 'codigo' => 'reportes', 'nombre' => 'REPORTES', 'padre' => 3, 'jerarquia' => 6, 'observacion' => 'ti ti-dots'],
+            [ 'id' => 985, 'codigo' => 'index', 'nombre' => 'LISTAR', 'padre' => 4, 'jerarquia' => 984, 'observacion' => NULL],
         ];
         foreach (array_chunk($dataMaestra,1000) as $data){
             DB::table('cfmaestras')->insert($data);

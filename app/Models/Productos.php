@@ -60,7 +60,7 @@ class Productos extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigo', 'codigobarra', 'nombre', 'duracion', 'descripcion', 'minimostock', 'precioingreso', 'preciosalida', 'acumulapuntos', 'observacion', 'padre', 'tipo_id', 'unidad_id', 'ubicacion_id', 'impuesto_id', 'categoria_id', 'marca_id', 'estado_id', 'sede_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigo', 'codigobarra', 'nombre', 'duracion', 'descripcion', 'minimostock', 'stock', 'precioingreso', 'preciosalida', 'acumulapuntos', 'observacion', 'padre', 'tipo_id', 'unidad_id', 'ubicacion_id', 'impuesto_id', 'categoria_id', 'marca_id', 'estado_id', 'sede_id', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**

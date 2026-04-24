@@ -20,6 +20,7 @@ export const initDataTable = (tableElement: HTMLTableElement) => {
     searching: true,
     responsive: true,
     scrollX: true,
+    destroy: true,
     language: {
       info: 'Mostrando página _PAGE_ de _PAGES_',
       infoEmpty: 'No hay información disponible.',

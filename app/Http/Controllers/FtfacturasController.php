@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Ftpagos, Cfcupones, Personas};
+use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Movimientosproductos, Cfcupones, Personas};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -219,7 +219,7 @@ class FtfacturasController extends Controller
                     $productoId = $item['producto_id'] ?? null;
                     // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
                     if (is_null($productoId) && !empty($item['nombre'])) {
-                        $productoId = Productos::firstOrCreate(
+                        $producto = Productos::firstOrCreate(
                             ['nombre' => strtoupper($item['nombre']), 'sede_id' => $sedePredeterminada],
                             [
                                 'precioingreso' => $item['precio'],
@@ -230,11 +230,15 @@ class FtfacturasController extends Controller
                                 'impuesto_id'   => 1, // Excluido
                                 'categoria_id'  => 955,
                                 'tipo_id'       => 854,
+                                'stock'         => 0, // Iniciamos en 0 si es nuevo
                                 'sede_id'       => $sedePredeterminada,
                                 'created_by'    => $userAuth->id,
                                 'created_at'    => now(),
                             ]
-                        )->id;
+                        );
+                        $productoId = $producto->id;
+                    }else {
+                        $producto = Productos::find($productoId);
                     }
 
                     $factura->detalles()->create([
@@ -250,6 +254,27 @@ class FtfacturasController extends Controller
                         'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
                         'observaciones' => $item['descripcion'],
                     ]);
+
+                    // 2.2 LÓGICA DE INVENTARIO: Solo si es tipo PRODUCTO (854)
+                    if ($producto && $producto->tipo_id == 854) {
+                        
+                        $cantidadVendida = $item['cantidad'];
+                        $stockAnterior = $producto->stock ?? 0;
+                        $nuevoStock = $stockAnterior - $cantidadVendida;
+
+                        // Actualizamos el stock en la tabla productos
+                        $producto->update(['stock' => $nuevoStock]);
+
+                        // Registramos el movimiento en el Kardex
+                        Movimientosproductos::create([
+                            'producto_id'      => $productoId,
+                            'tipo'             => 'venta',
+                            'cantidad'         => $cantidadVendida,
+                            'stock_resultante' => $nuevoStock,
+                            'motivo'           => "Venta Factura #" . $factura->numero,
+                            'created_by'       => Auth::id(),
+                        ]);
+                    }
 
                 }
 

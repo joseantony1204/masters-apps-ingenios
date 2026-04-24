@@ -1,24 +1,32 @@
 import { useEffect, useRef } from 'react';
 import { initDataTable } from '@/utils/initDataTable';
-import { Productos } from '@/types';
-import { useForm, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 
 interface Props {
     productos: any[];
+    activeTab: 'servicios' | 'productos' | 'combos';
+    onAdjust: (item: any) => void;
 }
 
-export default function Table({ productos }: Props) {
+export default function Table({ productos, onAdjust, activeTab }: Props) {
     const tableRef = useRef<HTMLTableElement>(null);
 
+    // --- Efecto para DataTables ---
     useEffect(() => {
+        let dt: any;
         if (tableRef.current) {
-            initDataTable(tableRef.current);
+            dt = initDataTable(tableRef.current);
         }
+        return () => {
+            if (dt && typeof dt.destroy === 'function') {
+                dt.destroy();
+            }
+        };
     }, [productos]);
 
+    // --- Helpers ---
     const handleEdit = (id: number) => router.visit(route('productos.edit', id));
 
-    // Formateador de moneda
     const formatCurrency = (value: string | number) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
@@ -27,7 +35,6 @@ export default function Table({ productos }: Props) {
         }).format(Number(value));
     };
 
-    // Badge de color según el tipo
     const getTipoBadge = (tipo: string) => {
         const colors: Record<string, string> = {
             'SERVICIO': 'bg-light-info text-info',
@@ -37,61 +44,107 @@ export default function Table({ productos }: Props) {
         return colors[tipo] || 'bg-light-secondary';
     };
 
+    const getItemIcon = (item: any) => {
+        if (item.tipo?.id === 855) return item.categoria?.observacion || 'ti-scissors'; // Servicio
+        if (item.tipo?.id === 856) return 'ti-layers-intersect'; // Combo
+        return 'ti-package'; // Producto
+    };
+
     return (
         <div className="table-responsive">
-            <table ref={tableRef} className="table table-hover align-middle shadow-sm">
+            <table 
+                ref={tableRef} 
+                className="table table-hover align-middle shadow-sm w-100"
+                style={{ borderCollapse: 'separate', borderSpacing: '0 5px' }}
+            >
                 <thead className="table-light">
                     <tr>
-                        <th className="text-center" style={{ width: '80px' }}>Acciones</th>
-                        <th className="text-center">#</th>
+                        <th className="text-center" style={{ width: '100px' }}>Acciones</th>
+                        <th className="text-center" style={{ width: '50px' }}>#</th>
                         <th>Información del Item</th>
                         <th>Tipo</th>
                         <th className="text-end">Precio Venta</th>
-                        <th className="text-center">Stock Min.</th>
+                        <th className="text-center">Stock Actual</th>
                         <th className="text-center">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {productos.map((item, index) => (
                         <tr key={item.id}>
+                            {/* Celda de Acciones Centralizada */}
                             <td className="text-center">
-                                <button
-                                    onClick={() => handleEdit(item.id)}
-                                    className="btn btn-icon btn-link-success avtar-s"
-                                    title="Editar"
-                                >
-                                    <i className="ti ti-edit fs-4"></i>
-                                </button>
+                                <div className="d-flex justify-content-center gap-1">
+                                    <button
+                                        onClick={() => handleEdit(item.id)}
+                                        className="btn btn-icon btn-link-success avtar-s"
+                                        title="Editar Ítem"
+                                    >
+                                        <i className="ti ti-edit fs-4"></i>
+                                    </button>
+                                    
+                                    {activeTab === 'productos' && (
+                                        <>
+                                        <button 
+                                            onClick={() => onAdjust(item)} 
+                                            className="btn btn-icon btn-link-primary avtar-s"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#movimientoModal"
+                                            title="Ajustar Inventario"
+                                        >
+                                            <i className="ti ti-arrows-exchange fs-4"></i>
+                                        </button>
+
+                                        <a href={route('productos.kardex', item.id)} className="btn btn-sm btn-light-secondary fw-bold" style={{ borderRadius: '8px' }}>
+                                        <i className="ti ti-history"></i> Kardex
+                                        </a>
+                                        </>
+                                        
+                                    )}
+                                </div>
                             </td>
-                            <td className="text-center text-muted">{index + 1}</td>
+
+                            <td className="text-center text-muted small">{index + 1}</td>
+
                             <td>
                                 <div className="d-flex align-items-center">
                                     <div className="avtar avtar-info avtar-s rounded-circle me-3">
-                                        <i className={`ti ${item.tipo?.id === 855 ? item.categoria?.observacion ? item.categoria?.observacion : 'ti-package' : 'ti-package'} fs-4`}></i>
+                                        <i className={`ti ${getItemIcon(item)} fs-4`}></i>
                                     </div>
                                     <div>
                                         <h6 className="mb-0 fw-bold">{item.nombre}</h6>
-                                        <small className="text-muted">
-                                            {item.codigo || 'S/C'} | {item.unidad?.nombre}
+                                        <small className="text-muted text-uppercase" style={{ fontSize: '10px' }}>
+                                            {item.codigo || 'SIN REF'} | {item.unidad?.nombre || 'UNIDAD'}
                                         </small>
                                     </div>
                                 </div>
                             </td>
+
                             <td>
-                                <span className={`badge ${getTipoBadge(item.tipo?.nombre || '')}`}>
+                                <span className={`badge border-0 ${getTipoBadge(item.tipo?.nombre || '')}`}>
                                     {item.tipo?.nombre}
                                 </span>
                             </td>
+
                             <td className="text-end fw-bold text-dark">
                                 {formatCurrency(item.preciosalida)}
                             </td>
+
                             <td className="text-center">
-                                <span className="badge bg-light-secondary text-dark border">
-                                    {item.minimostock || 0}
-                                </span>
+                                {/* Cambié a mostrar stock si es producto */}
+                                {activeTab === 'productos' ? (
+                                    <div className={`fw-900 ${item.stock <= item.minimostock ? 'text-danger' : 'text-dark'}`}>
+                                        {item.stock}
+                                        <div className="text-muted" style={{ fontSize: '9px', fontWeight: 'normal' }}>
+                                            Min: {item.minimostock}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted">---</span>
+                                )}
                             </td>
+
                             <td className="text-center">
-                                <span className={`badge ${item.estado?.nombre === 'ACTIVO' ? 'bg-success' : 'bg-danger'}`}>
+                                <span className={`badge rounded-pill ${item.estado?.nombre === 'ACTIVO' ? 'bg-success' : 'bg-danger'}`}>
                                     {item.estado?.nombre}
                                 </span>
                             </td>
