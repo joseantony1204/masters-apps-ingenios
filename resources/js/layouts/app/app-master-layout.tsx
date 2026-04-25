@@ -21,7 +21,7 @@ export default function AppMasterLayout({ children, breadcrumbs = [] }: PropsWit
 
         // 2. Reinicializar Feather Icons
         // El chequeo opcional '?' evita errores si el script no ha cargado
-        window.feather?.replace();
+        //window.feather?.replace();
 
         // 3. Reset del scroll al cambiar de página (Importante en SPAs)
         //window.scrollTo(0, 0);

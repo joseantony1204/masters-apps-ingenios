@@ -5,64 +5,61 @@ import photo_default from '/public/assets/images/user/default.png';
 
 export default function AppMasterHeader() {
     const cleanup = useMobileNavigation();
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Estado para el menú del usuario
-    
-    // Referencia para detectar clics fuera del menú
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const menuRef = useRef<HTMLLIElement>(null);
 
     const { auth } = usePage().props as any;
     const user = auth?.user;
 
-    // Efecto para cerrar el menú al hacer clic fuera de él
+    // Cierra el menú de usuario si haces clic fuera de él
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (isUserMenuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsUserMenuOpen(false);
             }
         }
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isUserMenuOpen]);
 
-   
-
-    // Modifica estas funciones dentro de AppMasterHeader.tsx
-
+    /**
+     * Colapso de Sidebar en Escritorio
+     */
     const toggleSidebar = (e: React.MouseEvent) => {
         e.preventDefault();
-        e.stopPropagation(); // BLOQUEA el conflicto con scripts externos
+        e.stopPropagation();
+        // Detenemos el evento inmediato para que scripts externos no lo reviertan
+        e.nativeEvent.stopImmediatePropagation();
         document.body.classList.toggle('pc-sidebar-hide');
     };
 
+    /**
+     * Apertura de Sidebar en Móvil
+     * Enviamos un CustomEvent que escucha el AppMasterSidebar
+     */
     const toggleMobileMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        e.stopPropagation(); // BLOQUEA el conflicto con scripts externos
-        document.body.classList.toggle('mob-sidebar-active');
+        e.stopPropagation(); 
+        e.nativeEvent.stopImmediatePropagation(); 
         
-        // Si la plantilla no crea el overlay automáticamente, lo gestionamos nosotros:
-        if (document.body.classList.contains('mob-sidebar-active')) {
-            if (!document.querySelector('.pc-menu-overlay')) {
-                const overlay = document.createElement('div');
-                overlay.className = 'pc-menu-overlay';
-                overlay.onclick = () => document.body.classList.remove('mob-sidebar-active');
-                document.body.appendChild(overlay);
-            }
-        }
+        // Disparamos el evento que nuestro Sidebar (React) entiende
+        window.dispatchEvent(new CustomEvent('toggle-sidebar-react'));
     };
 
     const toggleUserMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        e.stopPropagation(); // EVITA que el script de la plantilla reciba el evento y cierre el menú
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
         setIsUserMenuOpen(!isUserMenuOpen);
     };
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsUserMenuOpen(false); // Cerramos manualmente antes de salir
+        cleanup();
+        setIsUserMenuOpen(false);
         router.post(route('logout'));
     };
 
@@ -72,23 +69,23 @@ export default function AppMasterHeader() {
                 <div className="me-auto pc-mob-drp">
                     <ul className="list-unstyled">
                       
-                        {/* ICONO PARA ESCRITORIO */}
+                        {/* ICONO PARA ESCRITORIO (Collapse) */}
                         <li className="pc-h-item pc-sidebar-collapse">
-                            <a href="#" className="pc-head-link ms-0" id="sidebar-hide" onClick={toggleSidebar}>
+                            <a href="#" className="pc-head-link ms-0" onClick={toggleSidebar}>
                                 <i className="ti ti-menu-2"></i>
                             </a>
                         </li>
 
-                        {/* ICONO PARA MÓVIL */}
+                        {/* ICONO PARA MÓVIL (Popup) */}
                         <li className="pc-h-item pc-sidebar-popup">
-                            <a href="#" className="pc-head-link ms-0" id="mobile-collapse" onClick={toggleMobileMenu}>
+                            <a href="#" className="pc-head-link ms-0" onClick={toggleMobileMenu}>
                                 <i className="ti ti-menu-2"></i>
                             </a>
                         </li>
-
                         <li className="pc-h-item d-none d-md-inline-flex">
                             <form className="header-search">
-                                <i data-feather="search" className="icon-search"></i>
+                                {/* Cambiamos data-feather por la clase de Tabler Icons */}
+                                <i className="ph-duotone ph-magnifying-glass icon-search"></i>
                                 <input type="search" className="form-control" placeholder="Búsqueda aquí. . ." />
                             </form>
                         </li>
@@ -98,22 +95,14 @@ export default function AppMasterHeader() {
 
                 <div className="ms-auto">
                     <ul className="list-unstyled">
-                        {/* Notificaciones */}
+                        {/* Home / Links rápidos */}
                         <li className="dropdown pc-h-item">
-                            <a 
-                                className="pc-head-link dropdown-toggle arrow-none me-0" 
-                                href={route('dashboard')}
-                            >
+                            <Link className="pc-head-link arrow-none me-0" href={route('dashboard')}>
                                 <i className="ti ti-home"></i>
-                            </a>
-                        </li>
-                        <li className="dropdown pc-h-item">
-                            <a className="pc-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#" role="button">
-                                <i className="ti ti-mail"></i>
-                            </a>
+                            </Link>
                         </li>
 
-                        {/* PERFIL DE USUARIO CON LÓGICA DE CIERRE EXTERNO */}
+                        {/* MENÚ DE PERFIL DE USUARIO */}
                         <li 
                             ref={menuRef}
                             className={`dropdown pc-h-item header-user-profile ${isUserMenuOpen ? 'show' : ''}`}
@@ -121,13 +110,12 @@ export default function AppMasterHeader() {
                             <a
                                 className="pc-head-link dropdown-toggle arrow-none me-0"
                                 href="#"
-                                onClick={toggleUserMenu} // Solo React maneja esto
+                                onClick={toggleUserMenu}
                             >
                                 <img src={user?.foto || photo_default} className="user-avtar" alt="user" />
                                 <span>{user?.nombreCompleto}</span>
                             </a>
                             
-                            {/* El menú aparece solo si isUserMenuOpen es true */}
                             <div 
                                 className={`dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown ${isUserMenuOpen ? 'show' : ''}`} 
                                 style={{ 
@@ -137,7 +125,6 @@ export default function AppMasterHeader() {
                                     transform: 'translate3d(-20px, 70px, 0px)'
                                 }}
                             >
-                                
                                 <div className="dropdown-header">
                                     <div className="d-flex mb-1">
                                         <div className="flex-shrink-0" style={{ width: '40px', height: '40px' }}> 
@@ -148,7 +135,7 @@ export default function AppMasterHeader() {
                                             />
                                         </div>
                                         <div className="flex-grow-1 ms-3">
-                                            <h6 className="mb-1">{user?.nombreCompleto || user?.username}</h6>
+                                            <h6 className="mb-1">{user?.nombreCompleto}</h6>
                                             <span className="f-12">{user?.personas?.email}</span>
                                         </div>
                                         <button onClick={handleLogout} className="btn btn-icon btn-link-danger border-0 bg-transparent">
@@ -197,7 +184,6 @@ export default function AppMasterHeader() {
                                         </a>
                                     </div>
                                 </div>
-                                
                             </div>
                         </li>
                     </ul>
