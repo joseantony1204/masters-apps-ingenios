@@ -7,6 +7,9 @@ import { router } from '@inertiajs/react';
 import CitasModalPos from '@/components/global/citas-modal-pos';
 import CitasModalCancelar from '@/components/global/citas-modal-cancelar';
 import CitasOffcanvasReserva from '@/components/global/citas-offcanvas-reserva';
+import { useCierreCaja } from '@/hooks/use-cierre-caja';
+import CajasModalCierre from '@/components/global/cajas-modal-cierre';
+
 import * as bootstrap from 'bootstrap';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -71,7 +74,8 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const [horaActual, setHoraActual] = useState(new Date());
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
-    
+    const {  showCierre, setShowCierre,  resumenCierre, processing, abrirModalCierre, confirmarCierre } = useCierreCaja();
+
     // Al principio de index.tsx (fuera del componente)
     /**
      * Calcula la diferencia de días entre hoy y la fecha de vencimiento
@@ -295,7 +299,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
             growth: calcularGrowth(totalCitasMes, totalCitasMesAnterior), 
             icon: 'ti-calendar-event', 
             color: '#0d6efd',
-            description: 'Comparado con el mes anterior' 
+            description: 'vs mes anterior' 
         },
         { 
             label: 'CITAS HOY', 
@@ -303,7 +307,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
             growth: calcularGrowth(totalCitasHoy, totalCitasAyer), 
             icon: 'ti-star', 
             color: '#198754',
-            description: 'Comparado con el dia de ayer' 
+            description: 'vs dia de ayer' 
         },
         { 
             label: 'INGRESOS HOY', 
@@ -311,7 +315,7 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
             growth: calcularGrowth(ingresosHoy, ingresosAyer), 
             icon: 'ti-currency-dollar', 
             color: '#0dcaff',
-            description: 'Comparado con el dia de ayer' 
+            description: 'vs dia de ayer' 
         },
     ];
 
@@ -570,40 +574,6 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
         });
     };
     
-    const submitReservass = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Validación básica antes de enviar
-        if (!formReserva.data.cliente_nombre) {
-            alert("Por favor, selecciona un cliente o crea uno.");
-            return;
-        }
-    
-        formReserva.post(route('adcitas.store'), {
-            onSuccess: () => {
-                // CERRAR MODAL PRIMERO
-                const modalElement = document.getElementById('modalReserva');
-                if (modalElement) {
-                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) modalInstance.hide();
-                    
-                    // Limpieza forzada de Bootstrap
-                    setTimeout(() => {
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                    }, 100);
-                }
-                // 3. Resetear el formulario
-                formReserva.reset();
-                
-            },
-            forceFormData: true,
-            onError: (errors) => {
-                console.error("Errores al validar la cita:", errors);
-            }
-        });
-    };
 
     const submitReservas = () => {
         // Validación básica antes de enviar
@@ -1004,6 +974,13 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                         >
                                             <i className="ti ti-plus me-1"></i> Nueva venta directa
                                         </button>
+                                        {turnoActivo && (
+                                            <button
+                                                className="btn btn-light-primary btn-sm shadow-sm px-3 border-0" 
+                                                onClick={() => abrirModalCierre(turnoActivo)}>
+                                                <i className="ti ti-cash-register me-1"></i> Cerrar turno
+                                            </button>
+                                         )}
 
                                         {/* NUEVO BOTÓN: OBTENER QR */}
                                         <button 
@@ -2176,6 +2153,15 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                     console.log("Finalizado", datos);
                     reservaCita.cerrarModal();
                 }}
+            />
+
+            {/* Componente UI */}
+            <CajasModalCierre 
+                show={showCierre}
+                resumen={resumenCierre}
+                onClose={() => setShowCierre(false)}
+                onConfirm={confirmarCierre}
+                processing={processing}
             />
 
         </AppMainLayout>

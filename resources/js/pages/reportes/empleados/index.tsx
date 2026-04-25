@@ -269,29 +269,39 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                             <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '24px' }}>
                                 <div className="row g-0">
                                     {/* Sidebar de la Card */}
-                                    <div className="col-md-3 p-4" style={{ background: '#ffffff', borderRight: '1px solid #f1f5f9' }}>
-                                        <div className="text-center mb-4">
-                                            <div className="mx-auto mb-3 shadow-sm d-flex align-items-center justify-content-center fw-bold" style={{ width: '80px', height: '80px', borderRadius: '22px', background: `linear-gradient(45deg, #f0f7ff, #ffffff)`, color: brandBlue, fontSize: '2rem', border: '2px solid #eef2ff' }}>
-                                                {emp.nombre.charAt(0)}
-                                            </div>
-                                            <h5 className="fw-900 text-dark mb-0">{emp.nombre}</h5>
-                                            <p className="small text-muted fw-bold">Especialista</p>
+                                <div className="col-md-3 p-4" style={{ background: '#ffffff', borderRight: '1px solid #f1f5f9' }}>
+                                    <div className="text-center mb-4">
+                                        <div className="mx-auto mb-3 shadow-sm d-flex align-items-center justify-content-center fw-bold" style={{ width: '80px', height: '80px', borderRadius: '22px', background: `linear-gradient(45deg, #f0f7ff, #ffffff)`, color: brandBlue, fontSize: '2rem', border: '2px solid #eef2ff' }}>
+                                            {emp.nombre.charAt(0)}
                                         </div>
-                                        
-                                        <div className="bg-light p-3 mb-3" style={{ borderRadius: '15px' }}>
-                                            <div className="small text-muted fw-bold mb-1">RECAUDO</div>
-                                            <h4 className="fw-900 mb-0" style={{ color: brandBlue }}>${emp.suma_recaudado.toLocaleString()}</h4>
-                                        </div>
-
-                                        <div className="bg-soft-indigo p-3 mb-4" style={{ borderRadius: '15px', backgroundColor: '#f5f3ff' }}>
-                                            <div className="small text-indigo-600 fw-bold mb-1" style={{ color: brandIndigo }}>LIQUIDACIÓN</div>
-                                            <h4 className="fw-900 mb-0" style={{ color: brandIndigo }}>${emp.suma_comisiones.toLocaleString()}</h4>
-                                        </div>
-
-                                        <button onClick={() => handleExportIndividual(emp)} className="bbtn btn-outline-light text-muted btn-sm w-100 border-dashed py-2" style={{ borderRadius: '12px' }}>
-                                            <i className="ti ti-file-spreadsheet me-1"></i> Reporte Individual
-                                        </button>
+                                        <h5 className="fw-900 text-dark mb-0">{emp.nombre}</h5>
+                                        <p className="small text-muted fw-bold">Especialista</p>
                                     </div>
+                                    
+                                    {/* RECAUDO TOTAL (100%) */}
+                                    <div className="bg-light p-3 mb-3" style={{ borderRadius: '15px' }}>
+                                        <div className="small text-muted fw-bold mb-1">TOTAL RECAUDADO</div>
+                                        <h4 className="fw-900 mb-0" style={{ color: brandBlue }}>${emp.suma_recaudado.toLocaleString()}</h4>
+                                    </div>
+
+                                    {/* LIQUIDACIÓN EMPLEADO (Ej: 60%) */}
+                                    <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#f5f3ff' }}>
+                                        <div className="small fw-bold mb-1" style={{ color: brandIndigo }}>PARA EMPLEADO</div>
+                                        <h4 className="fw-900 mb-0" style={{ color: brandIndigo }}>${emp.suma_comisiones.toLocaleString()}</h4>
+                                    </div>
+
+                                    {/* LO QUE LE QUEDA AL COMERCIO (Ej: 40%) */}
+                                    <div className="p-3 mb-4" style={{ borderRadius: '15px', backgroundColor: '#ecfdf5', border: '1px solid #d1fae5' }}>
+                                        <div className="small fw-bold mb-1" style={{ color: '#059669' }}>PARA COMERCIO</div>
+                                        <h4 className="fw-900 mb-0" style={{ color: '#059669' }}>
+                                            ${(emp.suma_recaudado - emp.suma_comisiones).toLocaleString()}
+                                        </h4>
+                                    </div>
+
+                                    <button onClick={() => handleExportIndividual(emp)} className="btn btn-outline-light text-muted btn-sm w-100 border-dashed py-2" style={{ borderRadius: '12px', border: '1px dashed #ccc' }}>
+                                        <i className="ti ti-file-spreadsheet me-1"></i> Reporte Individual
+                                    </button>
+                                </div>
 
                                     {/* Tabla Principal */}
                                     <div className="col-md-9 p-0 bg-white">

@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/react';
 import Fields from './partials/fields';
 import { Ftfacturas } from '@/types';
 import React from 'react';
+import { em } from 'node_modules/@fullcalendar/core/internal-common';
 
 interface Props {
     ftfactura: Ftfacturas;
@@ -17,7 +18,7 @@ interface Props {
 
 export default function Create({ftfactura, cita, turnoActivo, comercio, sedePredeterminada, turnosList, estadosList, metodospagosList }: Props) {
     const today = new Date().toLocaleString('sv-SE', { timeZone: 'America/Bogota', hour12: false  }).replace(' ', 'T').slice(0, 16);
-    console.log("Persona", cita?.cliente?.persona_id || ftfactura.model_type_id || '', );
+    //console.log("Persona", cita?.cliente?.persona_id || ftfactura.model_type_id || '', );
     const { data, setData, post, processing, errors } = useForm({
         // Datos de cabecera
         id: ftfactura.id || null,
@@ -59,7 +60,6 @@ export default function Create({ftfactura, cita, turnoActivo, comercio, sedePred
         turno_id: turnoActivo?.id || '',
         comercio_id: comercio?.id || '',
     });
-
     // 1. Cambia el nombre de la función para que reciba el parámetro de acción
     const handleSubmit = (e: React.FormEvent, redirect: boolean = false) => {
         e.preventDefault();

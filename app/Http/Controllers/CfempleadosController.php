@@ -80,7 +80,7 @@ class CfempleadosController extends Controller
                 );
 
                 // 3. Crear Empleado
-                $persona->empleados()->updateOrCreate($request->only([
+                $empleado = $persona->empleados()->updateOrCreate($request->only([
                     'fechaingreso', 'estado_id', 'observaciones'
                 ]) + 
                 [
@@ -129,7 +129,7 @@ class CfempleadosController extends Controller
                     $nuevoUsuario->sedes()->syncWithoutDetaching($dataSedes);
                 }
 
-                return redirect()->route('cfempleados.index')
+                return redirect()->route('cfempleados.show',$empleado->id)
                     ->with('success', 'Empleado y datos personales creados correctamente.');
             });
 
@@ -370,7 +370,7 @@ class CfempleadosController extends Controller
                     'fechaingreso', 'estado_id', 'observaciones'
                 ]) + $audt);
                 
-                return redirect()->route('cfempleados.index')->with('success', 'Elemento actualizado exitosamente.');
+                return redirect()->route('cfempleados.show',$empleado->id)->with('success', 'Elemento actualizado exitosamente.');
             });
         }catch (\Exception $e){
             return response()->json(['message' => $e->getMessage()]);

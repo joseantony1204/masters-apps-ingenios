@@ -26,6 +26,16 @@ export default function Fields({
         errors[field] ? <div className="invalid-feedback d-block"><i className="ti ti-alert-circle me-1"></i>{errors[field]}</div> : null
     );
 
+    // Función para actualizar el precio de ingreso y replicarlo en el de salida
+    const handlePrecioIngresoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const valor = e.target.value;
+        setData('precioingreso', valor);
+        
+        // Solo actualizamos el precio de salida si el usuario no ha puesto uno manualmente
+        // o si queremos que siempre sean iguales al inicio.
+        setData('preciosalida', valor); 
+    };
+
     return (
         <div className="row g-4">
             {/* COLUMNA IZQUIERDA: INFORMACIÓN GENERAL */}
@@ -236,7 +246,7 @@ export default function Fields({
                                         type="number" 
                                         className={`form-control fw-bold ${errors.precioingreso ? 'is-invalid' : ''}`}
                                         value={data.precioingreso}
-                                        onChange={e => setData('precioingreso', e.target.value)}
+                                        onChange={handlePrecioIngresoChange}
                                         placeholder="0.00" 
                                     />
                                 </div>

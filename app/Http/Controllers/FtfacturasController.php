@@ -137,6 +137,7 @@ class FtfacturasController extends Controller
             $cita = Adcitas::with([
                 'cliente.persona.personasnaturales',
                 'detalle_con_empleadoservicio.empleadoservicio.servicio',
+                'detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
                 'detalle_con_producto.producto',
             ])
             ->find($request->cita);

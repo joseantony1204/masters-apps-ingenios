@@ -387,6 +387,7 @@ class AdcitasController extends Controller
                     
                     foreach ($request->items as $item) {
                         $productoId = $item['producto_id'] ?? null;
+                        $tipoId = $item['tipo_id'] ?? 854;
 
                         // Si el item es marcado como nuevo, creamos el producto "al vuelo"
                         if (!empty($item['es_nuevo']) && is_null($productoId)) {
@@ -399,7 +400,7 @@ class AdcitasController extends Controller
                                 'unidad_id'     => 863, // Unidad
                                 'categoria_id'   => 955, // Producto
                                 'impuesto_id'   => 1, // Excluido
-                                'tipo_id'       => 854, // Tipo producto
+                                'tipo_id'       => $tipoId, // Tipo producto
                                 'sede_id'       => $sedePredeterminada,
                                 'created_by'    => $userAuth->id,
                                 'created_at'    => $now,
@@ -421,7 +422,7 @@ class AdcitasController extends Controller
                             'descuento'     => $item['descuento'] ?? 0,
                             'preciounitario'   => $item['precio'],
                             'preciofinal'   => $precioFinal,
-                            'model_type'    => 920, // Productos
+                            'model_type'    => $tipoId === 854 ? 920 : 919, // Productos
                             'model_type_id' => $productoId,
                             'estado_id'     => 913,
                             'created_by'    => $userAuth->id,

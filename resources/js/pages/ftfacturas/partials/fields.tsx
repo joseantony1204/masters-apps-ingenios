@@ -219,9 +219,10 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
         }
 
         setBuscandoProducto(true);
+        const empleado_id = cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id ? cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id : null;
         try {
             const response = await axios.get(route('api.productos.buscar'), {
-                params: { q: query }
+                params: { q: query, empleado_id : null }
             });
             setResultadosProductos(response.data);
         } catch (error) {

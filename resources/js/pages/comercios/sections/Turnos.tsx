@@ -246,7 +246,7 @@ export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
                                     <p className="text-muted small">Resumen de ventas hasta este momento</p>
                                 </div>
 
-                                <div className="bg-light rounded-4 p-3 mb-4">
+                                <div className="bg-light rounded-3 p-3 mb-4">
                                     <div className="d-flex justify-content-between mb-2">
                                         <span className="text-muted small">Base Inicial:</span>
                                         <span className="fw-bold">${new Intl.NumberFormat().format(resumenCierre.base_inicial)}</span>
@@ -267,7 +267,7 @@ export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="alert alert-warning border-0 small rounded-4 mb-4">
+                                <div className="alert alert-warning border-0 small rounded-3 mb-4">
                                     <i className="ti ti-alert-triangle me-2"></i>
                                     Al cerrar el turno, ya no se podrán registrar más facturas en esta terminal hasta que se realice una nueva apertura.
                                 </div>

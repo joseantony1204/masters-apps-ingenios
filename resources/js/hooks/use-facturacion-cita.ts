@@ -9,7 +9,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-
+    //console.log(cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id)
+    
     const form = useForm({
         nombreCliente: '',
         observaciones: '',
@@ -195,12 +196,22 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
 
     // Buscador con Debounce
     useEffect(() => {
+        const empleado = cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id;
         if (filtroBusqueda.length > 2) {
             const delayDebounce = setTimeout(async () => {
                 try {
                     // Ajusta esta ruta a tu API real de búsqueda
                     //const { data } = await axios.get(`/api/productos/buscar?q=${filtroBusqueda}`);
-                    const { data } = await axios.get(route('api.productos.buscar'), { params: { q: filtroBusqueda } });
+                    const { data } = await axios.get(
+                                                        route('api.productos.buscar'), 
+                                                        { params: 
+                                                            { 
+                                                                q: filtroBusqueda, 
+                                                                empleado_id: empleado ? empleado: null
+     
+                                                            } 
+                                                        }
+                                                    );
                     setResultadosBusqueda(data);
                 } catch (error) {
                     console.error("Error buscando productos", error);
@@ -223,6 +234,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             precio: precio,
             descuento: 0,
             total: precio,
+            tipo_id: producto.tipo?.id || producto.tipo_id || 854,
             tipo: producto.tipo?.nombre || producto.tipo || 'PRODUCTO'
         };
         // 1. Actualizamos el form de la Cita (visual/db cita)
@@ -286,6 +298,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
                 descuento: 0,
                 total: precio,
                 es_nuevo: true,        // Flag crucial para el controlador de Laravel
+                tipo_id: 854,
                 tipo: 'PRODUCTO',
             };
     

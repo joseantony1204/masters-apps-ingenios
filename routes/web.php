@@ -12,7 +12,7 @@ use App\Http\Controllers\{
     FtserialesController,CfsedesController,UsersController,
     CfhorariosController, CfpromocionesController, CfcuponesController,
     CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController,
-    ReportesController, InventariosController, MovimientosproductosController};
+    ReportesController, MovimientosproductosController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};

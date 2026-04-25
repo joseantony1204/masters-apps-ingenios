@@ -47,7 +47,8 @@ class ReportesController extends Controller
         ->get()
         ->map(function($empleado) {
             $detallesProcesados = $empleado->detallescitas->map(function($det) {
-                $totalPagado = $det->cita->factura ? collect($det->cita->factura->pagos)->sum('total') : 0;
+                $totalPagado = $det->cita->factura ? (float) ($det->preciofinal ?? 0) : 0;
+                //$totalPagado = (float) ($det->preciofinal ?? 0); 
                 $porcentajeComision = $det->empleadoservicio->comision ?? 0;
                 $comisionCalculada = ($totalPagado * $porcentajeComision) / 100;
 
