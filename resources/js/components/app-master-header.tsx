@@ -53,7 +53,6 @@ export default function AppMasterHeader() {
         }
     };
 
-
     const toggleUserMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation(); // EVITA que el script de la plantilla reciba el evento y cierre el menú
@@ -100,6 +99,14 @@ export default function AppMasterHeader() {
                 <div className="ms-auto">
                     <ul className="list-unstyled">
                         {/* Notificaciones */}
+                        <li className="dropdown pc-h-item">
+                            <a 
+                                className="pc-head-link dropdown-toggle arrow-none me-0" 
+                                href={route('dashboard')}
+                            >
+                                <i className="ti ti-home"></i>
+                            </a>
+                        </li>
                         <li className="dropdown pc-h-item">
                             <a className="pc-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#" role="button">
                                 <i className="ti ti-mail"></i>
