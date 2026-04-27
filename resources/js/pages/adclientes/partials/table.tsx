@@ -100,7 +100,7 @@ export default function Table({ clientes }: Props) {
                             </td>
                             <td>
                                 <button 
-                                    onClick={() => handleSendWhatsapp(item)}
+                                    //onClick={() => handleSendWhatsapp(item)}
                                     className="btn btn-link p-0 text-success text-decoration-none fw-bold d-flex align-items-center"
                                 >
                                     <i className="ti ti-brand-whatsapp me-2 fs-4"></i>

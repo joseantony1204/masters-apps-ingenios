@@ -177,15 +177,19 @@ export default function Fields({ data, setData, errors, tpidentificacionList = {
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="form-group">
-                        <label className="form-label">Teléfono móvil</label>
-                        <input 
-                            type="text" 
-                            className={`form-control ${errors.telefonomovil ? 'is-invalid' : ''}`}
-                            value={data.telefonomovil || ''}
-                            onChange={e => setData('telefonomovil', e.target.value)}
-                        />
-                        {errors.telefonomovil && <div className="invalid-feedback">{errors.telefonomovil}</div>}
+                    <div className="form-group position-relative">
+                        <label className="fw-bold small">Teléfono whatsapp</label>
+                        <div className="input-group shadow-sm">
+                            <span className="input-group-text bg-white border-end-0"><i className="ti ti-brand-whatsapp text-muted"></i></span>
+                            <input 
+                                type="text" 
+                                className={`form-control border-start-0 ${errors.telefonomovil ? 'is-invalid' : ''}`} value={data.telefonomovil || ''}
+                                onChange={e => setData('telefonomovil', e.target.value)}
+                                placeholder="Escribe numero de whatsapp"
+                                autoComplete="off"
+                            />
+                            {errors.telefonomovil && <div className="invalid-feedback d-block">{errors.telefonomovil}</div>}
+                        </div>
                     </div>
                 </div>
 

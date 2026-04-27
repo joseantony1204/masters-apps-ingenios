@@ -41,7 +41,7 @@ export default function Fields({
             });
             if (response.data) {
                 const p = response.data;
-                toast.success('Persona encontrada. Rellenando datos...');
+                //toast.success('Persona encontrada. Rellenando datos...');
 
                 // IMPORTANTE: Mapeamos los campos exactos que espera tu 'data'
                 const nuevosDatos = {
@@ -190,11 +190,20 @@ export default function Fields({
                     {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
                 </div>
                 <div className="col-md-3">
-                    <div className="form-group">
-                        <label className="fw-bold small">Teléfono móvil</label>
-                        <input type="text" className={`form-control ${errors.telefonomovil ? 'is-invalid' : ''}`} value={data.telefonomovil || ''} onChange={e => setData('telefonomovil', e.target.value)} />
+                    <div className="form-group position-relative">
+                        <label className="fw-bold small">Teléfono whatsapp</label>
+                        <div className="input-group shadow-sm">
+                            <span className="input-group-text bg-white border-end-0"><i className="ti ti-brand-whatsapp text-muted"></i></span>
+                            <input 
+                                type="text" 
+                                className={`form-control border-start-0 ${errors.telefonomovil ? 'is-invalid' : ''}`} value={data.telefonomovil || ''}
+                                onChange={e => setData('telefonomovil', e.target.value)}
+                                placeholder="Escribe numero de whatsapp"
+                                autoComplete="off"
+                            />
+                            {errors.telefonomovil && <div className="invalid-feedback d-block">{errors.telefonomovil}</div>}
+                        </div>
                     </div>
-                    {errors.telefonomovil && <div className="invalid-feedback d-block">{errors.telefonomovil}</div>}
                 </div>
 
                 <div className="col-md-3">

@@ -101,7 +101,15 @@ export default function Table({ empleados }: Props) {
                                 </div>
                             </div>
                         </td>
-                        <td >{ item.telefonomovil }</td>
+                        <td>
+                            <button 
+                                //onClick={() => handleSendWhatsapp(item)}
+                                className="btn btn-link p-0 text-success text-decoration-none fw-bold d-flex align-items-center"
+                            >
+                                <i className="ti ti-brand-whatsapp me-2 fs-4"></i>
+                                {item.telefonomovil}
+                            </button>
+                        </td>
                         <td >{ item.fechaingreso }</td>
                         <td className="text-center">
                             <span 
