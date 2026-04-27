@@ -136,9 +136,9 @@ class FtfacturasController extends Controller
             // Cargamos la cita con la persona (cliente) y sus servicios asociados
             $cita = Adcitas::with([
                 'cliente.persona.personasnaturales',
-                'detalle_con_empleadoservicio.empleadoservicio.servicio',
+                'detalle_con_empleadoservicio.empleadoservicio.servicio.tipo:id,nombre',
                 'detalle_con_empleadoservicio.empleadoservicio.empleado.persona.personasnaturales',
-                'detalle_con_producto.producto',
+                'detalle_con_producto.producto.tipo:id,nombre',
             ])
             ->find($request->cita);
         }
@@ -218,6 +218,7 @@ class FtfacturasController extends Controller
                 
                 foreach ($request->items as $item) {
                     $productoId = $item['producto_id'] ?? null;
+                    $tipoId = $item['tipo_id'] ?? 854;
                     // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
                     if (is_null($productoId) && !empty($item['nombre'])) {
                         $producto = Productos::firstOrCreate(
@@ -241,17 +242,66 @@ class FtfacturasController extends Controller
                     }else {
                         $producto = Productos::find($productoId);
                     }
+                    $descuento = ($item['precio']*$request->porcentajedescuento/100);
+                    $totalapagar = $item['total'] - $descuento;
+
+                    $detalle_model_type = null;
+                    $detalle_model_type_id = null;
+
+                    if($request->model_type === 921){
+                        //1. Cargar la cita
+                        $cita = Adcitas::findOrFail($request->model_type_id);
+                        $addetallecita = $cita->detalle()->updateOrCreate(
+                            ['id' => $item['detallecita_id'] ?? null],
+                            [
+                            'cita_id'       => $cita->id,
+                            'cantidad'      => $item['cantidad'],
+                            'descuento'     => $item['descuento'] ?? 0,
+                            'preciounitario'   => $item['precio'],
+                            'preciofinal'   => $totalapagar,
+                            'model_type' => match ($tipoId) {
+                                854 => 920, // tipo productos ---> productos
+                                855 => 919, // tipo servicios ---> cfempleadosservicios
+                                default => null,
+                            },
+                            'model_type_id' => match ($tipoId) {
+                                854 => $productoId, // tipo productos ---> productos
+                                855 => $item['servicioasignado_id'], // tipo servicios ---> cfempleadosservicios
+                                default => null,
+                            },
+                            'estado_id'     => 913,
+                            'created_by'    => $userAuth->id,
+                            'created_at'    => now(),
+                            ]
+                        );
+                        $detalle_model_type = $addetallecita->model_type;
+                        $detalle_model_type_id = $addetallecita->model_type_id;
+                    }else{
+                        $detalle_model_type = match ($tipoId) {
+                            854 => 920, // tipo productos ---> productos
+                            855 => 919, // tipo servicios ---> cfempleadosservicios
+                            default => null,
+                        };
+
+                        $detalle_model_type_id = match ($tipoId) {
+                            854 => $productoId, // tipo productos ---> productos
+                            855 => $item['servicioasignado_id'], // tipo servicios ---> cfempleadosservicios
+                            default => null,
+                        };
+                    }
 
                     $factura->detalles()->create([
                         'numero' => 1,
                         'cantidad' => $item['cantidad'],
                         'precioinicial' => $item['precio'],
                         'preciofinal' => $item['precio'],
-                        'descuento' => 0,
-                        'totalapagar' => $item['total'],
+                        'descuento' => $descuento,
+                        'porcentajedescuento' => $request->porcentajedescuento,
+                        'totalapagar' => $totalapagar,
                         'fecha' => now(),
                         'factura_id' => $factura->id,
-                        'producto_id' => $productoId,
+                        'model_type' => $detalle_model_type,
+                        'model_type_id' => $detalle_model_type_id,
                         'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
                         'observaciones' => $item['descripcion'],
                     ]);
@@ -329,7 +379,8 @@ class FtfacturasController extends Controller
 
         //5. --- LÓGICA PARA CARGAR LA FACTURA ---
         $ftfactura = Ftfacturas::with([
-            'detalles.producto',
+            'detalles_con_producto.producto.tipo:id,nombre',
+            'detalles_con_empleadoservicio.empleadoservicio.servicio.tipo:id,nombre',
             'turnos.terminal.sede',
         ])->findOrFail($id);
 
@@ -399,7 +450,8 @@ class FtfacturasController extends Controller
 
         //5. --- LÓGICA PARA CARGAR LA FACTURA ---
         $ftfactura = Ftfacturas::with([
-            'detalles.producto'
+            'detalles_con_producto.producto.tipo:id,nombre',
+            'detalles_con_empleadoservicio.empleadoservicio.servicio.tipo:id,nombre',
         ])->findOrFail($id);
 
         //6. --- LÓGICA PARA CARGAR LA CITA ---
@@ -413,7 +465,12 @@ class FtfacturasController extends Controller
             ])
             ->find($ftfactura->model_type_id);
         }
-        
+
+        $persona = null;
+        if($ftfactura->model_type===922) {
+            $persona = Personas::with(['personasnaturales'])->find($ftfactura->model_type_id);
+        }
+
         return Inertia::render('ftfacturas/edit', [
             'comercio' => $comercio,
             'ftfactura' => $ftfactura,
@@ -423,6 +480,7 @@ class FtfacturasController extends Controller
             'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOSFACTURAS'),
             'metodospagosList' => Cfmaestra::getlistatipos('LIS_METODOSPAGO'),
             'cita' => $cita, // Pasamos la cita encontrada (o null)
+            'persona' => $persona, // Pasamos el cliente encontrada (o null)
         ]);
     }
 
@@ -491,6 +549,7 @@ class FtfacturasController extends Controller
             // 2. Guardar los Items (Detalle)  
             foreach ($request->items as $item) {
                 $productoId = $item['producto_id'] ?? null;
+                $tipoId = $item['tipo_id'] ?? 854;
                 // Si no tiene ID, es que el usuario lo escribió manualmente en la tabla
                 if (is_null($productoId) && !empty($item['nombre'])) {
                     $productoId = Productos::firstOrCreate(
@@ -511,6 +570,22 @@ class FtfacturasController extends Controller
                     )->id;
                 }
 
+                $descuento = ($item['precio']*$request->porcentajedescuento/100);
+                $totalapagar = $item['total'] - $descuento;
+
+                $detalle_model_type = match ($tipoId) {
+                    854 => 920, // tipo productos ---> productos
+                    855 => 919, // tipo servicios ---> cfempleadosservicios
+                    default => null,
+                };
+
+                $detalle_model_type_id = match ($tipoId) {
+                    854 => $productoId, // tipo productos ---> productos
+                    855 => $item['servicioasignado_id'], // tipo servicios ---> cfempleadosservicios
+                    default => null,
+                };
+            
+
                 $factura->detalles()->updateOrCreate(
                     ['id' => $item['id']], // Condición de búsqueda
                     [
@@ -518,11 +593,14 @@ class FtfacturasController extends Controller
                     'cantidad' => $item['cantidad'],
                     'precioinicial' => $item['precio'],
                     'preciofinal' => $item['precio'],
-                    'descuento' => 0,
-                    'totalapagar' => $item['total'],
+                    'descuento' => $descuento,
+                    'porcentajedescuento' => $request->porcentajedescuento,
+                    'totalapagar' => $totalapagar,
                     'fecha' => now(),
                     'factura_id' => $factura->id,
                     'producto_id' => $productoId,
+                    'model_type' => $detalle_model_type,
+                    'model_type_id' => $detalle_model_type_id,
                     'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
                     'observaciones' => $item['descripcion'],
                     'updated_by' => Auth::user()->id, 

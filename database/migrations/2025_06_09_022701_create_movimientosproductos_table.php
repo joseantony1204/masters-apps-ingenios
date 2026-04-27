@@ -17,6 +17,14 @@ return new class extends Migration
                 $table->integer('stock')->default(0)->after('minimostock');
             }
         });
+
+        Schema::table('ftdetalles', function (Blueprint $table) {
+            if (!Schema::hasColumn('ftdetalles', 'porcentajedescuento')) {
+                $table->integer('porcentajedescuento')->nullable()->default(0)->after('descuento');
+                $table->unsignedBigInteger('model_type')->after('porcentajedescuento')->comment('Tabla Padre de donde se genera el detallela factura');
+                $table->unsignedBigInteger('model_type_id')->after('porcentajedescuento')->comment('Referencia de la Tabla Padre');
+            }
+        });
         
         Schema::dropIfExists('movimientosproductos');
         Schema::create('movimientosproductos', function (Blueprint $table) {

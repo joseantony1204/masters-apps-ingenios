@@ -46,7 +46,6 @@ class Ftdetalles extends Model
 			'descuento' => 'required',
 			'totalapagar' => 'required',
 			'fecha' => 'required',
-			'producto_id' => 'required',
 			'factura_id' => 'required',
 			'estado_id' => 'required',];
 
@@ -55,7 +54,7 @@ class Ftdetalles extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['cantidad', 'numero', 'precioinicial', 'preciofinal', 'descuento', 'totalapagar', 'fecha', 'observaciones', 'producto_id', 'factura_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['cantidad', 'numero', 'precioinicial', 'preciofinal', 'descuento', 'porcentajedescuento', 'totalapagar', 'fecha', 'observaciones', 'model_type', 'model_type_id', 'factura_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**
@@ -79,15 +78,36 @@ class Ftdetalles extends Model
      */
     public function producto()
     {
-        return $this->belongsTo(\App\Models\Productos::class, 'producto_id', 'id');
+        return $this->belongsTo(\App\Models\Productos::class, 'model_type_id', 'id');
     }
-    
+
+    public function empleadoservicio()
+    {
+        return $this->belongsTo(\App\Models\Cfempleadosservicios::class, 'model_type_id', 'id');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function ftseriales()
     {
         return $this->hasMany(\App\Models\Ftseriales::class, 'id', 'detalle_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function factura_con_cita()
+    {
+        return $this->belongsTo(\App\Models\Ftfacturas::class, 'factura_id')->where('model_type', 921);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function factura_sin_cita()
+    {
+        return $this->belongsTo(\App\Models\Ftfacturas::class, 'factura_id')->where('model_type', 922);
     }
     
 }

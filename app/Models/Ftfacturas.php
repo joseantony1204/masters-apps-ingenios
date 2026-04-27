@@ -124,9 +124,26 @@ class Ftfacturas extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
+
     public function detalles()
     {
         return $this->hasMany(\App\Models\Ftdetalles::class, 'factura_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function detalles_con_empleadoservicio()
+    {
+        return $this->hasMany(\App\Models\Ftdetalles::class, 'factura_id')->where('model_type', 919);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function detalles_con_producto()
+    {
+        return $this->hasMany(\App\Models\Ftdetalles::class, 'factura_id')->where('model_type', 920);
     }
     
     /**
@@ -150,6 +167,22 @@ class Ftfacturas extends Model
     {
         // Esto mapea model_type_id con el ID de la tabla correspondiente
         return $this->morphTo(__FUNCTION__, 'model_type', 'model_type_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cita()
+    {
+        return $this->belongsTo(\App\Models\Adcitas::class, 'model_type_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function persona()
+    {
+        return $this->belongsTo(\App\Models\Personas::class, 'model_type_id');
     }
     
 }

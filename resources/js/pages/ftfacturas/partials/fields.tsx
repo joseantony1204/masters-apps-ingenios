@@ -51,63 +51,82 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
     }, []);
 
     useEffect(() => {
-        const nuevosItems: any[] = [];
-        if (ftfactura.id && data.items.length === 0 && ftfactura.detalles?.length > 0) {
-            const nuevosItems = ftfactura.detalles.map((det: any) => ({
-                id: det.id || 0,
+        // 1. Evitar ejecuciones si ya hay items o no hay factura/cita
+        if (data.items.length > 0) return;
+        let itemsFinales: any[] = [];
+
+        // --- ESCENARIO A: EDITANDO O VIENDO UNA FACTURA EXISTENTE ---
+        if (ftfactura?.id) {
+            // Procesar Productos
+            const productos = (ftfactura.detalles_con_producto || []).map((det: any) => ({
+                id: det.id,
                 producto_id: det.producto?.id || det.producto_id,
-                nombre: det.producto?.nombre || 'Producto/Servicio',
+                servicioasignado_id: null,
+                nombre: det.producto?.nombre || 'Producto',
                 descripcion: det.observaciones || '',
                 cantidad: Number(det.cantidad),
                 precio: Number(det.preciofinal),
                 total: Number(det.totalapagar),
-                is_from_appointment: !!det.observaciones?.includes('cita') // Detectar si era de cita por la observación
+                is_from_appointment: !!det.observaciones?.includes('cita'),
+                tipo_id: det?.producto?.tipo?.id,
+                tipo: det?.producto?.tipo?.nombre,
             }));
-            
-            actualizarItems(nuevosItems);
-            return; // Salimos para no ejecutar la lógica de "cita"
+
+            // Procesar Servicios (Aquí estaba el fallo, ahora se suman ambos)
+            const servicios = (ftfactura.detalles_con_empleadoservicio || []).map((det: any) => ({
+                id: det.id,
+                producto_id: det.empleadoservicio?.servicio?.id || det.model_type_id,
+                servicioasignado_id: det.empleadoservicio?.id,
+                nombre: det.empleadoservicio?.servicio?.nombre || 'Servicio',
+                descripcion: det.observaciones || '',
+                cantidad: Number(det.cantidad),
+                precio: Number(det.preciofinal),
+                total: Number(det.totalapagar),
+                is_from_appointment: !!det.observaciones?.includes('cita'),
+                tipo_id: det?.empleadoservicio?.servicio?.tipo?.id,
+                tipo: det?.empleadoservicio?.servicio?.tipo?.nombre,
+            }));
+
+            itemsFinales = [...productos, ...servicios];
         }
-    
-        // 2. SI ES CREACIÓN DESDE CITA: Cargar lo que viene de la agenda
-        if (!data.id && cita && data.items.length === 0) {
-            // Procesar Servicios
-            if (cita.detalle_con_empleadoservicio) {
-                cita.detalle_con_empleadoservicio.forEach((det: any) => {
-                    nuevosItems.push({
-                        id: det.empleadoservicio?.servicio?.id,
-                        producto_id: det.empleadoservicio?.servicio?.id,
-                        nombre: det.empleadoservicio?.servicio?.nombre || 'Servicio',
-                        descripcion: `Servicio de cita #${cita.codigo} - ${det.empleadoservicio?.servicio?.nombre}`,
-                        cantidad: det.cantidad || 1,
-                        precio: det.preciounitario || 0,
-                        total: (det.cantidad || 1) * (det.preciounitario || 0),
-                        is_from_appointment: true
-                    });
-                });
-            }
-    
-            // Procesar Productos adicionales
-            if (cita.detalle_con_producto) {
-                cita.detalle_con_producto.forEach((det: any) => {
-                    const productoInfo = det.producto?.[0]; 
-                    nuevosItems.push({
-                        id: productoInfo?.id,
-                        producto_id: productoInfo?.id,
-                        nombre: productoInfo?.nombre || 'Producto',
-                        descripcion: `Producto de cita #${cita.codigo}`,
-                        cantidad: det.cantidad || 1,
-                        precio: det.preciounitario || 0,
-                        total: (det.cantidad || 1) * (det.preciounitario || 0),
-                        is_from_appointment: true
-                    });
-                });
-            }
-    
-            if (nuevosItems.length > 0) {
-                actualizarItems(nuevosItems);
-            }
-    
-            // Vincular datos del cliente solo si es nuevo
+        // --- ESCENARIO B: CREACIÓN DESDE CITA (NUEVA FACTURA) ---
+        else if (cita && !data.id) {
+            // Servicios de la agenda
+            const serviciosCita = (cita.detalle_con_empleadoservicio || []).map((det: any) => ({
+                id: det.id, // ID del detalle de la cita
+                producto_id: det.empleadoservicio?.servicio?.id,
+                servicioasignado_id: det.empleadoservicio?.id,
+                nombre: det.empleadoservicio?.servicio?.nombre || 'Servicio',
+                descripcion: `Servicio de cita #${cita.codigo} - ${det.empleadoservicio?.servicio?.nombre}`,
+                cantidad: det.cantidad || 1,
+                precio: det.preciounitario || 0,
+                total: (det.cantidad || 1) * (det.preciounitario || 0),
+                is_from_appointment: true,
+                tipo_id: det?.empleadoservicio?.servicio?.tipo?.id,
+                tipo: det?.empleadoservicio?.servicio?.tipo?.nombre,
+            }));
+
+            // Productos de la agenda
+            const productosCita = (cita.detalle_con_producto || []).map((det: any) => {
+                const pInfo = det.producto?.[0] || det.producto;
+                return {
+                    id: det.id,
+                    producto_id: pInfo?.id,
+                    servicioasignado_id: null,
+                    nombre: pInfo?.nombre || 'Producto',
+                    descripcion: `Producto de cita #${cita.codigo}`,
+                    cantidad: det.cantidad || 1,
+                    precio: det.preciounitario || 0,
+                    total: (det.cantidad || 1) * (det.preciounitario || 0),
+                    is_from_appointment: true,
+                    tipo_id: pInfo?.tipo?.id,
+                    tipo: pInfo?.tipo?.nombre,
+                };
+            });
+
+            itemsFinales = [...serviciosCita, ...productosCita];
+
+            // Seteamos datos del cliente una sola vez
             setData((prev: any) => ({
                 ...prev,
                 model_type_id: cita.id,
@@ -116,9 +135,13 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                 cliente_correo_aux: cita.cliente?.persona?.email,
             }));
         }
-    }, [cita, data.id]); // Escuchamos cita y el ID de la factura
+        // 3. Aplicar cambios si hay items recolectados
+        if (itemsFinales.length > 0) {
+            actualizarItems(itemsFinales);
+        }
 
-    
+    }, [cita, ftfactura?.id, data.id]); // Agregada ftfactura?.id como dependencia crítica
+
 
     // Función auxiliar para actualizar e integrar con tus cálculos de impuestos/descuentos
     const actualizarItems = (nuevosItems: any[]) => {
@@ -173,7 +196,17 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
     };
 
     const addItem = () => {
-        const nuevosItems = [...(data.items || []), { producto_id: null, nombre: '', descripcion: 'Producto nuevo agregado manualmente', cantidad: 1, precio: 0, total: 0 }];
+        const nuevosItems = 
+        [...(data.items || []), 
+            { 
+                producto_id: null, 
+                nombre: '', 
+                descripcion: 'Producto nuevo agregado manualmente', 
+                cantidad: 1, 
+                precio: 0, 
+                total: 0,
+            }
+        ];
         calcularTotales(nuevosItems);
     };
 
@@ -222,7 +255,7 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
         const empleado_id = cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id ? cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id : null;
         try {
             const response = await axios.get(route('api.productos.buscar'), {
-                params: { q: query, empleado_id : null }
+                params: { q: query, empleado_id : empleado_id }
             });
             setResultadosProductos(response.data);
         } catch (error) {
@@ -237,12 +270,15 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
         nuevosItems[index] = {
             ...nuevosItems[index],
             id: producto.id,
+            servicioasignado_id: producto?.servicioasignado_id,
             producto_id: producto.id,
             nombre: producto.nombre,
             descripcion: `Producto adicional #${producto.id} - ${producto?.nombre}`,
             precio: producto.precio || 0,
             total: (nuevosItems[index].cantidad || 1) * (producto.precio || 0),
-            es_nuevo: false // Este ya existe en DB
+            es_nuevo: false, // Este ya existe en DB
+            tipo_id: producto?.tipo_id,
+            tipo: producto?.tipo,
         };
         
         setResultadosProductos([]);

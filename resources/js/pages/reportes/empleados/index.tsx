@@ -29,10 +29,23 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
 
     // Función de exportación corregida (paso a paso para evitar el error de tipo void)
     const handleExportIndividual = (emp: any) => {
-        const data = emp.servicios.map((s: any) => ({
-            'Fecha': s.fecha, 'Hora': s.hora, 'Cliente': s.cliente_nombre,
-            'Servicio': s.servicio, 'Estado': s.estado_nombre,
-            'Pago Real': s.total_pagado, 'Comisión': s.comision_valor
+        // Si emp.servicios es null o undefined, usamos un array vacío
+        const serviciosRaw = emp.servicios || [];
+        const serviciosArray = Array.isArray(serviciosRaw) ? serviciosRaw : Object.values(serviciosRaw);
+
+        if (serviciosArray.length === 0) {
+            alert("No hay servicios para exportar");
+            return;
+        }
+
+        const data = serviciosArray.map((s: any) => ({
+            'Fecha': s.fecha, 
+            'Hora': s.hora, 
+            'Cliente': s.cliente_nombre,
+            'Servicio': s.servicio, 
+            'Estado': s.estado_nombre,
+            'Pago Real': s.total_pagado, 
+            'Comisión': s.comision_valor
         }));
         
         const wb = XLSX.utils.book_new();
@@ -44,11 +57,13 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
     const exportAllToExcel = () => {
         let fullData: any[] = [];
         reporte.forEach((emp: any) => {
-            emp.servicios.forEach((s: any) => {
+            // Asegurar array aquí también
+            const serviciosArray = Array.isArray(emp.servicios) ? emp.servicios : Object.values(emp.servicios);
+            
+            serviciosArray.forEach((s: any) => {
                 fullData.push({
-                    'Especialista': emp.nombre, 'Fecha': s.fecha, 'Hora': s.hora,
-                    'Cliente': s.cliente_nombre, 'Servicio': s.servicio,
-                    'Estado': s.estado_nombre, 'Recaudo': s.total_pagado, 'Comisión': s.comision_valor
+                    'Especialista': emp.nombre, 
+                    // ... resto de los campos
                 });
             });
         });
@@ -103,7 +118,7 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                 <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '20px', border: '1px solid rgba(255,255,255,0.8)' }}>
                     <div className="card-body p-4">
                         <div className="row g-4 align-items-end">
-                            <div className="col-md-3">
+                            <div className="col-md-4">
                                 <div className="form-group mb-0">
                                     <label className="small fw-800 text-uppercase mb-2 text-primary">Periodo de Análisis</label>
                                     <div className="d-flex align-items-center bg-light px-3 py-2" style={{ borderRadius: '15px' }}>
@@ -113,20 +128,14 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-md-3">
+                            <div className="col-md-4">
                                 <label className="small fw-800 text-uppercase mb-2 text-primary">Especialista</label>
                                 <select className="form-select border-0 bg-light py-2" style={{ borderRadius: '12px' }} value={values.empleado_id} onChange={e => setValues({...values, empleado_id: e.target.value})}>
                                     <option value="">Cualquier Especialista</option>
                                     {empleados.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
                                 </select>
                             </div>
-                            <div className="col-md-3">
-                                <label className="small fw-800 text-uppercase mb-2 text-primary">Estado Operativo</label>
-                                <select className="form-select border-0 bg-light py-2" style={{ borderRadius: '12px' }} value={values.estado_cita_id} onChange={e => setValues({...values, estado_cita_id: e.target.value})}>
-                                    {Object.entries(estadosList).map(([id, nombre]: any) => <option key={id} value={id}>{nombre}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-md-3">
+                            <div className="col-md-4">
                                 <button onClick={handleFilter} className="btn btn-primary w-100 py-2 shadow-blue" style={{ borderRadius: '12px', background: `linear-gradient(135deg, ${brandBlue} 0%, ${brandIndigo} 100%)`, border: 'none', fontWeight: '700' }}>
                                 <i className="ti ti-filter me-2"></i>REFRESCAR MÉTRICAS
                                 </button>
@@ -264,6 +273,7 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
 
                 {/* Listado Estilo Dashboard Analytics */}
                 <div className="row">
+                    
                     {reporte.map((emp: any) => (
                         <div key={emp.id} className="col-12 mb-5">
                             <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '24px' }}>
@@ -316,40 +326,60 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                                                         <th className="pe-4 py-3 border-0 small fw-800 text-muted text-end">COMISION</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    {emp.servicios.map((s: any) => (
-                                                        <tr key={s.id} className="border-bottom border-light">
-                                                            <td className="ps-4 py-3">
-                                                                <div className="d-flex align-items-center">
-                                                                    <div className="bg-light text-center me-3" style={{ borderRadius: '10px', padding: '5px 10px', minWidth: '60px' }}>
-                                                                        <div className="fw-900" style={{ fontSize: '11px' }}>{s.hora}</div>
-                                                                        <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="fw-bold text-dark">{s.servicio}</div>
-                                                                        <span className="text-muted" style={{ fontSize: '10px' }}>cita #{s.codigo}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                <div className="fw-bold text-dark">{s.cliente_nombre}</div>
-                                                                <div className="small text-muted"><i className="ti ti-phone me-1"></i>{s.cliente_tel}</div>
-                                                            </td>
-                                                            <td className="text-center">
-                                                                <span className={`badge rounded-pill px-3 py-2 bg-light-${s.estado_color} text-${s.estado_color}`} style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
-                                                                    {s.estado_nombre.toUpperCase()}
-                                                                </span>
-                                                            </td>
-                                                            <td className="text-end fw-bold text-dark">
-                                                                ${s.total_pagado.toLocaleString()}
-                                                            </td>
-                                                            <td className="pe-4 text-end">
-                                                                <div className="fw-900" style={{ color: brandBlue }}>${s.comision_valor.toLocaleString()}</div>
-                                                                <div className="text-muted" style={{ fontSize: '9px' }}>{s.comision_pactada}% comisión</div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
+
+                                                // 2. En el cuerpo del return, reemplaza el mapeo de la tabla por este:
+<tbody>
+    {(() => {
+        // Validación en cascada para evitar el error de undefined
+        const serviciosRaw = emp.servicios || [];
+        const serviciosArray = Array.isArray(serviciosRaw) ? serviciosRaw : Object.values(serviciosRaw);
+
+        if (serviciosArray.length === 0) {
+            return (
+                <tr>
+                    <td colSpan={5} className="text-center py-5 text-muted">
+                        No se encontraron servicios realizados en este periodo.
+                    </td>
+                </tr>
+            );
+        }
+
+        return serviciosArray.map((s: any) => (
+            <tr key={s.id} className="border-bottom border-light">
+                <td className="ps-4 py-3">
+                    <div className="d-flex align-items-center">
+                        <div className="bg-light text-center me-3" style={{ borderRadius: '10px', padding: '5px 10px', minWidth: '60px' }}>
+                            <div className="fw-900" style={{ fontSize: '11px' }}>{s.hora}</div>
+                            <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
+                        </div>
+                        <div>
+                            <div className="fw-bold text-dark">{s.servicio}</div>
+                            <span className="text-muted" style={{ fontSize: '10px' }}>cita #{s.codigo}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div className="fw-bold text-dark">{s.cliente_nombre}</div>
+                    <div className="small text-muted"><i className="ti ti-phone me-1"></i>{s.cliente_tel || 'N/A'}</div>
+                </td>
+                <td className="text-center">
+                    <span className={`badge rounded-pill px-3 py-2 bg-light-${s.estado_color || 'primary'} text-${s.estado_color || 'primary'}`} style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                        {(s.estado_nombre || 'Asistida').toUpperCase()}
+                    </span>
+                </td>
+                <td className="text-end fw-bold text-dark">
+                    ${(s.total_pagado || 0).toLocaleString()}
+                </td>
+                <td className="pe-4 text-end">
+                    <div className="fw-900" style={{ color: brandBlue }}>${(s.comision_valor || 0).toLocaleString()}</div>
+                    <div className="text-muted" style={{ fontSize: '9px' }}>{s.comision_pactada || 0}% comisión</div>
+                </td>
+            </tr>
+        ));
+    })()}
+</tbody>
+
+                                                
                                             </table>
                                         </div>
                                     </div>

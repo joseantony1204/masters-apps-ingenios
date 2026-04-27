@@ -352,6 +352,7 @@ class AdcitasController extends Controller
     public function actualizardetallecita(Request $request, $id)
     {
         // 1. Validación mejorada
+        //dd($request->all() );
         $request->validate([
             'observaciones' => 'nullable|string',
             'items' => 'array',
@@ -422,8 +423,16 @@ class AdcitasController extends Controller
                             'descuento'     => $item['descuento'] ?? 0,
                             'preciounitario'   => $item['precio'],
                             'preciofinal'   => $precioFinal,
-                            'model_type'    => $tipoId === 854 ? 920 : 919, // Productos
-                            'model_type_id' => $productoId,
+                            'model_type' => match ($tipoId) {
+                                854 => 920, // tipo productos ---> productos
+                                855 => 919, // tipo servicios ---> cfempleadosservicios
+                                default => null,
+                            },
+                            'model_type_id' => match ($tipoId) {
+                                854 => $productoId, // tipo productos ---> productos
+                                855 => $item['servicioasignado_id'], // tipo servicios ---> cfempleadosservicios
+                                default => null,
+                            },
                             'estado_id'     => 913,
                             'created_by'    => $userAuth->id,
                             'created_at'    => $now

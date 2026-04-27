@@ -79,7 +79,7 @@ class Cfempleados extends Model
      */
     public function empleadosservicios()
     {
-        return $this->hasMany(\App\Models\Cfempleadosservicios::class, 'id', 'empleado_id');
+        return $this->hasMany(\App\Models\Cfempleadosservicios::class, 'empleado_id');
     }
 
     public function serviciosAsignados() {

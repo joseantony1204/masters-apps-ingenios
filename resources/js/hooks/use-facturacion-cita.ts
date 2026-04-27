@@ -99,12 +99,16 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             // Mapeamos los servicios de la cita al formato de items de factura
             const serviciosComoItems = cita.detalle_con_empleadoservicio?.map((d: any) => ({
                 producto_id: d.empleadoservicio.servicio.id,
+                detallecita_id: d.id || null,
+                servicioasignado_id: d?.empleadoservicio?.id,
                 nombre: d.empleadoservicio.servicio.nombre || 'Servicio',
                 descripcion: `Servicio de cita #${cita.codigo} - ${d.empleadoservicio?.servicio?.nombre}`,
-                cantidad: 1,
+                cantidad: d.cantidad,
                 precio: d.preciounitario || 0,
                 total: (d.cantidad || 1) * (d.preciounitario || 0),
-                is_from_appointment: true
+                is_from_appointment: true,
+                tipo_id: d?.empleadoservicio?.servicio?.tipo?.id || 855,
+                tipo: d?.empleadoservicio?.servicio?.tipo?.nombre || 'SERVICIO',
 
             })) || [];
 
@@ -116,12 +120,16 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
                     const productoInfo = det.producto?.[0]; 
                     productosComoItems.push({
                         producto_id: productoInfo?.id,
+                        detallecita_id: det.id || null,
+                        servicioasignado_id: null,
                         nombre: productoInfo?.nombre || 'Producto',
                         descripcion: `Producto adicional #${productoInfo.id} - ${productoInfo?.nombre}`,
                         cantidad: det.cantidad || 1,
                         precio: det.preciounitario || 0,
                         total: (det.cantidad || 1) * (det.preciounitario || 0),
-                        is_from_appointment: true
+                        is_from_appointment: true,
+                        tipo_id: productoInfo?.tipo?.id || 854,
+                        tipo: productoInfo?.tipo?.nombre || 'PRODUCTO',
                     });
                 }) || [];
             }
@@ -228,6 +236,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         const nuevoItem = {
             unique_id: Date.now(),
             producto_id: producto.id,
+            detallecita_id: null,
+            servicioasignado_id: producto.servicioasignado_id,
             nombre: producto.nombre,
             descripcion: `Producto adicional #${producto.id} - ${producto?.nombre}`,
             cantidad: 1,
@@ -235,7 +245,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             descuento: 0,
             total: precio,
             tipo_id: producto.tipo?.id || producto.tipo_id || 854,
-            tipo: producto.tipo?.nombre || producto.tipo || 'PRODUCTO'
+            tipo: producto.tipo?.nombre || producto.tipo || 'PRODUCTO',
         };
         // 1. Actualizamos el form de la Cita (visual/db cita)
         form.setData('items', [...form.data.items, nuevoItem]);
@@ -260,7 +270,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     };
 
     const actualizarCalculosItem = (uniqueId: number, cambios: object) => {
-        const nuevosItems = form.data.items.map((item: any) => {
+        // 1. Actualizamos los items del formulario de la CITA
+        const nuevosItemsCita = form.data.items.map((item: any) => {
             if (item.unique_id === uniqueId) {
                 const actualizado = { ...item, ...cambios };
                 actualizado.total = (actualizado.precio * actualizado.cantidad) * (1 - (actualizado.descuento / 100));
@@ -268,7 +279,28 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             }
             return item;
         });
-        form.setData('items', nuevosItems);
+        form.setData('items', nuevosItemsCita);
+    
+        // 2. ¡CRUCIAL! Actualizamos también los items de la FACTURA
+        setFacturaData(prev => {
+            const nuevosItemsFactura = prev.items.map((item: any) => {
+                if (item.unique_id === uniqueId) {
+                    const actualizado = { ...item, ...cambios };
+                    actualizado.total = (actualizado.precio * actualizado.cantidad) * (1 - (actualizado.descuento / 100));
+                    return actualizado;
+                }
+                return item;
+            });
+    
+            const nuevoSubtotal = nuevosItemsFactura.reduce((acc, i) => acc + Number(i.total), 0);
+    
+            return {
+                ...prev,
+                items: nuevosItemsFactura,
+                subtotal: nuevoSubtotal,
+                // El total final se recalculará automáticamente en tu useEffect de totales
+            };
+        });
     };
 
     const cambiarCantidadItem = (uniqueId: number, operacion: 'sumar' | 'restar') => {
@@ -291,6 +323,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             const nuevoItem = {
                 unique_id: Date.now(), 
                 producto_id: null,     // El backend detectará que es nuevo
+                servicioasignado_id: null,     // El backend detectará que es nuevo
                 nombre: nombre.toUpperCase(),
                 descripcion: 'Producto nuevo agregado manualmente',
                 cantidad: 1,

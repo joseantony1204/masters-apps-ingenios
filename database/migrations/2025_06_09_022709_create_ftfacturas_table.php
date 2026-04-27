@@ -166,6 +166,9 @@ return new class extends Migration
             $table->float('totalapagar', 10, 2);
             $table->date('fecha')->comment('Fecha')->useCurrent();
             $table->string('observaciones')->nullable()->comment('Observaciones');
+
+            $table->unsignedBigInteger('model_type')->comment('Tabla Padre de donde se genera el detallela factura');
+            $table->unsignedBigInteger('model_type_id')->comment('Referencia de la Tabla Padre');
                    
             $table->unsignedBigInteger('producto_id');
             $table->foreign('producto_id')->references('id')

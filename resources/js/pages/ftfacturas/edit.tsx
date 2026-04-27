@@ -7,6 +7,7 @@ import { useForm } from '@inertiajs/react';
 interface Props {
     ftfactura: Ftfacturas;
     cita : any;
+    persona : any;
     turnoActivo : any;
     sedePredeterminada : any;
     turnosList: any[];
@@ -15,7 +16,7 @@ interface Props {
     metodospagosList: any[];
 }
 
-export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo, comercio, turnosList, estadosList, metodospagosList }: Props) {
+export default function Edit({ ftfactura, cita, persona, sedePredeterminada, turnoActivo, comercio, turnosList, estadosList, metodospagosList }: Props) {
     const { data, setData, put, delete: destroy, processing, errors } = useForm({
         // Datos de cabecera
         id: ftfactura.id || '',
@@ -28,12 +29,12 @@ export default function Edit({ ftfactura, cita, sedePredeterminada, turnoActivo,
         // Lógica Polimórfica (Cliente)
         model_type: ftfactura.model_type || 0,
         model_type_id: ftfactura.model_type_id || cita?.cliente?.persona?.id || '',
-        cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || '', // Para mostrar el nombre en la UI sin recargar
+        cliente_nombre_aux: cita?.cliente?.persona?.personasnaturales?.nombrecompleto || persona?.personasnaturales?.nombrecompleto,// Para mostrar el nombre en la UI sin recargar
         persona_id: cita?.cliente?.persona_id || ftfactura.model_type_id || '', 
-        cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || '',
-        cliente_direccion_aux: cita?.cliente?.persona?.direccion || '',
-        cliente_telefonomovil_aux: cita?.cliente?.persona?.telefonomovil || '',
-        cliente_email_aux: cita?.cliente?.persona?.email || '',
+        cliente_identificacion_aux: cita?.cliente?.persona?.identificacion || persona?.identificacion,
+        cliente_direccion_aux: cita?.cliente?.persona?.direccion || persona?.direccion,
+        cliente_telefonomovil_aux: cita?.cliente?.persona?.telefonomovil || persona?.telefonomovil,
+        cliente_email_aux: cita?.cliente?.persona?.email || persona?.email,
 
         // Datos del Emisor (Sede)
         origen_id: sedePredeterminada?.id || '',

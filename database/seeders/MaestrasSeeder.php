@@ -179,6 +179,7 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 920, 'codigo' => 'productos', 'nombre' => 'Tabla con productos', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 921, 'codigo' => 'adcitas', 'nombre' => 'Tabla citas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 922, 'codigo' => 'personas', 'nombre' => 'Tabla personas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 1061, 'codigo' => 'addetallescitas', 'nombre' => 'Tabla citas detalles', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             
             [ 'id' => 923, 'codigo' => 'LIS_ESTADOSTURNOS', 'nombre' => 'ESTADOS DE TURNOS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 924, 'codigo' => 'AC', 'nombre' => 'Activo', 'padre' => 923, 'jerarquia' => NULL, 'observacion' => 'success'],

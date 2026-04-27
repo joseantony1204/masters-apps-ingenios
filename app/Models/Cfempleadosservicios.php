@@ -84,5 +84,13 @@ class Cfempleadosservicios extends Model
     {
         return $this->hasMany(\App\Models\Addetallescitas::class, 'id', 'model_type_id');
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function detallesfactura()
+    {
+        return $this->hasMany(\App\Models\Ftdetalles::class, 'model_type_id')->where('model_type', 919);
+    }
     
 }

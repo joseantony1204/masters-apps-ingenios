@@ -16,6 +16,19 @@ export default function Show({ ftfactura, comercio, cita, persona }: Props) {
         window.print();
     };
 
+    const todosLosDetalles = [
+        ...(ftfactura.detalles_con_producto || []).map((d : any) => ({
+            ...d,
+            nombreMostrar: d.producto?.nombre,
+            tipo: 'producto'
+        })),
+        ...(ftfactura.detalles_con_empleadoservicio || []).map((d : any) => ({
+            ...d,
+            nombreMostrar: d.empleadoservicio?.servicio?.nombre,
+            tipo: 'servicio'
+        }))
+    ];
+
     return (
         <AppMainLayout>
             <Head title={`Factura ${ftfactura.numero || 'Detalle'}`} />
@@ -131,19 +144,35 @@ export default function Show({ ftfactura, comercio, cita, persona }: Props) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {(ftfactura.detalles?.length && ftfactura.detalles?.length > 0) && (
-                                                  ftfactura.detalles?.map((det: any, index: number) => (
-                                                    <tr key={index}>
-                                                        <td>{index + 1}</td>
-                                                        <td>
-                                                            <div className="fw-bold">{det.producto?.nombre || 'Producto/Servicio'}</div>
-                                                            <small className="text-muted">{det.observaciones || ''}</small>
-                                                        </td>
-                                                        <td className="text-end">{Number(det.cantidad)}</td>
-                                                        <td className="text-end">${Number(det.preciofinal).toLocaleString()}</td>
-                                                        <td className="text-end">${Number(det.totalapagar).toLocaleString()}</td>
-                                                    </tr>
+                                                {todosLosDetalles.length > 0 ? (
+                                                    todosLosDetalles.map((det, index) => (
+                                                        <tr key={`${det.tipo}-${det.id || index}`}>
+                                                            <td className="text-muted">{index + 1}</td>
+                                                            <td>
+                                                                <div className="fw-bold text-dark">
+                                                                    {det.nombreMostrar || 'Sin nombre'}
+                                                                </div>
+                                                                {det.observaciones && (
+                                                                    <small className="text-muted d-block" style={{ fontSize: '11px' }}>
+                                                                        {det.observaciones}
+                                                                    </small>
+                                                                )}
+                                                            </td>
+                                                            <td className="text-end">{Number(det.cantidad)}</td>
+                                                            <td className="text-end">
+                                                                ${Number(det.preciofinal).toLocaleString()}
+                                                            </td>
+                                                            <td className="text-end fw-bold">
+                                                                ${Number(det.totalapagar).toLocaleString()}
+                                                            </td>
+                                                        </tr>
                                                     ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={5} className="text-center py-4 text-muted">
+                                                            No hay detalles registrados en esta factura.
+                                                        </td>
+                                                    </tr>
                                                 )}
                                             </tbody>
                                         </table>
