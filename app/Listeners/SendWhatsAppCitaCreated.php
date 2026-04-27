@@ -52,7 +52,7 @@ class SendWhatsAppCitaCreated
                 // IMPRIMIR EN LOG PARA VALIDAR
                 Log::info("WhatsApp Prep - Empleado:", ['telefono' => $telefonoEmpleado, 'template' => 'proximacita','params' => $params, 'buttonParam' => $buttonParam]);
                 // ENVIAR REALMENTE
-                //$this->whatsAppService->send($telefonoEmpleado, 'proximacita', $params, $buttonParam);
+                $this->whatsAppService->send($telefonoEmpleado, 'proximacita', $params, $buttonParam);
             } catch (\Exception $e) {
                 // Logueamos el error pero NO relanzamos la excepción 
                 // para que no rompa la transacción de la cita
