@@ -326,58 +326,56 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
                                                         <th className="pe-4 py-3 border-0 small fw-800 text-muted text-end">COMISION</th>
                                                     </tr>
                                                 </thead>
+                                                <tbody>
+                                                    {(() => {
+                                                        // Validación en cascada para evitar el error de undefined
+                                                        const serviciosRaw = emp.servicios || [];
+                                                        const serviciosArray = Array.isArray(serviciosRaw) ? serviciosRaw : Object.values(serviciosRaw);
 
-                                                // 2. En el cuerpo del return, reemplaza el mapeo de la tabla por este:
-<tbody>
-    {(() => {
-        // Validación en cascada para evitar el error de undefined
-        const serviciosRaw = emp.servicios || [];
-        const serviciosArray = Array.isArray(serviciosRaw) ? serviciosRaw : Object.values(serviciosRaw);
+                                                        if (serviciosArray.length === 0) {
+                                                            return (
+                                                                <tr>
+                                                                    <td colSpan={5} className="text-center py-5 text-muted">
+                                                                        No se encontraron servicios realizados en este periodo.
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        }
 
-        if (serviciosArray.length === 0) {
-            return (
-                <tr>
-                    <td colSpan={5} className="text-center py-5 text-muted">
-                        No se encontraron servicios realizados en este periodo.
-                    </td>
-                </tr>
-            );
-        }
-
-        return serviciosArray.map((s: any) => (
-            <tr key={s.id} className="border-bottom border-light">
-                <td className="ps-4 py-3">
-                    <div className="d-flex align-items-center">
-                        <div className="bg-light text-center me-3" style={{ borderRadius: '10px', padding: '5px 10px', minWidth: '60px' }}>
-                            <div className="fw-900" style={{ fontSize: '11px' }}>{s.hora}</div>
-                            <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
-                        </div>
-                        <div>
-                            <div className="fw-bold text-dark">{s.servicio}</div>
-                            <span className="text-muted" style={{ fontSize: '10px' }}>cita #{s.codigo}</span>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div className="fw-bold text-dark">{s.cliente_nombre}</div>
-                    <div className="small text-muted"><i className="ti ti-phone me-1"></i>{s.cliente_tel || 'N/A'}</div>
-                </td>
-                <td className="text-center">
-                    <span className={`badge rounded-pill px-3 py-2 bg-light-${s.estado_color || 'primary'} text-${s.estado_color || 'primary'}`} style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
-                        {(s.estado_nombre || 'Asistida').toUpperCase()}
-                    </span>
-                </td>
-                <td className="text-end fw-bold text-dark">
-                    ${(s.total_pagado || 0).toLocaleString()}
-                </td>
-                <td className="pe-4 text-end">
-                    <div className="fw-900" style={{ color: brandBlue }}>${(s.comision_valor || 0).toLocaleString()}</div>
-                    <div className="text-muted" style={{ fontSize: '9px' }}>{s.comision_pactada || 0}% comisión</div>
-                </td>
-            </tr>
-        ));
-    })()}
-</tbody>
+                                                        return serviciosArray.map((s: any) => (
+                                                            <tr key={s.id} className="border-bottom border-light">
+                                                                <td className="ps-4 py-3">
+                                                                    <div className="d-flex align-items-center">
+                                                                        <div className="bg-light text-center me-3" style={{ borderRadius: '10px', padding: '5px 10px', minWidth: '60px' }}>
+                                                                            <div className="fw-900" style={{ fontSize: '11px' }}>{s.hora}</div>
+                                                                            <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="fw-bold text-dark">{s.servicio}</div>
+                                                                            <span className="text-muted" style={{ fontSize: '10px' }}>cita #{s.codigo}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="fw-bold text-dark">{s.cliente_nombre}</div>
+                                                                    <div className="small text-muted"><i className="ti ti-phone me-1"></i>{s.cliente_tel || 'N/A'}</div>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    <span className={`badge rounded-pill px-3 py-2 bg-light-${s.estado_color || 'primary'} text-${s.estado_color || 'primary'}`} style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                                                                        {(s.estado_nombre || 'Asistida').toUpperCase()}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="text-end fw-bold text-dark">
+                                                                    ${(s.total_pagado || 0).toLocaleString()}
+                                                                </td>
+                                                                <td className="pe-4 text-end">
+                                                                    <div className="fw-900" style={{ color: brandBlue }}>${(s.comision_valor || 0).toLocaleString()}</div>
+                                                                    <div className="text-muted" style={{ fontSize: '9px' }}>{s.comision_pactada || 0}% comisión</div>
+                                                                </td>
+                                                            </tr>
+                                                        ));
+                                                    })()}
+                                                </tbody>
 
                                                 
                                             </table>
