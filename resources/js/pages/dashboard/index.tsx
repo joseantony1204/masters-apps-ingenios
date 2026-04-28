@@ -1422,7 +1422,9 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
 
                                                     <div className="ms-2">
                                                         <h6 className={`mb-0 fw-bold ${isUsado ? 'text-muted text-decoration-line-through' : 'text-dark'}`} style={{ fontSize: '13px' }}>
-                                                            {cliente.nombrecompleto}
+                                                            <Link href={route('adclientes.show', cliente.id)} className="text-dark">
+                                                                        <h6 className="mb-1">{cliente.nombrecompleto}</h6>
+                                                            </Link>
                                                         </h6>
                                                         <div className={`mb-0 fw-bold ${isUsado ? 'text-muted text-decoration-line-through' : 'text-dark'}`} style={{ fontSize: '13px' }}>
                                                             <span className="text-muted x-small me-2">

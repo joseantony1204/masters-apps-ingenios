@@ -149,7 +149,7 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
                                                             {detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombrecompleto}
                                                         </small>
                                                     </div>
-                                                    <div className="col-2 text-center">1</div>
+                                                    <div className="col-2 text-center">{detalle.cantidad}</div>
                                                     <div className="col-2 text-end fw-medium">${Number(detalle.empleadoservicio?.preciopersonalizado).toLocaleString()}</div>
                                                     <div className="col-2 text-end fw-bold text-dark">${Number(detalle.preciofinal).toLocaleString()}</div>
                                                 </div>
@@ -275,92 +275,152 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
                                 </div>
 
                                 {/* COLUMNA DERECHA: TOTALES Y OBSERVACIONES */}
-                                <div className="col-lg-4 bg-light-subtle h-100 border-start">
-                                    <div className="p-4 d-flex flex-column h-100">
+                                <div className="col-lg-4 bg-white h-100 border-start shadow-lg">
+                                    <div className="p-4 d-flex flex-column h-100 overflow-y-auto" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)' }}>
                                         
-                                        <h5 className="mb-4 fw-bold text-dark d-flex align-items-center">
-                                            <i className="ti ti-receipt-2 me-2 text-primary"></i> Resumen de Cobro
-                                        </h5>
-
-                                        {/* --- NOTAS --- */}
-                                        <div className="mb-4">
-                                            <label className="form-label x-small fw-bolder text-uppercase text-muted mb-2">
-                                                <i className="ti ti-notes me-1"></i> Recomendaciones / Fórmulas
-                                            </label>
-                                            <textarea 
-                                                className="form-control border-0 shadow-sm bg-white" 
-                                                rows={3}
-                                                style={{ resize: 'none', fontSize: '14px' }}
-                                                placeholder="Escribe aquí las observaciones finales..."
-                                                value={form.data.observaciones}
-                                                onChange={(e) => form.setData('observaciones', e.target.value)}
-                                            ></textarea>
+                                        {/* ENCABEZADO TIPO TICKET */}
+                                        <div className="text-center mb-1 pb-1 border-bottom border-dashed">
+                                            <div className="avtar avtar-sm bg-light-primary text-primary mb-2 mx-auto">
+                                                <i className="ti ti-cash-banknote fs-1"></i>
+                                            </div>
+                                            <h6 className="fw-900 mb-1 text-dark">FINALIZAR COBRO</h6>
+                                            <p className="text-muted small fw-bold">Verifica los datos de fidelización y pago</p>
                                         </div>
 
-                                        {/* --- PAGO Y CAJA --- */}
-                                        <div className="row g-2 mb-4">
-                                            <div className="col-12">
-                                                <label className="x-small fw-bolder text-uppercase text-muted mb-1">Método de Pago</label>
-                                                <select 
-                                                    className={`form-select form-select-sm shadow-sm border-0 ${facturaErrors.metodo_id ? 'is-invalid' : ''}`}
-                                                    value={facturaData.metodo_id} 
-                                                    onChange={e => setFacturaData('metodo_id', e.target.value)} 
-                                                >
-                                                    <option value="">Seleccionar...</option>
-                                                    {Object.entries(metodospagosList).map(([key, label]) => (
-                                                        <option key={key} value={key}>{label}</option>
-                                                    ))}
-                                                </select>
+                                        {/* 1. SECCIÓN DE FIDELIZACIÓN (Impacto Visual) */}
+                                        <div className="mb-4">
+                                            <div className="d-flex align-items-center justify-content-between mb-3">
+                                                <label className="x-small fw-900 text-uppercase text-muted letter-spacing-1">
+                                                    1. FIDELIZACIÓN
+                                                </label>
                                             </div>
+                                            
+                                            <div className="bg-white rounded-3 shadow-sm p-3 border border-light">
+                                                <div className="vstack gap-3">
+                                                    {/* WhatsApp con Input Group Moderno */}
+                                                    <div className="input-group input-group-merge border-bottom pb-2">
+                                                        <span className="input-group-text bg-transparent border-0 p-0 me-2">
+                                                            <i className="ti ti-brand-whatsapp text-success fs-4"></i>
+                                                        </span>
+                                                        <input 
+                                                            type="tel" 
+                                                            className="form-control border-0 p-0 fw-bold" 
+                                                            placeholder="Telefono del cliente..."
+                                                            style={{ fontSize: '14px' }}
+                                                            value={form.data.telefonomovil || ''}
+                                                            onChange={(e) => {
+                                                                // Elimina cualquier caracter que no sea número
+                                                                const value = e.target.value.replace(/\D/g, ''); 
+                                                                
+                                                                form.setData('telefonomovil', value);
+                                                                setFacturaData('telefonomovil', value);
+                                                            }}
+                                                        />
+                                                    </div>
 
-                                            <div className="col-12 mt-2">
-                                                <label className="x-small fw-bolder text-uppercase text-muted mb-1">Turno de Caja</label>
-                                                {turnoActivo ? (
-                                                    <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
-                                                        <span className="input-group-text bg-white border-0"><i className="ti ti-device-floppy text-primary"></i></span>
+                                                    {/* Fecha Nacimiento con Input Group Moderno */}
+                                                    <div className="input-group input-group-merge">
+                                                        <span className="input-group-text bg-transparent border-0 p-0 me-2">
+                                                            <i className="ti ti-cake text-danger fs-4"></i>
+                                                        </span>
+                                                        <input 
+                                                            type="date" 
+                                                            className="form-control border-0 p-0 fw-bold text-muted" 
+                                                            style={{ fontSize: '14px' }}
+                                                            value={form.data.fechanacimiento || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                form.setData('fechanacimiento', value);
+                                                                setFacturaData('fechanacimiento', value);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2. CAJA Y MÉTODO (Grid Estilizado) */}
+                                        <div className="mb-4">
+                                            <div className="d-flex align-items-center justify-content-between mb-3">
+                                                <label className="form-label x-small fw-bolder text-uppercase text-muted mb-2">
+                                                    2. CONFIGURACIÓN DE PAGO
+                                                </label>
+                                            </div>
+                                            
+                                            <div className="bg-white rounded-3 shadow-sm p-3 border border-light">
+                                                <div className="vstack gap-3">
+                                                    {/* Metodo pago */}
+                                                    <div className="input-group input-group-merge border-bottom pb-2">
+                                                        <span className="input-group-text bg-transparent border-0 p-0 me-2">
+                                                            <i className="ti ti-cash text-info fs-4"></i>
+                                                        </span>
                                                         <select 
-                                                            className="form-select border-0 fw-bold"
-                                                            value={facturaData.turno_id}
-                                                            onChange={e => setFacturaData('turno_id', e.target.value)}
+                                                            className={`form-select border-light bg-light-subtle fw-bold ${facturaErrors.metodo_id ? 'is-invalid' : ''}`}
+                                                            style={{ borderRadius: '12px', fontSize: '13px' }}
+                                                            value={facturaData.metodo_id} 
+                                                            onChange={e => setFacturaData('metodo_id', e.target.value)} 
                                                         >
-                                                            {Array.isArray(turnosList) ? (
-                                                                turnosList.map((t: any) => (
-                                                                    <option key={t.id} value={t.id}>{t.codigo} — {t.terminal?.nombre}</option>
-                                                                ))
-                                                            ) : (
-                                                                <option value={turnoActivo.id}>{turnoActivo.codigo}</option>
-                                                            )}
+                                                            <option value="">Metodo de pago...</option>
+                                                            {Object.entries(metodospagosList).map(([key, label]) => (
+                                                                <option key={key} value={key}>{label}</option>
+                                                            ))}
                                                         </select>
                                                     </div>
-                                                ) : (
-                                                    <button 
-                                                        type="button"
-                                                        className="btn btn-sm btn-outline-danger w-100 border-dashed py-2"
-                                                        onClick={() => setShowTurnoModal(true)}
-                                                    >
-                                                        <i className="ti ti-alert-triangle me-1"></i> ABRIR TURNO REQUERIDO
-                                                    </button>
-                                                )}
+
+                                                    {/* Turno caja */}
+                                                    <div className="input-group input-group-merge">
+                                                        {turnoActivo ? (
+                                                            <div className="input-group input-group-merge border-bottom pb-2">
+                                                                <span className="input-group-text bg-transparent border-0 p-0 me-2">
+                                                                    <i className="ti ti-device-floppy text-primary"></i>
+                                                                </span>
+                                                                <select 
+                                                                    
+                                                                    className={`form-select border-light bg-light-subtle fw-bold ${facturaErrors.turno_id ? 'is-invalid' : ''}`}
+                                                                    value={facturaData.turno_id}
+                                                                    onChange={e => setFacturaData('turno_id', e.target.value)}
+                                                                >
+                                                                    {Array.isArray(turnosList) ? (
+                                                                        turnosList.map((t: any) => (
+                                                                            <option key={t.id} value={t.id}>{t.codigo} — {t.terminal?.nombre}</option>
+                                                                        ))
+                                                                    ) : (
+                                                                        <option value={turnoActivo.id}>{turnoActivo.codigo}</option>
+                                                                    )}
+                                                                </select>
+                                                            </div>
+                                                        ) : (
+                                                            <button 
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline-danger w-100 border-dashed fw-bold"
+                                                                onClick={() => setShowTurnoModal(true)}
+                                                            >
+                                                                <i className="ti ti-alert-triangle me-1"></i> ABRIR TURNO REQUERIDO
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* --- SECCIÓN DE CUPÓN (Dinamizada) --- */}
+                                        {/* 3. CUPÓN (Estilo Neumórfico) */}
                                         <div className="mb-4">
-                                            <label className="x-small fw-bolder text-uppercase text-muted mb-2 d-block">Cupón de Descuento</label>
                                             {!appliedCoupon ? (
-                                                <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden">
+                                                <div className="input-group shadow-sm rounded-3 overflow-hidden border border-primary border-dashed">
+                                                    <span className="input-group-text bg-white border-0"><i className="ti ti-ticket text-primary"></i></span>
                                                     <input 
                                                         type="text" 
-                                                        className="form-control border-0 bg-white fw-bold text-primary" 
-                                                        placeholder="CÓDIGO AQUÍ"
+                                                        className="form-control border-0 bg-white fw-bold" 
+                                                        placeholder="CÓDIGO PROMOCIONAL"
                                                         value={couponCode}
                                                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                                     />
-                                                    <button className="btn btn-primary" type="button" onClick={validarCupon} disabled={isValidatingCoupon || !couponCode}>
-                                                        {isValidatingCoupon ? <span className="spinner-border spinner-border-sm"></span> : 'Aplicar'}
+                                                    <button className="btn btn-primary fw-bold" type="button" onClick={validarCupon} disabled={isValidatingCoupon || !couponCode}>
+                                                        {isValidatingCoupon ? <span className="spinner-border spinner-border-sm"></span> : 'APLICAR'}
                                                     </button>
                                                 </div>
                                             ) : (
+                                                
                                                 <div className="p-2 rounded-3 bg-light-primary border border-primary border-dashed d-flex align-items-center justify-content-between">
                                                     <div className="d-flex align-items-center">
                                                         <div className="avtar avtar-s bg-primary text-white me-2" style={{ width: '30px', height: '30px' }}>
@@ -372,69 +432,107 @@ export default function CitasModalPos({ cita, metodospagosList, turnoActivo, tur
                                                         </div>
                                                     </div>
                                                     <div className="d-flex gap-1">
-                                                    {/* Botón RE-APLICAR / RECALCULAR */}
-                                                    <button 
-                                                        type="button"  // <--- CRUCIAL: Esto evita el submit del formulario
-                                                        className="btn btn-sm btn-link-primary p-1" 
-                                                        title="Recalcular" 
-                                                        onClick={(e) => {
-                                                            e.preventDefault(); // Doble seguridad
-                                                            validarCupon();
-                                                        }}
-                                                        disabled={isValidatingCoupon}
-                                                    >
-                                                        {isValidatingCoupon ? (
-                                                            <span className="spinner-border spinner-border-sm"></span>
-                                                        ) : (
-                                                            <i className="ti ti-refresh fs-5"></i>
-                                                        )}
-                                                    </button>
+                                                        {/* Botón RE-APLICAR / RECALCULAR */}
+                                                        <button 
+                                                            type="button"  // <--- CRUCIAL: Esto evita el submit del formulario
+                                                            className="btn btn-sm btn-link-primary p-1" 
+                                                            title="Recalcular" 
+                                                            onClick={(e) => {
+                                                                e.preventDefault(); // Doble seguridad
+                                                                validarCupon();
+                                                            }}
+                                                            disabled={isValidatingCoupon}
+                                                        >
+                                                            {isValidatingCoupon ? (
+                                                                <span className="spinner-border spinner-border-sm"></span>
+                                                            ) : (
+                                                                <i className="ti ti-refresh fs-5"></i>
+                                                            )}
+                                                        </button>
 
-                                                    {/* Botón ELIMINAR */}
-                                                    <button 
-                                                        type="button" // <--- CRUCIAL
-                                                        className="btn btn-sm btn-link-danger p-1" 
-                                                        title="Quitar" 
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            quitarCupon();
-                                                        }}
-                                                    >
-                                                        <i className="ti ti-trash fs-5"></i>
-                                                    </button>
-                                                </div>
+                                                        {/* Botón ELIMINAR */}
+                                                        <button 
+                                                            type="button" // <--- CRUCIAL
+                                                            className="btn btn-sm btn-link-danger p-1" 
+                                                            title="Quitar" 
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                quitarCupon();
+                                                            }}
+                                                        >
+                                                            <i className="ti ti-trash fs-5"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* --- TOTALES (Jerarquía Visual) --- */}
-                                        <div className="mt-auto pt-3 border-top">
-                                            <div className="d-flex justify-content-between mb-1">
-                                                <span className="text-muted small">Subtotal Base</span>
-                                                <span className="fw-semibold text-dark">${(totales.subtotalServicios + totales.subtotalProductosPrevios).toLocaleString()}</span>
-                                            </div>
-                                            <div className="d-flex justify-content-between mb-2">
-                                                <span className="text-muted small">Nuevos consumos</span>
-                                                <span className="text-warning fw-bold small">+ ${totales.subtotalNuevos.toLocaleString()}</span>
-                                            </div>
-                                            
-                                            {totales.montoDescuento > 0 && (
-                                                <div className="d-flex justify-content-between mb-2 p-2 bg-light-danger rounded-2">
-                                                    <span className="text-danger fw-bold small">DESCUENTO ({appliedCoupon?.promociones.valor}%)</span>
-                                                    <span className="text-danger fw-bold">-${totales.montoDescuento.toLocaleString()}</span>
+                                        {/* --- NOTAS --- */}
+                                        <div className="mb-4">
+                                            <label className="form-label x-small fw-bolder text-uppercase text-muted mb-2">
+                                                3. RECOMENDACIONES / FORMULAS
+                                            </label>
+                                            <textarea 
+                                                className="form-control border-0 shadow-sm bg-white" 
+                                                rows={2}
+                                                style={{ resize: 'none', fontSize: '14px' }}
+                                                placeholder="Escribe aquí las observaciones finales..."
+                                                value={form.data.observaciones}
+                                                onChange={(e) => form.setData('observaciones', e.target.value)}
+                                            ></textarea>
+                                        </div>
+
+                                        {/* 4. TOTALES (Diseño Premium) */}
+                                        <div className="mb-4">
+                                            <label className="form-label x-small fw-bolder text-uppercase text-muted mb-2">
+                                                4. SERVICIOS Y CONSUMOS
+                                            </label>
+                                            <div className="bg-white rounded-3 p-4 shadow-blue-sm border border-light position-relative overflow-hidden">
+                                                {/* Decoración de fondo */}
+                                                
+                                                <div className="vstack gap-2 position-relative z-1">
+                                                    <div className="d-flex justify-content-between mb-1">
+                                                        <span className="text-muted small">Subtotal base</span>
+                                                        <span className="fw-semibold text-dark">${(totales.subtotalServicios + totales.subtotalProductosPrevios).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="d-flex justify-content-between mb-2">
+                                                        <span className="text-muted small">Nuevos consumos</span>
+                                                        <span className="text-warning fw-bold small">+ ${totales.subtotalNuevos.toLocaleString()}</span>
+                                                    </div>
+                                                    
+                                                    {totales.montoDescuento > 0 && (
+                                                        <div className="d-flex justify-content-between mb-2 p-2 bg-light-danger rounded-2">
+                                                            <span className="text-danger fw-bold small">DESCUENTO ({appliedCoupon?.promociones.valor}%)</span>
+                                                            <span className="text-danger fw-bold">-${totales.montoDescuento.toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="d-flex justify-content-between align-items-end">
+                                                        <div>
+                                                            <p className="text-uppercase text-muted fw-bolder mb-0" style={{ fontSize: '11px', letterSpacing: '1.5px' }}>Total a cobrar</p>
+                                                            <h2 className="fw-bolder text-primary mb-0" style={{ fontSize: '2.5rem', letterSpacing: '-1px' }}>
+                                                                <small className="fs-4 fw-normal text-muted">$</small>
+                                                                {totales.totalFinal.toLocaleString()}
+                                                            </h2>
+                                                        </div>
+                                                        <div className="text-end">
+                                                            <i className="ti ti-shield-check text-success fs-2 d-block"></i>
+                                                            <small className="fw-bold text-muted" style={{fontSize: '9px'}}>PAGO SEGURO</small>
+                                                        </div>
+                                                    </div>
+                                                    
                                                 </div>
-                                            )}
-                                            
-                                            <div className="d-flex justify-content-between align-items-end mt-3">
-                                                <div>
-                                                    <h6 className="text-uppercase text-muted fw-bolder mb-0" style={{ fontSize: '11px', letterSpacing: '1px' }}>Total a cobrar</h6>
-                                                    <h2 className="fw-bolder text-primary mb-0">${totales.totalFinal.toLocaleString()}</h2>
-                                                </div>
-                                                <i className="ti ti-wallet fs-1 text-light-primary opacity-50"></i>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <style dangerouslySetInnerHTML={{ __html: `
+                                    .shadow-blue-sm { box-shadow: 0 10px 30px -10px rgba(0, 149, 255, 0.15); }
+                                    .letter-spacing-1 { letter-spacing: 1px; }
+                                    .opacity-05 { opacity: 0.05; }
+                                    .fw-900 { font-weight: 900; }
+                                    .border-dashed { border-style: dashed !important; }
+                                `}} />
                             </div>
                         </div>
 

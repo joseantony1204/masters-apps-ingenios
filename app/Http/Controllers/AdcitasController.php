@@ -383,6 +383,16 @@ class AdcitasController extends Controller
                     'updated_at'  => $now
                 ]);
 
+                // Si telefonomovil
+                $cita->cliente->persona()->update([
+                    'telefonomovil' => $request->telefonomovil
+                ]);
+
+                // Si fechanacimiento
+                $cita->cliente->persona->personasnaturales()->update([
+                    'fechanacimiento' => $request->fechanacimiento
+                ]);
+
                 // 4. Procesar ítems adicionales
                 if ($request->has('items') && is_array($request->items)) {
                     

@@ -9,10 +9,12 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-    //console.log(cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id)
+    //console.log(cita?.telefonomovil)
     
     const form = useForm({
         nombreCliente: '',
+        telefonomovil: '',
+        fechanacimiento: '',
         observaciones: '',
         items: [] as any[],
         cupon_id: '',
@@ -53,6 +55,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         turno_id: '', // Deja vacío para que el usuario elija
         metodo_id: '', // Deja vacío para que el usuario elija
         estado_id: 938, // Asumiendo que 938 es 'Pagada'
+        telefonomovil: cita?.telefonomovil || null,
+        fechanacimiento: cita?.fechanacimiento || '1900-01-01',
     });
 
     // ... dentro de tu función Index o Create ...
@@ -80,7 +84,9 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             setIsValidatingCoupon(false);
             form.setData({
                 nombreCliente: `${cita.nombres} ${cita.apellidos}`,
-                observaciones: cita.observaciones || '',
+                observaciones: cita?.observaciones || '',
+                telefonomovil: cita?.telefonomovil || '',
+                fechanacimiento: cita?.fechanacimiento || '1900-01-01',
                 items: [], // Reiniciamos items adicionales al cambiar de cita
                 cupon_id: '',
                 porcentajedescuento: 0,
@@ -89,7 +95,9 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             setFacturaData(prev => ({
                 ...prev,
                 porcentajedescuento: 0,
-                cupon_id: ''
+                cupon_id: '',
+                telefonomovil: cita?.telefonomovil || '',
+                fechanacimiento: cita?.fechanacimiento || '1900-01-01',
             }));
         }
     }, [cita]);

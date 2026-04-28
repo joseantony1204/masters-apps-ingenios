@@ -196,6 +196,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
             DB::raw("CONCAT_WS(' ', pn.nombre, pn.segundonombre) AS nombres"),
             DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos"),
             'p.telefonomovil',
+            'pn.fechanacimiento',
             'p.email',
             'adcitas.id',
             'adcitas.codigo',

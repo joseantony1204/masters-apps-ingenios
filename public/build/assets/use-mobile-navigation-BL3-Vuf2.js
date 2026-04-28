@@ -1,0 +1,1 @@
+import{r as e}from"./app-ClCP7y6-.js";function r(){return e.useCallback(()=>{document.body.style.removeProperty("pointer-events"),document.body.style.removeProperty("overflow"),document.body.classList.remove("mob-sidebar-active"),document.body.classList.remove("pc-sidebar-hide")},[])}export{r as u};

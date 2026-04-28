@@ -215,7 +215,21 @@ class FtfacturasController extends Controller
                 ]);
 
                 // 3. Guardar los Items (Detalle)
-                
+                //Actualizar datos cliente
+                $cita = null;
+                if($request->model_type === 921){
+                    //1. Cargar la cita
+                    $cita = Adcitas::findOrFail($request->model_type_id);
+                    // Si telefonomovil
+                    $cita->cliente->persona()->update([
+                        'telefonomovil' => $request->telefonomovil
+                    ]);
+
+                    // Si fechanacimiento
+                    $cita->cliente->persona->personasnaturales()->update([
+                        'fechanacimiento' => $request->fechanacimiento
+                    ]);
+                }
                 foreach ($request->items as $item) {
                     $productoId = $item['producto_id'] ?? null;
                     $tipoId = $item['tipo_id'] ?? 854;
@@ -248,9 +262,7 @@ class FtfacturasController extends Controller
                     $detalle_model_type = null;
                     $detalle_model_type_id = null;
 
-                    if($request->model_type === 921){
-                        //1. Cargar la cita
-                        $cita = Adcitas::findOrFail($request->model_type_id);
+                    if($cita){
                         $addetallecita = $cita->detalle()->updateOrCreate(
                             ['id' => $item['detallecita_id'] ?? null],
                             [
