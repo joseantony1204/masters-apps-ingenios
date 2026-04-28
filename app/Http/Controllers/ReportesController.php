@@ -60,13 +60,20 @@ class ReportesController extends Controller
                 if (!$factura) continue;
 
                 // Determinar Cliente
-                $clienteNombre = "Venta Directa";
+                $clienteNombre = "Cliente";
+                $clienteTelefono = "Telefono";
+                $codigoCita = NULL;
                 if ($det->factura_con_cita && isset($det->factura_con_cita->cita->cliente->persona)) {
                     $clienteNombre = $det->factura_con_cita->cita->cliente->persona->personasnaturales->nombrecompleto ?? 'Cliente';
+                    $clienteTelefono = $det->factura_con_cita->cita->cliente->persona->telefonomovil ?? 'N/A';
+                    $codigoCita = $det->factura_con_cita->cita->codigo; 
                 } elseif ($det->factura_sin_cita && isset($det->factura_sin_cita->persona)) {
                     $clienteNombre = $det->factura_sin_cita->persona->personasnaturales->nombrecompleto ?? 'Cliente';
+                    $clienteTelefono = $det->factura_sin_cita->persona->telefonomovil ?? 'N/A';
                 }
 
+                $valorItem = (float)$det->preciofinal*$det->cantidad;
+                $descuentoItem = (float)$det->descuento;
                 $totalItem = (float)$det->totalapagar;
 
                 $todosLosServicios->push([
@@ -74,11 +81,16 @@ class ReportesController extends Controller
                     'fecha' => date('Y-m-d', strtotime($factura->fecha)),
                     'hora' => date('H:i', strtotime($factura->fecha)),
                     'servicio' => $es->servicio->nombre ?? 'Servicio',
-                    'codigo' => $factura->numero ?? 'S/N',
+                    'codigo' => $codigoCita ? $codigoCita : $factura->numero,
                     'cliente_nombre' => $clienteNombre,
+                    'cliente_telefono' => $clienteTelefono,
+                    'precio_servicio' => $valorItem,
+                    'total_descuento' => $descuentoItem,
                     'total_pagado' => $totalItem,
                     'comision_pactada' => $porcentajeComision,
                     'comision_valor' => ($totalItem * $porcentajeComision) / 100,
+                    'estado_nombre' => 'Pagada',
+                    'estado_color' => 'success'
                 ]);
             }
         }
@@ -86,9 +98,11 @@ class ReportesController extends Controller
         return [
             'id' => $empleado->id,
             'nombre' => $empleado->persona->personasnaturales->nombrecompleto ?? 'Sin Nombre',
+            'total_servicios' => $todosLosServicios->count(),
+            'suma_servicios' => (float)$todosLosServicios->sum('precio_servicio'),
+            'suma_descuentos' => (float)$todosLosServicios->sum('total_descuento'),
             'suma_recaudado' => (float)$todosLosServicios->sum('total_pagado'),
             'suma_comisiones' => (float)$todosLosServicios->sum('comision_valor'),
-            'total_servicios' => $todosLosServicios->count(),
             'servicios' => $todosLosServicios->values()->all()
         ];
     });

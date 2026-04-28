@@ -73,6 +73,60 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
         XLSX.writeFile(wb, "Reporte_General_Vantify.xlsx");
     };
 
+    // Componente de fila de tabla para mejor performance
+    const ServicioRow = ({ s, brandBlue }: any) => {
+        const tieneDescuento = (s.total_descuento || 0) > 0;
+        return (
+            <tr className="border-bottom border-light">
+                <td className="ps-4 py-3">
+                    <div className="d-flex align-items-center">
+                        <div className="bg-light text-center me-3" style={{ borderRadius: '12px', padding: '6px 10px', minWidth: '65px', border: '1px solid #f1f5f9' }}>
+                            <div className="fw-900 text-dark" style={{ fontSize: '11px' }}>{s.hora}</div>
+                            <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
+                        </div>
+                        <div>
+                            <div className="fw-bold text-dark mb-0" style={{ lineHeight: '1.2' }}>{s.servicio}</div>
+                            <div className="d-flex align-items-center gap-1">
+                                <span className="text-muted" style={{ fontSize: '10px' }}>#{s.codigo}</span>
+                                <span className={`text-${s.estado_color} fw-bold`} style={{ fontSize: '9px' }}>• {s.estado_nombre}</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div className="fw-bold text-dark" style={{ fontSize: '13px' }}>{s.cliente_nombre}</div>
+                    <div className="small text-muted" style={{ fontSize: '11px' }}>
+                        <i className="ti ti-phone-call me-1"></i>{s.cliente_telefono || 'N/A'}
+                    </div>
+                </td>
+                {/* COLUMNA COMPRIMIDA: PRECIO + DESCUENTO + NETO */}
+                <td className="text-end">
+                    {tieneDescuento && (
+                        <div className="d-flex flex-column align-items-end mb-1" style={{ lineHeight: '1' }}>
+                            <span className="text-muted text-decoration-line-through" style={{ fontSize: '11px' }}>
+                                ${(s.precio_servicio || 0).toLocaleString()}
+                            </span>
+                            <span className="text-danger fw-bold" style={{ fontSize: '10px' }}>
+                                <i className="ti ti-arrow-down-right"></i> ${(s.total_descuento || 0).toLocaleString()}
+                            </span>
+                        </div>
+                    )}
+                    <div className="fw-900 text-dark" style={{ fontSize: '15px' }}>
+                        ${(s.total_pagado || 0).toLocaleString()}
+                    </div>
+                </td>
+                <td className="pe-4 text-end">
+                    <div className="fw-900" style={{ color: brandBlue, fontSize: '15px' }}>
+                        ${(s.comision_valor || 0).toLocaleString()}
+                    </div>
+                    <div className="text-muted fw-bold" style={{ fontSize: '10px' }}>
+                        {s.comision_pactada}% <span className="fw-normal">Comisión</span>
+                    </div>
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <AppMainLayout>
             <Head title="Vantify Intelligence - Dashboard" />
@@ -273,118 +327,107 @@ export default function Index({ reporte, empleados, estadosList, filtros }: any)
 
                 {/* Listado Estilo Dashboard Analytics */}
                 <div className="row">
-                    
-                    {reporte.map((emp: any) => (
-                        <div key={emp.id} className="col-12 mb-5">
-                            <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '24px' }}>
-                                <div className="row g-0">
-                                    {/* Sidebar de la Card */}
-                                <div className="col-md-3 p-4" style={{ background: '#ffffff', borderRight: '1px solid #f1f5f9' }}>
-                                    <div className="text-center mb-4">
-                                        <div className="mx-auto mb-3 shadow-sm d-flex align-items-center justify-content-center fw-bold" style={{ width: '80px', height: '80px', borderRadius: '22px', background: `linear-gradient(45deg, #f0f7ff, #ffffff)`, color: brandBlue, fontSize: '2rem', border: '2px solid #eef2ff' }}>
-                                            {emp.nombre.charAt(0)}
+                    {reporte.map((emp: any) => {
+                        const servicios = Array.isArray(emp.servicios) ? emp.servicios : Object.values(emp.servicios || {});
+                        return (
+                            <div key={emp.id} className="col-12 mb-5">
+                                <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '24px', background: '#fff' }}>
+                                    <div className="row g-0">
+                                        {/* Sidebar de la Card */}
+                                        <div className="col-md-3 p-4" style={{ background: '#f8fafc', borderRight: '1px solid #edf2f7' }}>
+                                            <div className="d-flex align-items-center gap-3 mb-4">
+                                                <div className="shadow-sm d-flex align-items-center justify-content-center fw-bold text-white" 
+                                                    style={{ width: '50px', height: '50px', borderRadius: '15px', background: `linear-gradient(135deg, ${brandBlue}, ${brandIndigo})`, fontSize: '1.2rem' }}>
+                                                    {emp.nombre.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-900 text-dark mb-0">{emp.nombre}</h6>
+                                                    <span className="badge bg-white text-primary border border-primary-subtle" style={{fontSize: '9px', letterSpacing: '0.5px'}}>ESPECIALISTA</span>
+                                                </div>
+                                            </div>
+                                            <div className="vstack gap-1">
+                                                <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#FFFFFF' }}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <span className="fw-800 text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>FACTURADO</span>
+                                                        <i className="ti ti-wallet text-primary fs-5"></i>
+                                                    </div>
+                                                    <h4 className="fw-900 mb-0" style={{ color: '#64748b' }}>${emp.suma_servicios.toLocaleString()}</h4>
+                                                </div>
+
+                                                {/* RESUMEN INFERIOR (Recaudo y Descuento) */}
+                                                <div className="row g-2 mt-1">
+                                                    {/*  TOTAL DESCUENTOS (100%) */}
+                                                    <div className="col-6">
+                                                        <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#fef2f2' }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <span className="fw-800 text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>DESCUENTO</span>
+                                                                <i className="ti ti-discount text-primary fs-5"></i>
+                                                            </div>
+                                                            <h4 className="fw-900 mb-0" style={{ color: '#ef4444' }}>${emp.suma_descuentos.toLocaleString()}</h4>
+                                                        </div>
+                                                    </div>
+                                                    {/*  TOTAL RECAUDO (100%) */}
+                                                    <div className="col-6">
+                                                        <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#f0f9ff' }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <span className="fw-800 text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>RECAUDADO</span>
+                                                                <i className="ti ti-home-dollar text-primary fs-5"></i>
+                                                            </div>
+                                                            <h4 className="fw-900 mb-0" style={{ color: brandBlue }}>${emp.suma_recaudado.toLocaleString()}</h4>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* LIQUIDACIÓN EMPLEADO (Ej: 60%) */}
+                                                <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#f5f3ff' }}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <span className="fw-800 text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>PARA ESPECIALISTA</span>
+                                                        <i className="ti ti-user text-primary fs-5"></i>
+                                                    </div>
+                                                    <h4 className="fw-900 mb-0" style={{ color: brandIndigo }}>${emp.suma_comisiones.toLocaleString()}</h4>
+                                                </div>
+
+                                                {/* LO QUE LE QUEDA AL COMERCIO (Ej: 40%) */}
+                                                <div className="p-3 mb-4" style={{ borderRadius: '15px', backgroundColor: '#ecfdf5', border: '1px solid #d1fae5' }}>
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <span className="fw-800 text-muted" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>PARA COMERCIO</span>
+                                                        <i className="ti ti-building-store text-success fs-5"></i>
+                                                    </div>
+                                                    <h4 className="fw-900 mb-0" style={{ color: '#059669' }}>${(emp.suma_recaudado - emp.suma_comisiones).toLocaleString()}</h4>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleExportIndividual(emp)} className="btn btn-outline-light text-muted btn-sm w-100 border-dashed py-2" style={{ borderRadius: '12px', border: '1px dashed #ccc' }}>
+                                                <i className="ti ti-file-spreadsheet me-1"></i> Reporte Individual
+                                            </button>
                                         </div>
-                                        <h5 className="fw-900 text-dark mb-0">{emp.nombre}</h5>
-                                        <p className="small text-muted fw-bold">Especialista</p>
-                                    </div>
-                                    
-                                    {/* RECAUDO TOTAL (100%) */}
-                                    <div className="bg-light p-3 mb-3" style={{ borderRadius: '15px' }}>
-                                        <div className="small text-muted fw-bold mb-1">TOTAL RECAUDADO</div>
-                                        <h4 className="fw-900 mb-0" style={{ color: brandBlue }}>${emp.suma_recaudado.toLocaleString()}</h4>
-                                    </div>
 
-                                    {/* LIQUIDACIÓN EMPLEADO (Ej: 60%) */}
-                                    <div className="bg-soft-indigo p-3 mb-2" style={{ borderRadius: '15px', backgroundColor: '#f5f3ff' }}>
-                                        <div className="small fw-bold mb-1" style={{ color: brandIndigo }}>PARA EMPLEADO</div>
-                                        <h4 className="fw-900 mb-0" style={{ color: brandIndigo }}>${emp.suma_comisiones.toLocaleString()}</h4>
-                                    </div>
-
-                                    {/* LO QUE LE QUEDA AL COMERCIO (Ej: 40%) */}
-                                    <div className="p-3 mb-4" style={{ borderRadius: '15px', backgroundColor: '#ecfdf5', border: '1px solid #d1fae5' }}>
-                                        <div className="small fw-bold mb-1" style={{ color: '#059669' }}>PARA COMERCIO</div>
-                                        <h4 className="fw-900 mb-0" style={{ color: '#059669' }}>
-                                            ${(emp.suma_recaudado - emp.suma_comisiones).toLocaleString()}
-                                        </h4>
-                                    </div>
-
-                                    <button onClick={() => handleExportIndividual(emp)} className="btn btn-outline-light text-muted btn-sm w-100 border-dashed py-2" style={{ borderRadius: '12px', border: '1px dashed #ccc' }}>
-                                        <i className="ti ti-file-spreadsheet me-1"></i> Reporte Individual
-                                    </button>
-                                </div>
-
-                                    {/* Tabla Principal */}
-                                    <div className="col-md-9 p-0 bg-white">
-                                        <div className="table-responsive">
-                                            <table className="table table-hover align-middle mb-0">
-                                                <thead>
-                                                    <tr style={{ background: '#f8fafc' }}>
-                                                        <th className="ps-4 py-3 border-0 small fw-800 text-muted">SERVICIO</th>
-                                                        <th className="border-0 small fw-800 text-muted">CLIENTE</th>
-                                                        <th className="border-0 small fw-800 text-muted text-center">ESTADO</th>
-                                                        <th className="border-0 small fw-800 text-muted text-end">RECAUDADO</th>
-                                                        <th className="pe-4 py-3 border-0 small fw-800 text-muted text-end">COMISION</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(() => {
-                                                        // Validación en cascada para evitar el error de undefined
-                                                        const serviciosRaw = emp.servicios || [];
-                                                        const serviciosArray = Array.isArray(serviciosRaw) ? serviciosRaw : Object.values(serviciosRaw);
-
-                                                        if (serviciosArray.length === 0) {
-                                                            return (
-                                                                <tr>
-                                                                    <td colSpan={5} className="text-center py-5 text-muted">
-                                                                        No se encontraron servicios realizados en este periodo.
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        }
-
-                                                        return serviciosArray.map((s: any) => (
-                                                            <tr key={s.id} className="border-bottom border-light">
-                                                                <td className="ps-4 py-3">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="bg-light text-center me-3" style={{ borderRadius: '10px', padding: '5px 10px', minWidth: '60px' }}>
-                                                                            <div className="fw-900" style={{ fontSize: '11px' }}>{s.hora}</div>
-                                                                            <div className="text-muted" style={{ fontSize: '9px' }}>{s.fecha}</div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <div className="fw-bold text-dark">{s.servicio}</div>
-                                                                            <span className="text-muted" style={{ fontSize: '10px' }}>cita #{s.codigo}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className="fw-bold text-dark">{s.cliente_nombre}</div>
-                                                                    <div className="small text-muted"><i className="ti ti-phone me-1"></i>{s.cliente_tel || 'N/A'}</div>
-                                                                </td>
-                                                                <td className="text-center">
-                                                                    <span className={`badge rounded-pill px-3 py-2 bg-light-${s.estado_color || 'primary'} text-${s.estado_color || 'primary'}`} style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
-                                                                        {(s.estado_nombre || 'Asistida').toUpperCase()}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="text-end fw-bold text-dark">
-                                                                    ${(s.total_pagado || 0).toLocaleString()}
-                                                                </td>
-                                                                <td className="pe-4 text-end">
-                                                                    <div className="fw-900" style={{ color: brandBlue }}>${(s.comision_valor || 0).toLocaleString()}</div>
-                                                                    <div className="text-muted" style={{ fontSize: '9px' }}>{s.comision_pactada || 0}% comisión</div>
-                                                                </td>
-                                                            </tr>
-                                                        ));
-                                                    })()}
-                                                </tbody>
-
-                                                
-                                            </table>
+                                        {/* TABLA DE ACTIVIDAD COMPRIMIDA */}
+                                        <div className="col-md-9 bg-white">
+                                            <div className="table-responsive">
+                                                <table className="table table-hover align-middle mb-0">
+                                                    <thead>
+                                                        <tr style={{ background: '#fff' }}>
+                                                            <th className="ps-4 py-3 border-0 small fw-800 text-muted" style={{width: '40%'}}>DETALLE DEL SERVICIO</th>
+                                                            <th className="border-0 small fw-800 text-muted">CLIENTE</th>
+                                                            <th className="border-0 small fw-800 text-muted text-end">TRANSACCIÓN</th>
+                                                            <th className="pe-4 py-3 border-0 small fw-800 text-muted text-end">LIQUIDACIÓN</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {servicios.length === 0 ? (
+                                                            <tr><td colSpan={4} className="text-center py-5">No hay registros</td></tr>
+                                                        ) : (
+                                                            servicios.map((s: any) => <ServicioRow key={s.id} s={s} brandBlue={brandBlue} />)
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
