@@ -18,12 +18,10 @@ use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 
-Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
-    // Si entra a la raíz, lo mandamos al dashboard
-    Route::get('/', function () {
-        return redirect()->route('dashboard'); 
-    })->name('home');
-});
+
+Route::get('/', function () {
+    return Inertia::render('welcome');
+})->middleware('guest')->name('welcome');
 
 // Ruta pública para el QR
 Route::get('/landing', [LandingController::class, 'index'])->name('public.landing');
