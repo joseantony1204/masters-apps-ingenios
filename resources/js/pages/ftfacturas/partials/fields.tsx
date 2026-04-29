@@ -730,14 +730,16 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="fw-bold mb-0">Detalles</h5>
                 </div>
-                <div className="table-responsive">
-                    <table className="table table-hover align-middle border-top">
+                
+                {/* IMPORTANTE: quitamos overflow-hidden si lo tuviera el table-responsive */}
+                <div className="table-responsive" style={{ overflow: 'visible' }}> 
+                    <table className="table table-hover align-middle border-top" style={{ minWidth: '1000px' }}>
                         <thead className="bg-light">
                             <tr>
                                 <th className="py-3" style={{width: '50px'}}>#</th>
-                                <th className="py-3"><span className="text-danger">*</span> Nombre</th>
+                                <th className="py-3" style={{ minWidth: '350px' }}><span className="text-danger">*</span> Nombre del Producto o Servicio</th>
                                 <th className="py-3">Descripción</th>
-                                <th className="py-3" style={{width: '120px'}}><span className="text-danger">*</span> Cantidad</th>
+                                <th className="py-3" style={{width: '100px'}}><span className="text-danger">*</span> Cant.</th>
                                 <th className="py-3" style={{width: '150px'}}><span className="text-danger">*</span> Precio</th>
                                 <th className="py-3 text-end" style={{width: '150px'}}>Total</th>
                                 <th className="py-3 text-center" style={{width: '80px'}}>Acciones</th>
@@ -747,48 +749,78 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                             {(data.items || []).map((item: any, index: number) => (
                                 <tr key={index} className="animate__animated animate__fadeIn">
                                     <td className="fw-bold text-muted">{index + 1}</td>
-                                    <td>
+                                    <td style={{ overflow: 'visible', position: 'relative' }}>
                                         <div className="position-relative">
                                             <input 
                                                 type="text" 
-                                                className="form-control form-control-sm bg-light border-0" 
+                                                className={`form-control transition-all border-0 ${filaActiva === index ? 'bg-white shadow ring-primary' : 'bg-light'}`} 
+                                                style={{ 
+                                                    minHeight: '45px',
+                                                    fontSize: '1rem',
+                                                    fontWeight: 500
+                                                }}
                                                 value={item.nombre} 
                                                 onChange={e => buscarProducto(e.target.value, index)}
-                                                placeholder="Escribe para buscar..."
+                                                placeholder="Escribe para buscar (Ej: Corte, Cerveza...)"
                                                 autoComplete="off"
+                                                onFocus={() => setFilaActiva(index)}
                                             />
                                             
-                                            {/* Dropdown de sugerencias */}
+                                            {/* Dropdown de sugerencias AMPLIO y FLOTANTE */}
                                             {filaActiva === index && resultadosProductos.length > 0 && (
-                                                <div className="list-group shadow-lg position-absolute w-100" 
-                                                    style={{ top: '100%', zIndex: 1050 }}>
+                                                <div className="list-group shadow-2xl position-absolute border-0 animate__animated animate__fadeInUp" 
+                                                    style={{ 
+                                                        top: '105%', 
+                                                        left: 0,
+                                                        zIndex: 2000, // Elevamos el z-index
+                                                        minWidth: '500px', // <-- Ancho mucho más amplio que la columna
+                                                        maxHeight: '400px',
+                                                        overflowY: 'auto',
+                                                        borderRadius: '12px',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                                                        backdropFilter: 'blur(10px)'
+                                                    }}>
+                                                    <div className="p-2 bg-light border-bottom">
+                                                        <small className="fw-bold text-muted text-uppercase" style={{fontSize: '10px'}}>Resultados encontrados</small>
+                                                    </div>
                                                     {resultadosProductos.map((p) => (
                                                         <button 
                                                             key={p.id}
                                                             type="button"
-                                                            className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                            className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
                                                             onClick={() => seleccionarProducto(p, index)}
                                                         >
-                                                            <div>
-                                                                <div className="fw-bold small">{p.nombre}</div>
-                                                                <small className="text-muted">{p.tipo || 'General'}</small>
+                                                            <div className="d-flex align-items-center gap-3">
+                                                                <div className="avtar avtar-md bg-light-primary text-primary rounded-circle">
+                                                                    <i className={p.tipo === 'PRODUCTO' ? 'ti ti-package' : 'ti ti-scissors'}></i>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="fw-bolder text-dark mb-0">{p.nombre}</div>
+                                                                    <small className="text-muted">{p.tipo || 'Servicio'}</small>
+                                                                </div>
                                                             </div>
-                                                            <span className="badge bg-light-primary text-primary">
-                                                                ${new Intl.NumberFormat().format(p.precio)}
-                                                            </span>
+                                                            <div className="text-end">
+                                                                <span className="h6 fw-bolder text-primary mb-0 d-block">
+                                                                    ${new Intl.NumberFormat().format(p.precio)}
+                                                                </span>
+                                                                {p.stock !== undefined && (
+                                                                    <small className="text-muted">Stock: {p.stock}</small>
+                                                                )}
+                                                            </div>
                                                         </button>
                                                     ))}
                                                 </div>
                                             )}
                                         </div>
                                     </td>
+                                    {/* Resto de los campos (Descripción, Cantidad, etc.) */}
                                     <td>
                                         <input 
                                             type="text" 
-                                            className="form-control form-control-sm bg-light border-0" 
+                                            className="form-control bg-light border-0" 
                                             value={item.descripcion} 
                                             onChange={e => handleItemChange(index, 'descripcion', e.target.value)} 
-                                            placeholder="Informacion extra"
+                                            placeholder="Nota..."
                                         />
                                     </td>
                                     <td>
@@ -828,7 +860,6 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                         </tbody>
                     </table>
                 </div>
-                
                 <button 
                     type="button" 
                     onClick={addItem} 
