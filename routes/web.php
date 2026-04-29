@@ -455,6 +455,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         $topClientes = Adclientes::with('persona.personasnaturales')
             ->join('adcitas', 'adclientes.id', '=', 'adcitas.cliente_id')
             ->where('adcitas.estado_id', 915) // Suponiendo 915 = Finalizada/Cerrada/Asistida
+            ->where('adclientes.comercio_id', $comercio->id)
             ->select('adclientes.id', 'adclientes.persona_id', DB::raw('count(adcitas.id) as total_visitas'))
             ->groupBy('adclientes.id','adclientes.persona_id')
             ->orderByDesc('total_visitas')
@@ -471,7 +472,9 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
             // Ordenamos por fecha descendente para que la primera sea la más reciente
             //$q->orderBy('fecha', 'desc'); 
             $q->where('estado_id', 915)->orderBy('fecha', 'desc');
-        }])->get()
+        }])
+        ->where('adclientes.comercio_id', $comercio->id)
+        ->get()
         ->map(function($cliente) {
             // IMPORTANTE: Solo tomamos citas que tengan una fecha válida
             $citas = $cliente->citas->whereNotNull('fecha');
