@@ -3,15 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CfempleadosRequest;
-use App\Models\{Personas, Personasnaturales, Cfempleados, Cfmaestra, User, Comercios, Productos};
+use App\Models\{Personas, Personasnaturales, Cfempleados, Cfmaestra, User, Comercios, Productos, Ftturnos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{DB,Auth,Hash,Mail};
+use App\Helpers\StorageHelper;
 
 class CfempleadosController extends Controller
 {
     public function __construct(){
-        $this->middleware('permission:cfempleados.index')->only(['index', 'show']);
+        $this->middleware('permission:cfempleados.index')->only(['index', 'lista', 'show']);
         $this->middleware('permission:cfempleados.create')->only(['create', 'store']);
         $this->middleware('permission:cfempleados.edit')->only(['edit', 'update']);
         $this->middleware('permission:cfempleados.destroy')->only(['destroy']);
@@ -25,6 +26,12 @@ class CfempleadosController extends Controller
         return Inertia::render('cfempleados/index', [
             'empleados' => Cfempleados::search($request)->get(),
         ]);
+    }
+
+    public function lista(Request $request)
+    {
+        $empleados = Cfempleados::listar($request)->get();
+        return response()->json($empleados);
     }
 
     /**
@@ -145,6 +152,12 @@ class CfempleadosController extends Controller
     {
         // Obtenemos el comercio del usuario autenticado (dueño/admin)
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
+        // Usamos first() para tener el objeto directamente
+        $sedePredeterminadaUser = $user->sedes()
+        ->with(['terminal'])
+        ->wherePivot('predeterminada', 1)
+        ->first();
+
         $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
         // Todas las sedes del comercio para la lista de la izquierda
         $sedesComercio = $comercio->sedes;
@@ -173,6 +186,18 @@ class CfempleadosController extends Controller
                 $query->with('estado')->orderBy('estado_id', 'asc');
             },
             'detallescitas.empleadoservicio.servicio', // Para el nombre del servicio
+            'persona.soportes' => function($q) {
+                $q->where('tipo_id', 1)->where('predeterminado', 1);
+            },
+            'vales' => function($q) {
+                $q->select('ftfacturas.*') // Aseguramos que traiga los campos de la factura
+                ->with([
+                    'detalles',
+                    'estado:id,nombre,observacion',
+                    'tipo:id,nombre',
+                ])
+                ->orderBy('fecha', 'desc');
+            },
         ])->findOrFail($id);
 
         // 1. Obtener los IDs de servicios que YA tiene asociados para excluirlos
@@ -202,6 +227,22 @@ class CfempleadosController extends Controller
         ->get(['id', 'nombre', 'preciosalida', 'duracion','sede_id']); // Traer solo lo necesario para la modal
 
 
+        //Consultar turnos abiertos filtrados por Sede y Comercio
+        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        ->where('estado_id', 924) // 924 = ABIERTO
+        ->whereHas('terminal', function ($query) use ($sedePredeterminadaUser) {
+            // Filtramos directamente por el ID de la sede que ya obtuvimos
+            $query->where('sede_id', $sedePredeterminadaUser->id);
+        })
+        ->whereHas('terminal.sede', function ($query) use ($comercio) {
+            // Aseguramos que la sede pertenezca al comercio actual
+            $query->where('comercio_id', $comercio->id);
+        })
+        ->orderBy('fechaapertura', 'DESC')
+        ->get();
+        //Definir el turno activo por defecto (el primero de la lista)
+       $turnoActivo = $turnosAbiertos->first();
+
         return Inertia::render('cfempleados/show', [
             'empleado' => $empleado,
             'sedesComercio' => $sedesComercio,
@@ -210,6 +251,7 @@ class CfempleadosController extends Controller
             'perfilesList' => Cfmaestra::getlistatipos('LIS_PERFILES'),
             'motivosList' => Cfmaestra::getlistatipos('LIS_MOTIVOSBLOQEOSAGENDA'),
             'serviciosList' => $serviciosDisponibles,
+            'turnoActivo' => $turnoActivo,
         ]);
     }
 
@@ -384,6 +426,7 @@ class CfempleadosController extends Controller
             'email'          => 'nullable|email|unique:users,email,' . $empleado->persona->user->id,
             'telefonomovil'       => 'nullable|string|unique:users,telefonomovil,' . $empleado->persona->user->id,
             'perfil_id'            => 'required',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', 
         ]);
 
         // 1. Actualizar Persona
@@ -397,6 +440,18 @@ class CfempleadosController extends Controller
         $user->update(['email' => $request->email]);
         $user->update(['telefonomovil' => $request->telefonomovil]);
         $user->update(['perfil_id' => $request->perfil_id]);
+
+        // 3. Lógica Polimórfica para el Soporte (Logo)
+        // USAR EL HELPER PARA EL LOGO
+        if ($request->hasFile('logo')) {
+            StorageHelper::save(
+                $request->file('logo'), 
+                'personas/logos', 
+                922, // model_type
+                $empleado->persona->id, // model_type_id
+                1 // Referencia a cfmaestras (Tipo Soporte)
+            );
+        }
 
         return back()->with('success', 'Perfil actualizado con éxito');
     }
@@ -460,5 +515,18 @@ class CfempleadosController extends Controller
 
         return redirect()->route('cfempleados.index')
             ->with('success', 'Elemento eliminado correctamente.');
+    }
+
+    public function calcularLiquidacion(Request $request)
+    {
+        // Llamamos al método del modelo
+        $data = Cfempleados::productividad($request);
+
+        // Si la petición viene de un filtro o API (espera JSON)
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        return response()->json($data);
     }
 }

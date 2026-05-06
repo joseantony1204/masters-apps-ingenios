@@ -42,13 +42,15 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     // --- MÓDULO: ENTIDADES PRINCIPALES (CRM) ---
     Route::resource('personas', PersonasController::class);
     Route::resource('adclientes', AdclientesController::class);
+    Route::get('/cfempleados/lista', [CfempleadosController::class, 'lista'])->name('cfempleados.lista');
+    Route::get('/cfempleados/calcular-liquidacion', [CfempleadosController::class, 'calcularLiquidacion'])->name('cfempleados.calcular-liquidacion');
     Route::resource('cfempleados', CfempleadosController::class);
     Route::resource('productos', ProductosController::class);
     Route::get('productos/kardex/{id}', [ProductosController::class, 'kardex'])->name('productos.kardex');
     Route::post('productos/movimientos', [ProductosController::class, 'storeMovimiento'])->name('productos.movimiento');
-
+    
     Route::resource('movimientosproductos', MovimientosproductosController::class);
-
+    
     // --- MÓDULO: AGENDA Y TURNOS ---
     Route::resource('adcitas', AdcitasController::class);
     Route::resource('addetallescitas', AddetallescitasController::class);
@@ -56,8 +58,9 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::resource('cfempleadosservicios', CfempleadosserviciosController::class);
     Route::resource('ftturnos', FtturnosController::class);
     Route::resource('cfhorarios', CfhorariosController::class);
-
+    
     // --- MÓDULO: FACTURACIÓN Y CAJA ---
+    Route::post('ftfacturas/store-movimiento', [FtfacturasController::class, 'storeMovimiento'])->name('ftfacturas.store-movimiento');
     Route::resource('ftfacturas', FtfacturasController::class);
     Route::resource('ftdetalles', FtdetallesController::class);
     Route::resource('ftpagos', FtpagosController::class);
@@ -81,10 +84,10 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::put('cfempleados/{empleado}/sedes/{sede}/set-default', [CfempleadosController::class, 'setSedePredeterminada'])->name('cfempleados.set-default');    
     Route::put('cfempleados/{empleado}/perfil', [CfempleadosController::class, 'updatePerfil'])
         ->name('cfempleados.updateperfil');
-    Route::post('cfempleados/validar-disponibilidad', [CfempleadosController::class, 'validarDisponibilidad'])
-        ->name('cfempleados.validar-disponibilidad');
+    Route::post('cfempleados/validar-disponibilidad', [CfempleadosController::class, 'validarDisponibilidad'])->name('cfempleados.validar-disponibilidad');
     Route::put('cfempleados/{empleado}/horarios', [CfempleadosController::class, 'updateHorarios'])->name('cfempleados.update-horarios');
-       
+    
+
     Route::put('adclientes/{cliente}/perfil', [AdclientesController::class, 'updatePerfil'])->name('adclientes.updateperfil');
     Route::put('adclientes/{cliente}/sedes/{sede}/toggle-permiso', [AdclientesController::class, 'toggleSedePermiso'])->name('adclientes.toggle-permiso');
     Route::put('adclientes/{cliente}/sedes/{sede}/set-default', [AdclientesController::class, 'setSedePredeterminada'])->name('adclientes.set-default'); 
@@ -250,6 +253,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
             // Subconsulta para obtener el ID de la persona real dependiendo del tipo
             DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END as persona_real_id"),
             // Cálculo de total
@@ -261,6 +265,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
             // Unimos usando la lógica del CASE para normalizar el origen
             $join->on("p.id", "=", DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END"));
         })
@@ -423,6 +428,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
             // Subconsulta para obtener el ID de la persona real dependiendo del tipo
             DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END as persona_real_id"),
             // Cálculo de total
@@ -434,6 +440,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
             // Unimos usando la lógica del CASE para normalizar el origen
             $join->on("p.id", "=", DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END"));
         })

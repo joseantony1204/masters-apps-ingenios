@@ -113,6 +113,7 @@ return new class extends Migration
             
             $table->float('subtotal',12,2)->default(0)->comment('Subtotal factura');
             $table->float('descuento',12,2)->default(0)->nullable()->comment('Descuento total factura');
+            $table->float('propina',12,2)->default(0)->nullable()->comment('Propinas');
             $table->float('porcentajedescuento',12,2)->default(0)->nullable()->comment('Porcentaje de descuento total factura');
             $table->float('impuesto',12,2)->default(0)->nullable()->comment('Impuesto total factura');
             $table->float('total',12,2)->default(0)->comment('Total factura');
@@ -166,6 +167,7 @@ return new class extends Migration
             $table->float('totalapagar', 10, 2);
             $table->date('fecha')->comment('Fecha')->useCurrent();
             $table->string('observaciones')->nullable()->comment('Observaciones');
+            $table->boolean('liquidado')->nullable()->default(0)->comment('Indica si el seevicio fue liquidado al empleado');
 
             $table->unsignedBigInteger('model_type')->comment('Tabla Padre de donde se genera el detallela factura');
             $table->unsignedBigInteger('model_type_id')->comment('Referencia de la Tabla Padre');

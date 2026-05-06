@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AppMainLayout from '@/layouts/app-main-layout';
 import { Head, Link, useForm, usePage} from '@inertiajs/react';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg';
+import avatar10 from '/public/assets/images/user/default.png';
 import { router } from '@inertiajs/react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -12,6 +13,8 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { Offcanvas } from 'bootstrap';
 import axios from 'axios';
 import * as bootstrap from 'bootstrap';
+import { useLiquidacionEmpleados } from '@/hooks/use-liquidacion-empleados';
+import LiquidacionModalResumen from '@/components/global/liquidacion-modal-resumen';
 
 export default function Show({ 
     perfilesList, 
@@ -21,6 +24,7 @@ export default function Show({
     sedesAsignadasIds,   
     sedePredeterminadaId, 
     motivosList,
+    turnoActivo,
     flash
 }: any) {
     const { auth } = usePage().props as any;
@@ -32,20 +36,36 @@ export default function Show({
     // 1. Estados adicionales para visibilidad (puedes usar un objeto para manejar varios)
     const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
 
+    // 1. Buscamos el objeto de soporte dentro del array de soportes que ahora sí viene cargado
+    const logoSoporte = empleado?.persona?.soportes[0];
+    // Extraemos solo la ruta
+    const rutaLogo = logoSoporte ? logoSoporte.ruta : null;
+
     // 1. Formulario para la información de la cuenta (Perfil)
     const { data, setData, put, processing, errors, clearErrors} = useForm({
         username: empleado.persona.user?.username || '',
         email: empleado.persona.user?.email || '',
         telefonomovil: empleado.persona.user.telefonomovil || '',
         perfil_id: empleado.persona.user?.perfil_id?.toString() || '',
+        logo: null as File | null,
+        current_logo_path: rutaLogo || null,
     });
+
+    
 
     const submitPerfil = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('cfempleados.updateperfil', empleado.id), {
+    
+        // IMPORTANTE: Cambiamos .put por .post y añadimos _method: 'put'
+        // Esto es necesario para que Laravel reciba los archivos correctamente
+        router.post(route('cfempleados.updateperfil', empleado.id), {
+            _method: 'put', // Spoofing para que Laravel lo trate como PUT
+            ...data         // Enviamos todo el objeto data que incluye el archivo 'logo'
+        }, {
+            forceFormData: true, // Asegura que se envíe como multipart/form-data
             preserveScroll: true,
             onSuccess: () => {
-                // Notificación de éxito
+                // Notificación de éxito opcional
             }
         });
     };
@@ -74,6 +94,7 @@ export default function Show({
         bloqueos: 'ti ti-ban',
         horarios: 'ti ti-clock',
         servicios: 'ti ti-scissors',
+        nomina: 'ti ti-receipt-2',
         seguridad: 'ti ti-shield-lock'
     };
 
@@ -541,6 +562,69 @@ export default function Show({
         });
     };
 
+
+    // 1. Estado inicial con el primer día del mes para ver historial
+    const [filtroNomina, setFiltroNomina] = useState({
+        inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        fin: new Date().toISOString().split('T')[0]
+    });
+
+    const [datosLiquidacion, setDatosLiquidacion] = useState<any>(null);
+    const [loadingLiquidacion, setLoadingLiquidacion] = useState(false);
+
+    // El primer argumento es el ID del turno, el segundo es el callback
+    const { loading, ejecutarLiquidacion, showModal, setShowModal } = useLiquidacionEmpleados(
+        turnoActivo?.id, 
+        () => {
+            // 1. Cerramos la modal
+            setShowModal(false);
+            obtenerTotales();
+            // 2. Forzamos a Inertia a refrescar los props (la tabla)
+            router.reload({ 
+                only: ['empleado'], // Opcional: solo refresca estas llaves de los props
+                onSuccess: () => {
+                    // Aquí podrías ejecutar obtenerTotales() si es una función local
+                    obtenerTotales(); 
+                }
+            });
+        }
+    );
+    
+    // Este efecto disparará la búsqueda cada vez que cambien las fechas
+    useEffect(() => {
+        obtenerTotales();
+    }, [filtroNomina.inicio, filtroNomina.fin]);
+
+    const obtenerTotales = async () => {
+        setLoadingLiquidacion(true);
+        try {
+            const response = await axios.get(route('cfempleados.calcular-liquidacion'), {
+                params: {
+                    fecha_inicio: filtroNomina.inicio,
+                    fecha_fin: filtroNomina.fin,
+                    // Si empleado.id existe, trae 1. Si es nulo, el backend traerá todos.
+                    empleado_id: empleado?.id || null,
+                    liquidado: 0 // Solo no liquidados para mostrar en el resumen, los liquidados ya no aparecen aquí 
+                }
+            });
+            
+            // Si mandamos ID, el backend devuelve un array de 1 posición
+            // Si no mandamos ID, devuelve el array completo de empleados
+            // CORRECCIÓN: Accedemos a response.data.reporte[0]
+            const reporteFinal = empleado?.id 
+            ? (response.data.reporte[0] ? [response.data.reporte[0]] : []) 
+            : (response.data.reporte || []);
+
+            setDatosLiquidacion(reporteFinal);
+            
+        } catch (error) {
+            console.error("Error calculando saldo", error);
+            setDatosLiquidacion([]);
+        } finally {
+            setLoadingLiquidacion(false);
+        }
+    };
+
     return (
         <AppMainLayout>
             <Head title={`Detalle - ${nombreCompleto}`} />
@@ -569,32 +653,84 @@ export default function Show({
                 {/* --- COLUMNA IZQUIERDA: TARJETA DE RESUMEN --- */}
                 {/* --- LADO IZQUIERDO: PERFIL RÁPIDO --- */}
                 <div className="col-lg-3">
+
                     <div className="card border shadow-none">
-                        <div className="card-body text-center"> {/* text-center centra el texto y elementos inline */}
-                            <div className="d-flex justify-content-center"> {/* Contenedor flex para centrar la imagen perfectamente */}
-                                <div className="position-relative d-inline-block">
-                                    <img 
-                                        //src={persona.foto || '/assets/images/user/avatar-1.png'}
-                                        src={persona.personasnaturales.sexo_id === 46 ? avatar1 : persona.personasnaturales.sexo_id === 47 ? avatar9 : '' } 
-                                        className="img-radius wid-100 mb-3" 
-                                        alt="User" 
-                                        style={{ border: '3px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}
-                                    />
+                        <div className="card-body">
+                            <div className="text-center">
+                                {/* Contenedor Principal del Avatar */}
+                                <div className="position-relative d-inline-flex mb-4">
+                                    <div 
+                                        className="avatar avatar-xxl rounded-circle border border-white shadow-sm overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                                        style={{ width: '120px', height: '120px' }}
+                                    >
+                                        {/* LÓGICA DE VISUALIZACIÓN PRIORIZADA */}
+                                        {data.logo ? (
+                                            // 1. Si el usuario acaba de seleccionar una foto nueva
+                                            <img 
+                                                src={URL.createObjectURL(data.logo as any)} 
+                                                className="w-100 h-100 object-fit-cover animate__animated animate__fadeIn" 
+                                                alt="Previsualización" 
+                                            />
+                                        ) : data.current_logo_path ? (
+                                            // 2. Si hay una foto guardada en el servidor
+                                            <img 
+                                                src={`..//storage/${data.current_logo_path}`} 
+                                                className="w-100 h-100 object-fit-cover" 
+                                                alt="Logo Actual" 
+                                            />
+                                        ) : (
+                                            // 3. FALLBACK: Si no hay nada, usamos la lógica de sexo o el default (avatar10)
+                                            <img 
+                                                src={
+                                                    persona.personasnaturales.sexo_id === 46 ? avatar1 : 
+                                                    persona.personasnaturales.sexo_id === 47 ? avatar9 : avatar10
+                                                } 
+                                                className="w-100 h-100 object-fit-cover opacity-75" 
+                                                alt="Avatar por defecto" 
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Botón de Acción (Cámara) */}
+                                    <label 
+                                        className="btn btn-icon btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle shadow-sm border border-white" 
+                                        style={{ width: '32px', height: '32px', cursor: 'pointer' }}
+                                        title="Cambiar imagen"
+                                    >
+                                        <i className="ti ti-camera fs-6"></i>
+                                        <input 
+                                            type="file" 
+                                            className="d-none" 
+                                            accept="image/*"
+                                            onChange={e => setData('logo', e.target.files?.[0] || null)} 
+                                        />
+                                    </label>
                                 </div>
-                            </div>
-                            
-                            {/* Datos del nombre y cargo */}
-                            <h5 className="mb-1 text-uppercase fw-bold" style={{ fontSize: '0.95rem' }}>
-                            {nombreCompleto}
-                            </h5>
-                            <p className="text-muted small mb-3">
-                                {empleado.cargo || 'Staff / Colaborador'}
-                            </p>
-                            {/* Badge de Estado centrado */}
-                            <div className="d-flex justify-content-center">
-                                <span className={`badge bg-light-${empleado.estado.observacion} text-${empleado.estado.observacion} border border-${empleado.estado.observacion} px-3 py-2`}>
-                                    {empleado.estado.nombre}
-                                </span>
+
+                                {/* Textos Informativos */}
+                                <div className="mb-3">
+                                    <h5 className="mb-1 text-uppercase fw-bold" style={{ fontSize: '0.95rem' }}>{nombreCompleto}</h5>
+                                    <p className="text-muted small mb-0">
+                                        {data.logo ? (
+                                            <span className="text-success fw-medium animate__animated animate__flash">
+                                                <i className="ti ti-check me-1"></i>Imagen lista para subir
+                                            </span>
+                                        ) : (
+                                            "Formatos sugeridos: PNG, JPG o WEBP"
+                                        )}
+                                    </p>
+                                </div>
+                                {/* Datos del nombre y cargo */}
+                                <p className="text-muted small mb-3">
+                                    {empleado.cargo || 'Staff / Colaborador'}
+                                </p>
+                                {/* Badge de Estado centrado */}
+                                <div className="d-flex justify-content-center">
+                                    <span className={`badge bg-light-${empleado.estado.observacion} text-${empleado.estado.observacion} border border-${empleado.estado.observacion} px-3 py-2`}>
+                                        {empleado.estado.nombre}
+                                    </span>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -1291,6 +1427,170 @@ export default function Show({
                                 </div>
                             )}
 
+                            {activeTab === 'nomina' && (
+                                <div className="card border-0 shadow-sm" style={{ borderRadius: '20px' }}>
+                                    <div className="card-header bg-white border-0 p-4">
+                                        <div className="row align-items-center">
+                                            <div className="col-12 col-xl-4 mb-3 mb-xl-0">
+                                                <h5 className="mb-0 fw-900">Historial de Nómina</h5>
+                                                <p className="text-muted small mb-0">Gestión de comisiones, propinas y adelantos</p>
+                                            </div>
+
+                                            {/* FILTROS DE FECHA */}
+                                            <div className="col-12 col-xl-8">
+                                                <div className="d-flex flex-wrap gap-2 justify-content-xl-end align-items-center">
+                                                    <div className="d-flex align-items-center bg-light rounded-3 px-3 py-1 border">
+                                                        <i className="ti ti-calendar-event text-primary me-2"></i>
+                                                        <input 
+                                                            type="date" 
+                                                            className="form-control form-control-sm border-0 bg-transparent fw-bold" 
+                                                            value={filtroNomina.inicio}
+                                                            onChange={(e) => setFiltroNomina({...filtroNomina, inicio: e.target.value})}
+                                                        />
+                                                        <span className="mx-2 text-muted">-</span>
+                                                        <input 
+                                                            type="date" 
+                                                            className="form-control form-control-sm border-0 bg-transparent fw-bold" 
+                                                            value={filtroNomina.fin}
+                                                            onChange={(e) => setFiltroNomina({...filtroNomina, fin: e.target.value})}
+                                                        />
+                                                    </div>
+
+                                                    {/* WIDGET SALDO */}
+                                                    <div className="bg-primary bg-opacity-10 px-4 py-2 rounded-3 border border-primary border-opacity-20 d-flex align-items-center">
+                                                        <div className="me-3 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '35px', height: '35px' }}>
+                                                            {loadingLiquidacion ? (
+                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                            ) : (
+                                                                <i className="ti ti-wallet fs-5"></i>
+                                                            )}
+                                                        </div>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="me-3">
+                                                                <span className="text-primary fw-bold d-block text-uppercase" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                                                                    Saldo Pendiente
+                                                                </span>
+                                                                <h4 className="fw-900 mb-0 text-primary">
+                                                                    ${Number(datosLiquidacion?.[0]?.total_ganado_empleado || 0).toLocaleString()}
+                                                                </h4>
+                                                            </div>
+                                                            
+                                                            {/* Desglose visual pequeño opcional */}
+                                                            {!loadingLiquidacion && datosLiquidacion && (
+                                                                <div className="ps-3 border-start border-primary border-opacity-25 d-none d-md-block">
+                                                                    <div className="text-success" style={{ fontSize: '10px', fontWeight: '700' }}>
+                                                                        + ${(Number(datosLiquidacion?.[0]?.suma_comisiones) + Number(datosLiquidacion?.[0]?.suma_propinas)).toLocaleString()}
+                                                                    </div>
+                                                                    <div className="text-danger" style={{ fontSize: '10px', fontWeight: '700' }}>
+                                                                        - ${Number(datosLiquidacion?.[0]?.suma_vales || 0).toLocaleString()}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => setShowModal(true)} 
+                                                        className="btn btn-primary shadow-blue-deep py-2 px-3 d-flex align-items-center"
+                                                        style={{ borderRadius: '12px' }}
+                                                        disabled={loadingLiquidacion || !datosLiquidacion?.[0]?.total_ganado_empleado}
+                                                    >
+                                                        <i className="ti ti-circle-check me-2 fs-4"></i>
+                                                        <span className="fw-bold">Liquidar Período</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card-body p-0">
+                                        {/* Tabla de movimientos filtrada */}
+                                        <div className="table-responsive">
+                                            <table className="table table-hover align-middle mb-0">
+                                                <thead className="bg-light">
+                                                    <tr className="text-muted small">
+                                                        <th className="ps-4">FECHA</th>
+                                                        <th>CONCEPTO</th>
+                                                        <th>TIPO</th>
+                                                        <th className="text-end pe-4">VALOR</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {empleado?.vales?.filter((v: any) => {
+                                                        const f = v.fecha.substring(0, 10);
+                                                        return f >= filtroNomina.inicio && f <= filtroNomina.fin;
+                                                    }).length > 0 ? (
+                                                        empleado.vales
+                                                            .filter((v: any) => {
+                                                                const f = v.fecha.substring(0, 10);
+                                                                return f >= filtroNomina.inicio && f <= filtroNomina.fin;
+                                                            })
+                                                            .map((mov: any) => (
+                                                                <tr key={mov.id}>
+                                                                    <td className="ps-4">
+                                                                        <div className="d-flex flex-column">
+                                                                            <span className="fw-bold text-dark">
+                                                                                {new Date(mov.fecha.replace(/-/g, '/')).toLocaleDateString('es-ES', { 
+                                                                                    day: '2-digit', 
+                                                                                    month: 'short',
+                                                                                    year: 'numeric' 
+                                                                                })}
+                                                                            </span>
+                                                                            <small className="text-muted" style={{fontSize: '10px'}}>
+                                                                                {mov.fecha.substring(11, 16)} hs
+                                                                            </small>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div className="d-flex align-items-center">
+                                                                            <div className={`avtar avtar-xs me-2 ${mov.tipo_id === 944 ? 'bg-light-danger' : 'bg-light-success'}`}>
+                                                                                <i className={`ti ${mov.tipo_id === 944 ? 'ti-arrow-down-right' : 'ti-arrow-up-left'}`}></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="d-block fw-bold text-dark f-13">{mov.observaciones || 'Sin descripción'}</span>
+                                                                                <small className="text-muted">Ref: {mov.numero.split(':').pop()}</small>
+                                                                                <span className={`fw-bold text-${mov.estado.observacion || 'success'}`} style={{ fontSize: '10px' }}>
+                                                                                    <i className="ti ti-point-filled"></i> {mov.estado.nombre}
+                                                                                </span>
+                                                                                <div>
+                                                                                    {mov.tipo_id === 944 && (
+                                                                                        <>
+                                                                                            <small className="text-muted">Estado:</small>
+                                                                                            <span className={`fw-bold text-${mov.detalles?.[0]?.liquidado ? 'success' : 'warning' }`} style={{ fontSize: '10px' }}>
+                                                                                                <i className="ti ti-point-filled"></i> {mov.detalles?.[0]?.liquidado ? 'Liquidado' : 'Pendiente de liquidación'} 
+                                                                                            </span>
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span className={`badge ${mov.tipo_id === 944 ? 'bg-light-warning text-warning' : 'bg-light-success text-success'} rounded-pill`}>
+                                                                            {mov.tipo?.nombre || 'N/A'}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="text-end pe-4">
+                                                                        <h6 className={`mb-0 fw-900 ${mov.tipo_id === 944 ? 'text-danger' : 'text-success'}`}>
+                                                                            {mov.tipo_id === 944 ? '-' : '+'} ${Number(mov.total).toLocaleString()}
+                                                                        </h6>
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={4} className="text-center py-5 text-muted small">
+                                                                No hay movimientos registrados para el rango seleccionado.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* --- TAB: SEGURIDAD --- */}
                             {activeTab === 'seguridad' && (
                                 <div className="animate__animated animate__fadeIn">
@@ -1845,6 +2145,16 @@ export default function Show({
                     </div>
                 </div>
             </div>
+
+            {/* Modal del Resumen */}
+            <LiquidacionModalResumen
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                data={datosLiquidacion} // Pasamos todo el reporte actual
+                loading={loading}
+                fechas={filtroNomina}
+                onConfirm={() => ejecutarLiquidacion(datosLiquidacion, filtroNomina)}
+            />
 
         </AppMainLayout> 
     );

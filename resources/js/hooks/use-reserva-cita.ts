@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import {usePage } from '@inertiajs/react';
 
@@ -14,6 +14,27 @@ export const useReservaCita = () => {
     const [fechaSeleccionada, setFechaSeleccionada] = useState<string>('');
     const [jornadaActiva, setJornadaActiva] = useState<'Mañana' | 'Tarde' | 'Noche'>('Mañana');
     const [seleccion, setSeleccion] = useState<any>(null);
+
+    // --- LÓGICA DE CATEGORÍAS ---
+    const [activeCat, setActiveCat] = useState<number | null>(null);
+
+    const categorias = useMemo(() => {
+        const unique = new Map();
+        servicios.forEach((s: any) => {
+            // Verificamos que s.categoria exista
+            if (s.categoria && !unique.has(s.categoria.id)) {
+                unique.set(s.categoria.id, s.categoria);
+            }
+        });
+        return Array.from(unique.values());
+    }, [servicios]);
+
+    // Efecto para seleccionar la primera categoría por defecto cuando carguen los servicios
+    useEffect(() => {
+        if (categorias.length > 0 && activeCat === null) {
+            setActiveCat(categorias[0].id);
+        }
+    }, [categorias]);
 
     const abrirModal = async () => {
         setCargando(true);
@@ -82,6 +103,7 @@ export const useReservaCita = () => {
     return {
         show, abrirModal, cerrarModal,
         servicios, cargando,
+        categorias, activeCat, setActiveCat,
         servicioSeleccionado, setServicioSeleccionado,
         especialistaSeleccionado, setEspecialistaSeleccionado, 
         seleccionarEspecialista,

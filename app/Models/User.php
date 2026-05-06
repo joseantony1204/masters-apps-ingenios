@@ -62,7 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Comercios::class, 'persona_id', 'persona_id');
     }
 
-    // En el modelo Comercios.php
+    // En el modelo
     public function soportes()
     {
         return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 966); // 966 es el identificador de tabla padre para users

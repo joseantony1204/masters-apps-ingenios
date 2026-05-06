@@ -21,7 +21,7 @@ export default function AuthMasterLayout({ children, title, description }: Props
                                 <AppMasterLogo className="custom-class" alt="Masters Apps Ingenios" />
                             </Link>
                         </div>
-                        <div className="card my-5">
+                        <div className="card my-8">
                             <div className="card-body">
                                 {children}
                             </div>

@@ -175,7 +175,7 @@ class DisponibilidadController extends Controller
         ->pluck('cfsedes.id')
         ->toArray();
 
-        $servicios = Productos::with(['empleadosasignados',])
+        $servicios = Productos::with(['categoria','empleadosasignados',])
         ->where('estado_id', 858)
         ->whereIn('sede_id', $sedesIds)
         ->whereHas('empleadosasignados', function($q) {
@@ -186,7 +186,8 @@ class DisponibilidadController extends Controller
             return [
                 'id' => $servicio->id,
                 'nombre' => $servicio->nombre,
-                'categoria' => $servicio->categoria->nombre,
+                'categoria_id' => $servicio->categoria_id,
+                'categoria' => $servicio->categoria,
                 'icon' => $servicio->categoria->observacion,
                 'preciobase' => $servicio->preciosalida,
                 'duracion' => $servicio->duracion,

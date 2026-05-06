@@ -180,6 +180,8 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 921, 'codigo' => 'adcitas', 'nombre' => 'Tabla citas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 922, 'codigo' => 'personas', 'nombre' => 'Tabla personas', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 1061, 'codigo' => 'addetallescitas', 'nombre' => 'Tabla citas detalles', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 1064, 'codigo' => 'cfempleados', 'nombre' => 'Tabla empleados', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 1070, 'codigo' => 'cfmaestras', 'nombre' => 'Tabla cfmaestras', 'padre' => 918, 'jerarquia' => NULL, 'observacion' => NULL],
             
             [ 'id' => 923, 'codigo' => 'LIS_ESTADOSTURNOS', 'nombre' => 'ESTADOS DE TURNOS', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 924, 'codigo' => 'AC', 'nombre' => 'Activo', 'padre' => 923, 'jerarquia' => NULL, 'observacion' => 'success'],
@@ -205,7 +207,8 @@ class MaestrasSeeder extends Seeder
             [ 'id' => 941, 'codigo' => 'LIS_TIPOSFACTURAS', 'nombre' => 'TIPOS DE FACTURA', 'padre' => 1, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 942, 'codigo' => NULL, 'nombre' => 'Compra', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
             [ 'id' => 943, 'codigo' => NULL, 'nombre' => 'Venta', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
-            [ 'id' => 944, 'codigo' => NULL, 'nombre' => 'Cotizacion', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 944, 'codigo' => NULL, 'nombre' => 'Vale / Adelanto', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
+            [ 'id' => 1063, 'codigo' => NULL, 'nombre' => 'Pago nómina', 'padre' => 941, 'jerarquia' => NULL, 'observacion' => NULL],
 
             [ 'id' => 945, 'codigo' => NULL, 'nombre' => 'Depilacion corporal', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-scissors'],
             [ 'id' => 946, 'codigo' => NULL, 'nombre' => 'Peinados', 'padre' => 889, 'jerarquia' => NULL, 'observacion' => 'ti ti-wind'],

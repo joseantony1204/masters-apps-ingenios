@@ -45,7 +45,6 @@ export default function Table({ empleados }: Props) {
                         <th className="text-left" style={{ width: '10%' }}>Nombre</th>
                         <th >Telefono movil</th>
                         <th >F. ingreso</th>
-                        <th >Estado</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,7 +52,7 @@ export default function Table({ empleados }: Props) {
                     <tr key={item.id}>
                         <td className="text-center">
                         <ul className="list-inline mb-0">
-                            {/*
+                            {
                             <li className="list-inline-item">
                                 <button
                                     onClick={() => handleView(item.id)}
@@ -61,7 +60,7 @@ export default function Table({ empleados }: Props) {
                                     <i className="ti ti-eye f-20"></i>
                                 </button>
                             </li>
-                            */}
+                            }
                             <li className="list-inline-item">
                                 <button
                                     onClick={() => handleEdit(item.id)}
@@ -83,41 +82,79 @@ export default function Table({ empleados }: Props) {
                         <td className="text-center">{index + 1}</td>
                         
                         <td className="text-left">
-                            <div className="row">
-                                <div className="col-auto pe-0">
-                                    <img 
-                                        src={item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : avatar10 } 
-                                        alt="user-image" 
-                                        className="wid-40 rounded-circle" 
-                                    />
+                            <div className="d-flex align-items-center p-2 rounded-4 hover-bg-light transition-all">
+                                {/* AVATAR CON EFECTO */}
+                                <div className="position-relative d-inline-block">
+                                    <div className="wid-55 hei-55 rounded-circle shadow-sm border border-white overflow-hidden bg-light d-flex align-items-center justify-content-center">
+                                        <img 
+                                            src={
+                                                item.foto ? `.//storage/${item.foto}` :
+                                                (item.sexo_id === 46 ? avatar1 : item.sexo_id === 47 ? avatar9 : avatar10)
+                                            } 
+                                            alt="user" 
+                                            className="w-100 h-100 object-fit-cover"
+                                            onError={(e: any) => e.target.src = avatar10}
+                                        />
+                                    </div>
+
+                                    {/* Indicador de estado con pulso si está activo */}
+                                    <span className={`position-absolute bottom-0 end-0 p-1 bg-${item.color_estado || 'secondary'} border border-white rounded-circle`}>
+                                        {item.color_estado === 'success' && (
+                                            <span className="visually-hidden">Online</span>
+                                        )}
+                                    </span>
                                 </div>
-                                <div className="col">
-                                    <Link href={route('cfempleados.show', item.id)} className="text-dark">
-                                        <h6 className="mb-1">{item.nombres } {item.apellidos }</h6>
+
+                                {/* INFORMACIÓN */}
+                                <div className="flex-grow-1 min-width-0">
+                                    <Link href={route('cfempleados.show', item.id)} className="text-decoration-none">
+                                        <h6 className="mb-0 text-dark fw-bolder f-14 text-truncate">
+                                            {item.nombres} {item.apellidos}
+                                        </h6>
+                                        
+                                        <div className="d-flex flex-wrap gap-2 mt-1">
+                                            <span className="badge bg-light-secondary text-muted border border-light fw-medium px-2 py-1" style={{ fontSize: '10px' }}>
+                                                <i className="ti ti-id me-1"></i>{item.identificacion}
+                                            </span>
+                                            <span className="badge bg-light-primary text-primary border border-primary-subtle fw-medium px-2 py-1" style={{ fontSize: '10px' }}>
+                                                <i className="ti ti-calendar-event me-1"></i>{item.edad.split(' ')[0]} años
+                                            </span>
+                                        </div>
+
+                                        <p className="text-muted mb-0 mt-1 d-flex align-items-center opacity-75" style={{ fontSize: '11px' }}>
+                                            <i className="ti ti-mail me-1"></i>
+                                            <span className="text-truncate">{item.email}</span>
+                                        </p>
                                     </Link>
-                                    <p className="text-muted f-12 mb-0">Identificación: { item.identificacion }</p>
-                                    <p className="text-muted f-12 mb-0">Email: { item.email }</p>
-                                    <p className="text-muted f-12 mb-0"> Edad: { item.edad }</p>
                                 </div>
+
+                                {/* ACCIÓN RÁPIDA (Opcional) */}
+                                <div className="ms-2">
+                                    <Link href={route('cfempleados.show', item.id)} className="btn btn-icon btn-link-secondary sm-icon">
+                                        <i className="ti ti-chevron-right fs-4"></i>
+                                    </Link>
+                                </div>
+
+                                <style dangerouslySetInnerHTML={{ __html: `
+                                    .hover-bg-light:hover { 
+                                        background-color: rgba(0,0,0,0.02); 
+                                        transform: translateX(5px);
+                                    }
+                                    .transition-all { transition: all 0.3s ease; }
+                                    .wid-50 { width: 50px; height: 50px; }
+                                    .fw-bolder { font-weight: 700; }
+                                `}} />
                             </div>
                         </td>
                         <td>
-                            <button 
-                                //onClick={() => handleSendWhatsapp(item)}
-                                className="btn btn-link p-0 text-success text-decoration-none fw-bold d-flex align-items-center"
-                            >
-                                <i className="ti ti-brand-whatsapp me-2 fs-4"></i>
-                                {item.telefonomovil}
-                            </button>
+                            <div className="d-flex flex-column">
+                                <a href={`https://wa.me/${item.telefonomovil}`} target="_blank" className="text-success text-decoration-none fw-bold f-13 d-flex align-items-center mb-1">
+                                    <i className="ti ti-brand-whatsapp me-1 fs-5"></i>
+                                    {item.telefonomovil}
+                                </a>
+                            </div>
                         </td>
                         <td >{ item.fechaingreso }</td>
-                        <td className="text-center">
-                            <span 
-                                className={`badge bg-light-${item.color_estado} text-${item.color_estado}`} 
-                                style={{  minWidth: '90px',  padding: '5px 10px', borderRadius: '4px', fontWeight: '600',textTransform: 'capitalize'}}>
-                                {item.estado}
-                            </span>
-                        </td>
 
                     </tr>
                     ))}

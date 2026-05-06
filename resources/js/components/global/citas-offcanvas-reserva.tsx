@@ -10,13 +10,15 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
         show,
         cerrarModal,
         servicios,
+        categorias, 
+        activeCat, 
+        setActiveCat,
         servicioSeleccionado,
         setServicioSeleccionado,
         especialistaSeleccionado,
         setEspecialistaSeleccionado,
         seleccionarEspecialista,
         turnosDisponibles,
-        setTurnosDisponibles,
         fechaSeleccionada,
         setFechaSeleccionada,
         jornadaActiva,
@@ -28,7 +30,6 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
 
     return (
         <>
-            {/* Backdrop manual para asegurar funcionamiento fuera de Bootstrap tradicional */}
             <div className="offcanvas-backdrop fade show" style={{ zIndex: 1040 }} onClick={cerrarModal}></div>
             
             <div 
@@ -41,54 +42,95 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                         <h4 className="offcanvas-title fw-bold text-white mb-1">📅 Reservar Cita</h4>
                         <p className="text-white-50 small mb-0">Sigue los pasos para agendar</p>
                     </div>
-                    <button type="button" className="btn-close btn-close-white" onClick={cerrarModal}><i className="ti ti-x"></i></button>
+                    <button type="button" className="btn-close btn-close-white" onClick={cerrarModal}></button>
                 </div>
 
                 <div className="offcanvas-body p-0 bg-light-subtle d-flex flex-column" style={{ overflowX: 'hidden' }}>
                     
-                    {/* ESTADO DE CARGA GLOBAL (SKELETON) */}
+                    {/* SKELETON LOAD */}
                     {cargando && !turnosDisponibles && (
                         <div className="p-4">
                             <div className="placeholder-glow">
                                 <div className="placeholder col-6 mb-3 rounded py-2"></div>
                                 <div className="placeholder col-12 mb-2 rounded py-4"></div>
                                 <div className="placeholder col-12 mb-2 rounded py-4"></div>
-                                <div className="placeholder col-12 mb-2 rounded py-4"></div>
                             </div>
                         </div>
                     )}
 
-                    {/* PASO 1: SELECCIÓN DE SERVICIO */}
+                    {/* PASO 1: CATEGORÍAS Y SERVICIOS */}
                     {!servicioSeleccionado && !cargando && (
-                        <div className="p-4 animated fadeIn">
-                            <h6 className="fw-bold text-muted small text-uppercase mb-3">1. Selecciona un Servicio</h6>
-                            <div className="row g-2">
-                                {servicios.map((s: any) => (
-                                    <div key={s.id} className="col-12">
+                        <div className="p-4 animate__animated animate__fadeIn">
+                            <h6 className="fw-bold text-muted small text-uppercase mb-3">1. Selecciona una Categoría</h6>
+                            
+                            {/* Burbujas de Categorías */}
+                            <div className="d-flex overflow-auto gap-3 mb-4 pb-2 no-scrollbar" style={{ scrollbarWidth: 'none' }}>
+                                {categorias.map((cat: any) => (
+                                    <div key={cat.id} onClick={() => setActiveCat(cat.id)} className="text-center" style={{ minWidth: '75px', cursor: 'pointer' }}>
                                         <div 
-                                            className="card shadow-none border hover-border-primary cursor-pointer mb-0 transition-all"
-                                            onClick={() => setServicioSeleccionado(s)} 
+                                            className={`mb-2 mx-auto d-flex align-items-center justify-content-center rounded-circle border transition-all ${
+                                                activeCat === cat.id ? 'bg-primary-subtle border-primary shadow-sm' : 'bg-white'
+                                            }`} 
+                                            style={{ width: '55px', height: '55px' }}
                                         >
-                                            <div className="card-body p-3 d-flex align-items-center">
-                                                <div className="bg-light-primary rounded p-2 me-3">
-                                                    <i className={`${s.icon} text-primary fs-4`}></i>
-                                                </div>
-                                                <div className="flex-grow-1">
-                                                    <div className="fw-bold text-dark">{s.nombre}</div>
-                                                    <small className="text-muted">Ver especialistas disponibles</small>
-                                                </div>
-                                                <i className="ti ti-chevron-right text-muted"></i>
-                                            </div>
+                                            <i className={`${cat.observacion || 'ti ti-layout-grid'} fs-4 ${
+                                                activeCat === cat.id ? 'text-primary' : 'text-muted'
+                                            }`}></i>
                                         </div>
+                                        <span 
+                                            className={`small fw-bold d-block ${activeCat === cat.id ? 'text-primary' : 'text-muted'}`} 
+                                            style={{ fontSize: '11px', lineHeight: '1.2' }}
+                                        >
+                                            {cat.nombre}
+                                        </span>
                                     </div>
                                 ))}
+                            </div>
+
+                            <h6 className="fw-bold text-muted small text-uppercase mb-3">Servicios Disponibles</h6>
+                            <div className="row g-2">
+                                {servicios
+                                    .filter((s: any) => s.categoria?.id === activeCat)
+                                    .map((s: any) => {
+                                        // Usamos el icono del servicio, o el de la categoría como fallback
+                                        const iconoFinal = s.icon || s.categoria?.observacion || 'ti ti-cut';
+                                        
+                                        return (
+                                            <div key={s.id} className="col-12">
+                                                <div 
+                                                    className="card shadow-none border hover-border-primary cursor-pointer mb-0 transition-all"
+                                                    onClick={() => setServicioSeleccionado(s)} 
+                                                >
+                                                    <div className="card-body p-3 d-flex align-items-center">
+                                                        <div className="bg-light-primary rounded-3 p-2 me-3 d-flex align-items-center justify-content-center" style={{width: '45px', height: '45px'}}>
+                                                            <i className={`${iconoFinal} text-primary fs-4`}></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <div className="fw-bold text-dark">{s.nombre}</div>
+                                                            <small className="text-muted">Especialistas disponibles</small>
+                                                        </div>
+                                                        <i className="ti ti-chevron-right text-muted"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                }
+                                
+                                {/* Empty State para categorías vacías */}
+                                {servicios.filter((s: any) => s.categoria?.id === activeCat).length === 0 && (
+                                    <div className="text-center py-4 opacity-50">
+                                        <i className="ti ti-package fs-1"></i>
+                                        <p className="small">No hay servicios en esta categoría</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
                     {/* PASO 2: SELECCIONAR ESPECIALISTA */}
                     {servicioSeleccionado && !especialistaSeleccionado && !cargando && (
-                        <div className="p-4 animated fadeIn">
+                        <div className="p-4 animate__animated animate__fadeIn">
                             <button className="btn btn-link btn-sm p-0 mb-3 text-decoration-none text-primary" onClick={() => setServicioSeleccionado(null)}>
                                 <i className="ti ti-arrow-left me-1"></i> Volver a servicios
                             </button>
@@ -125,14 +167,14 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
 
                     {/* PASO 3: CALENDARIO DE TURNOS */}
                     {especialistaSeleccionado && turnosDisponibles && !cargando && (
-                        <div className="animated fadeIn d-flex flex-column h-100">
+                        <div className="animate__animated animate__fadeIn d-flex flex-column h-100">
+                            {/* Selector de días horizontal */}
                             <div className="px-4 pt-3 pb-2 border-bottom bg-white">
-                                <button className="btn btn-link btn-sm p-0 text-decoration-none mb-3" onClick={() => {setEspecialistaSeleccionado(null); setTurnosDisponibles(null);}}>
+                                <button className="btn btn-link btn-sm p-0 text-decoration-none mb-3" onClick={() => {setEspecialistaSeleccionado(null);}}>
                                     <i className="ti ti-arrow-left me-1"></i> Cambiar especialista
                                 </button>
                                 
-                                {/* SELECTOR DE DÍAS HORIZONTAL */}
-                                <div className="d-flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                <div className="d-flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
                                     {Object.keys(turnosDisponibles).map((fecha) => (
                                         <button
                                             key={fecha}
@@ -149,7 +191,7 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                                 </div>
                             </div>
 
-                            {/* TABS DE JORNADA */}
+                            {/* Jornadas */}
                             <div className="bg-white border-bottom px-4">
                                 <ul className="nav nav-pills nav-fill py-2 gap-2">
                                     {['Mañana', 'Tarde', 'Noche'].map((j) => (
@@ -165,7 +207,7 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                                 </ul>
                             </div>
 
-                            {/* LISTADO DE TURNOS */}
+                            {/* Turnos */}
                             <div className="p-4 overflow-y-auto flex-grow-1">
                                 {(() => {
                                     const turnosFiltrados = turnosDisponibles[fechaSeleccionada]?.filter((t: any) => {
@@ -196,13 +238,13 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                                                                 </div>
                                                                 <div className="text-muted small">Disponible</div>
                                                             </div>
-                                                            <div className="d-flex flex-wrap gap-1 justify-content-end">
+                                                            <div className="d-flex flex-wrap gap-1">
                                                                 {bloque.servicios_que_caben.map((serv: any, sIdx: number) => (
                                                                     <button 
                                                                         key={sIdx}
                                                                         onClick={() => {
                                                                             const datosCita = state.manejarSeleccionFinal(state.fechaSeleccionada, bloque.hora, serv);
-                                                                            onReservar(datosCita); // Notificamos al Dashboard
+                                                                            onReservar(datosCita);
                                                                         }}
                                                                         className="btn btn-sm btn-primary rounded-pill px-3 fw-medium"
                                                                     >
@@ -211,7 +253,6 @@ export default function CitasOffcanvasReserva({ state, onReservar }: Props) {
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                        
                                                     </div>
                                                 </div>
                                             ))}

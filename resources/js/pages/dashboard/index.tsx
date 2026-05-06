@@ -65,6 +65,11 @@ declare global {
 }
 
 import { useReservaCita } from '@/hooks/use-reserva-cita';
+import { useFacturacionPos } from '@/hooks/use-facturacion-pos';
+import { Dropdown } from 'bootstrap'; // Importa la clase Dropdown
+import { FacturacionModalPos } from '@/components/global/facturacion-modal-pos';
+
+
 
 export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosHoy, estadosList, metodospagosList, totalClientes, clientesHoy, tasaRetencion, turnoActivo, turnosList, sedePredeterminada}: Props) {
     
@@ -75,6 +80,14 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
     const {  showCierre, setShowCierre,  resumenCierre, processing, abrirModalCierre, confirmarCierre } = useCierreCaja();
+
+
+    // Dentro de tu componente:
+useEffect(() => {
+    // Busca todos los dropdowns y los inicializa
+    const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+    const dropdownList = [...dropdownElementList].map(dropdownToggleEl => new Dropdown(dropdownToggleEl));
+}, []);
 
     // Al principio de index.tsx (fuera del componente)
     /**
@@ -902,6 +915,24 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
         }
     }, [mostrarBanner, diasParaVencer]);
 
+    // ... dentro de tu componente principal
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Cerrar al hacer clic afuera
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Solo añade el "?" después de turnoActivo
+    const hookCaja = useFacturacionPos(turnoActivo?.id);
+
     return (
         <AppMainLayout>
             <Head title="Vantify - Dashboard Unificado" />
@@ -918,22 +949,22 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                     />
                 </div>
             )}
-
             {/* --- BANNER DE BIENVENIDA OPTIMIZADO --- */}
             <div className="row mb-4">
                 <div className="col-12">
                     <div 
-                        className="card border-0 shadow-sm overflow-hidden" 
+                        className="card border-0 shadow-sm" // He quitado 'overflow-hidden' para que el dropdown flote libre
                         style={{ 
                             background: 'linear-gradient(90deg, #e6f7ff 0%, #ffffff 100%)', 
                             borderLeft: '5px solid #1890ff',
-                            position: 'relative'
+                            position: 'relative',
+                            zIndex: 10 // Asegura que esté sobre otros elementos
                         }}
                     >
                         <div className="card-body p-4">
                             <div className="row align-items-center">
                                 
-                                {/* 1. SECCIÓN DE INFORMACIÓN Y ACCIONES (Izquierda) */}
+                                {/* 1. SECCIÓN DE INFORMACIÓN Y ACCIONES */}
                                 <div className="col-md-12 col-lg-12">
                                     <div className="d-flex align-items-center mb-2">
                                         <span className="badge bg-light-primary text-primary me-2 px-2 py-1 small">Resumen en tiempo real</span>
@@ -947,44 +978,115 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                     <h3 className="fw-bold text-dark mb-1">
                                         ¡Bienvenido a Vantify Pro, {auth.user.nombreComercio || auth.user.name}! 🚀
                                     </h3>
-                                    {/*<p className="text-muted mb-3 small">
-                                        Tu comercio ha crecido un <span className="text-success fw-bold">15% más</span> esta semana.
-                                    </p>*/}
 
-                                    {/* ACCIONES MOVIDAS AQUÍ PARA NO TAPAR EL FONDO */}
-                                    <div className="d-flex align-items-center gap-2 flex-wrap">
-                                        <select className="form-select form-select-sm w-auto border-0 shadow-sm bg-white cursor-pointer fw-bold text-muted">
+                                    {/* ACCIONES */}
+                                    <div className="d-flex align-items-center gap-2 flex-wrap mt-3">
+                                        <select className="form-select form-select-sm w-auto border-0 shadow-sm bg-white cursor-pointer fw-bold text-muted rounded-pill px-3">
                                             <option>Hoy</option>
                                             <option>Esta Semana</option>
                                             <option>Este Mes</option>
                                         </select>
                                         
                                         <button 
-                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0 rounded-pill"
                                             onClick={reservaCita.abrirModal} 
                                             disabled={reservaCita.cargando}
                                         >
-                                            {reservaCita.cargando ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-plus me-1"></i>}
+                                            {reservaCita.cargando ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-calendar-plus me-1"></i>}
                                             Agendar cita
                                         </button>
                                         
-                                        <button 
-                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
-                                            onClick={handleCrearFactura}
-                                        >
-                                            <i className="ti ti-plus me-1"></i> Nueva venta directa
-                                        </button>
+                                        {/* BOTÓN DROPDOWN DE VENTAS Y CAJA */}
+                                        <div className="btn-group shadow-sm" ref={dropdownRef} style={{ position: 'relative' }}>
+                                            <button 
+                                                className="btn btn-light-primary btn-sm px-3 border-0 d-flex align-items-center rounded-start-pill"
+                                                
+                                                onClick={handleCrearFactura}
+                                            >
+                                                <i className="ti ti-plus me-1"></i> Nueva venta directa
+                                            </button>
+
+                                            <button 
+                                                type="button" 
+                                                className={`btn btn-light-primary btn-sm dropdown-toggle dropdown-toggle-split border-0 border-start rounded-end-pill ${showDropdown ? 'show' : ''}`}
+                                                style={{ borderColor: 'rgba(255,255,255,0.3) !important' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowDropdown(!showDropdown);
+                                                }}
+                                            >
+                                                <span className="visually-hidden">Toggle</span>
+                                            </button>
+
+                                            {/* Menú Flotante Mejorado */}
+                                            <ul className={`dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 ${showDropdown ? 'show' : ''}`} 
+                                                style={{ 
+                                                    display: showDropdown ? 'block' : 'none',
+                                                    borderRadius: '16px', 
+                                                    minWidth: '240px',
+                                                    position: 'absolute',
+                                                    top: '100%',
+                                                    right: '0',
+                                                    marginTop: '10px',
+                                                    zIndex: 9999,
+                                                    backgroundColor: '#ffffff',
+                                                    border: '1px solid rgba(0,0,0,0.05)',
+                                                    boxShadow: '0 15px 35px rgba(0,0,0,0.2)'
+                                                }}
+                                            >
+                                                <li><h6 className="dropdown-header text-uppercase text-muted fw-bold mb-2" style={{ fontSize: '10px', letterSpacing: '1px' }}>Gestión de Caja</h6></li>
+                                              
+                                               {/*}
+                                                <li>
+                                                    <button className="dropdown-item rounded-3 d-flex align-items-center py-2 mb-1" onClick={() => hookCaja.abrirModal(942)}>
+                                                        <div className="avtar avtar-xs bg-light-danger text-danger me-2 rounded-circle">
+                                                            <i className="ti ti-minus fs-6"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <div className="fw-bold">Gasto / Compra</div>
+                                                            <div className="text-muted small" style={{ fontSize: '10px' }}>Insumos o servicios</div>
+                                                        </div>
+                                                    </button>
+                                                </li>
+                                                */}
+
+                                                <li>
+                                                    <button className="dropdown-item rounded-3 d-flex align-items-center py-2 mb-1" onClick={() => hookCaja.abrirModal(944)}>
+                                                        <div className="avtar avtar-xs bg-light-warning text-warning me-2 rounded-circle">
+                                                            <i className="ti ti-cash fs-6"></i>
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <div className="fw-bold">Adelanto (Vale)</div>
+                                                            <div className="text-muted small" style={{ fontSize: '10px' }}>Pago anticipado staff</div>
+                                                        </div>
+                                                    </button>
+                                                </li>
+
+                                                <li><hr className="dropdown-divider my-2 opacity-50" /></li>
+
+                                                <li>
+                                                    <button className="dropdown-item rounded-3 d-flex align-items-center py-2 text-success fw-bold" 
+                                                        onClick={() => router.get(route('reportes.empleados'))}
+                                                    >
+                                                        <div className="avtar avtar-xs bg-light-success text-success me-2 rounded-circle">
+                                                            <i className="ti ti-wallet fs-6"></i>
+                                                        </div>
+                                                        <span>Liquidar Nómina</span>
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+
                                         {turnoActivo && (
                                             <button
-                                                className="btn btn-light-primary btn-sm shadow-sm px-3 border-0" 
+                                                className="btn btn-light-danger btn-sm shadow-sm px-3 border-0 rounded-pill fw-bold" 
                                                 onClick={() => abrirModalCierre(turnoActivo)}>
-                                                <i className="ti ti-cash-register me-1"></i> Cerrar turno
+                                                <i className="ti ti-lock me-1"></i> Cerrar turno
                                             </button>
-                                         )}
+                                        )}
 
-                                        {/* NUEVO BOTÓN: OBTENER QR */}
                                         <button 
-                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0"
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0 rounded-pill" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#qrModal"
                                         >
@@ -993,12 +1095,11 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                         
                                     </div>
                                 </div>
-
                             </div>
 
-                            {/* Icono Decorativo de Fondo (Limpio, sin botones encima) */}
-                            <div className="position-absolute end-0 top-50 translate-middle-y me-n2 d-none d-lg-block opacity-25">
-                                <i className="ti ti-chart-dots text-primary" style={{ fontSize: '9rem', pointerEvents: 'none' }}></i>
+                            {/* Icono Decorativo - Ahora con contenedor para no romper el overflow de la card */}
+                            <div className="position-absolute end-0 top-0 h-100 d-none d-lg-block opacity-25" style={{ width: '200px', overflow: 'hidden', borderTopRightRadius: '15px', borderBottomRightRadius: '15px', pointerEvents: 'none' }}>
+                                <i className="ti ti-chart-dots text-primary" style={{ fontSize: '9rem', position: 'absolute', top: '50%', right: '-20px', transform: 'translateY(-50%)' }}></i>
                             </div>
                         </div>
                     </div>
@@ -1544,40 +1645,63 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                             <th className="text-end pe-4 border-0">Acciones</th>
                                         </tr>
                                     </thead>
+                                    {/* --- 5. HISTORIAL DE TRANSACCIONES ACTUALIZADO --- */}
                                     <tbody className="small">
                                         {facturasPaginadas.map((item: any) => {
-                                            // Cálculo del porcentaje de descuento si no viene directo del objeto
                                             const subtotal = Number(item.subtotal || item.grand_total);
                                             const descuento = Number(item.descuento || 0);
                                             const porcentajeDesc = item.porcentajedescuento || (descuento > 0 ? Math.round((descuento / subtotal) * 100) : 0);
+
+                                            // Lógica de identificación por tipo_id
+                                            const configurarTipo = (tipoId: number) => {
+                                                switch (tipoId) {
+                                                    case 942: // Compras
+                                                        return { label: '🛒 Compra', color: 'danger', icon: 'ti ti-shopping-cart', bg: 'bg-light-danger' };
+                                                    case 943: // Ventas
+                                                        return { label: item.model_type === 921 ? '📅 Cita' : '🛍️ Venta directa', color: 'primary', icon: 'ti ti-tag', bg: 'bg-light-primary' };
+                                                    case 944: // Vales de Adelanto
+                                                        return { label: '💸 Vale/Adelanto', color: 'warning', icon: 'ti ti-cash', bg: 'bg-light-warning' };
+                                                    case 1063: // Nómina
+                                                        return { label: '👔 Nómina', color: 'info', icon: 'ti ti-briefcase', bg: 'bg-light-info' };
+                                                    default:
+                                                        return { label: '📄 Otros', color: 'secondary', icon: 'ti ti-file-text', bg: 'bg-light-secondary' };
+                                                }
+                                            };
+
+                                            const tipoInfo = configurarTipo(item.tipo_id);
 
                                             return (
                                                 <tr key={item.id}>
                                                     <td className="ps-4">
                                                         <div className="d-flex align-items-center">
-                                                            <div className="avtar avtar-xs bg-light-primary text-primary rounded-circle me-2 fw-bold" style={{width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                                                {item.round || item.nombres?.charAt(0)}
+                                                            {/* Avatar dinámico basado en el tipo de transacción */}
+                                                            <div className={`avtar avtar-xs ${tipoInfo.bg} text-${tipoInfo.color} rounded-circle me-3 fw-bold`} 
+                                                                style={{width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem'}}>
+                                                                <i className={tipoInfo.icon}></i>
                                                             </div>
                                                             <div>
                                                                 <div className="fw-bold text-dark">
                                                                     {item.nombres} {item.apellidos}
                                                                 </div>
                                                                 <div className="x-small text-muted">
-                                                                    {item.identificacion}
+                                                                    {item.identificacion || 'Sin identificación'}
                                                                 </div>
-                                                                <div className="">
+                                                                <div className="mt-1">
                                                                     <span className="badge bg-light-secondary text-dark border-0 me-1">#{item.numero}</span>
-                                                                    {item.model_type === 921 ? '📅 Cita' : '🛒 Venta'}
+                                                                    <span className={`fw-bold text-${tipoInfo.color}`} style={{fontSize: '11px'}}>
+                                                                        {tipoInfo.label}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
+                                                    
+                                                    {/* Resto de las columnas se mantienen igual pero con mejor legibilidad */}
                                                     <td className="text-muted">
                                                         {new Date(item.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}<br/>
                                                         <span className="x-small">{new Date(item.fecha).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                                     </td>
                                                     
-                                                    {/* COLUMNA DE DESCUENTOS Y CUPONES */}
                                                     <td>
                                                         {descuento > 0 ? (
                                                             <div>
@@ -1587,12 +1711,8 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                                 </div>
                                                                 {item.cupon_id && (
                                                                     <div className="x-small text-primary fw-semibold mt-1">
-                                                                        <i className="ti ti-ticket me-1"></i>
-                                                                        {item.cupon?.codigo || 'Cupón Aplicado'}
+                                                                        <i className="ti ti-ticket me-1"></i> {item.cupon?.codigo || 'CUPÓN'}
                                                                     </div>
-                                                                )}
-                                                                {!item.cupon_id && (
-                                                                    <div className="x-small text-muted mt-1 italic">Dcto. Manual</div>
                                                                 )}
                                                             </div>
                                                         ) : (
@@ -1600,7 +1720,6 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                         )}
                                                     </td>
 
-                                                    {/* COLUMNA DE MONTO CON SUBOTOTAL */}
                                                     <td>
                                                         {descuento > 0 && (
                                                             <div className="text-muted x-small text-decoration-line-through">
@@ -1617,25 +1736,15 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                                                             {item.estado?.nombre}
                                                         </span>
                                                     </td>
+
                                                     <td className="text-end pe-4">
                                                         <div className="d-flex justify-content-end gap-1">
-                                                            <button 
-                                                                className="btn btn-sm btn-icon btn-link-secondary border-0" 
-                                                                title="Ver detalle"
-                                                                onClick={() => {
-                                                                    router.visit(route('ftfacturas.show', item.id))
-                                                                }}
-                                                            >
+                                                            <button className="btn btn-sm btn-icon btn-link-secondary border-0" 
+                                                                    onClick={() => router.visit(route('ftfacturas.show', item.id))}>
                                                                 <i className="ti ti-eye fs-5"></i>
                                                             </button>
-
-                                                            <button 
-                                                                className="btn btn-sm btn-icon btn-link-secondary border-0" 
-                                                                title="Imprimir Recibo"
-                                                                onClick={() => {
-                                                                    window.print()
-                                                                }}
-                                                            >
+                                                            <button className="btn btn-sm btn-icon btn-link-secondary border-0" 
+                                                                    onClick={() => window.print()}>
                                                                 <i className="ti ti-printer fs-5"></i>
                                                             </button>
                                                         </div>
@@ -2165,7 +2274,9 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
                 onConfirm={confirmarCierre}
                 processing={processing}
             />
+            <FacturacionModalPos hook={hookCaja} />
 
         </AppMainLayout>
+        
     );
 }

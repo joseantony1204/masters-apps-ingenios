@@ -61,7 +61,7 @@ class Ftfacturas extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigoseguridad', 'numero', 'subtotal', 'descuento', 'porcentajedescuento', 'impuesto', 'total', 'fecha', 'fechanavencimiento', 'observaciones', 'model_type', 'model_type_id', 'origen_id', 'destino_id', 'tipo_id', 'cupon_id', 'turno_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigoseguridad', 'numero', 'subtotal', 'descuento', 'porcentajedescuento', 'impuesto', 'propina', 'total', 'fecha', 'fechanavencimiento', 'observaciones', 'model_type', 'model_type_id', 'origen_id', 'destino_id', 'tipo_id', 'cupon_id', 'turno_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
 
     
     public function getAdestadoAttribute()

@@ -102,6 +102,12 @@ class Personas extends Model
         return $this->hasOne(\App\Models\User::class, 'persona_id', 'id');
     }
 
+    // En el modelo
+    public function soportes()
+    {
+        return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 922); // 922 es el identificador de tabla padre para personas
+    }
+
     public function generateAndSendOpt($identificacion,$telefono)
     {
 

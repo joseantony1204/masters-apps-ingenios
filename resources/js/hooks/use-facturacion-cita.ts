@@ -9,7 +9,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-    //console.log(cita?.telefonomovil)
+    const [showMetodosExtra, setShowMetodosExtra] = useState(false);
+    //console.log(cita)
     
     const form = useForm({
         nombreCliente: '',
@@ -45,6 +46,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         // Totales
         subtotal: 0,
         descuento: 0, // <--- Agregado para tu controlador
+        propina: 0,
         impuesto: 0,  // <--- Agregado para tu controlador
         total: 0,
         porcentajedescuento: 0,
@@ -95,6 +97,7 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
             setFacturaData(prev => ({
                 ...prev,
                 porcentajedescuento: 0,
+                propina: 0,
                 cupon_id: '',
                 telefonomovil: cita?.telefonomovil || '',
                 fechanacimiento: cita?.fechanacimiento || '1900-01-01',
@@ -431,7 +434,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
     
     const totalAntesDeDescuento = subtotalServicios + subtotalProductosPrevios + subtotalNuevos;
     const montoDescuento = totalAntesDeDescuento * (facturaData.porcentajedescuento / 100);
-    const totalFinal = totalAntesDeDescuento - montoDescuento;
+    const montoPropina = facturaData.propina;
+    const totalFinal = totalAntesDeDescuento - montoDescuento + montoPropina;
     
     // 1. Efecto para sincronizar los totales calculados con el estado de la factura
     // Sincronización con FacturaData (Agregando descuento e impuesto para el controlador)
@@ -490,6 +494,8 @@ export const useFacturacionCita = (cita: any, turnoActivo: any) => {
         appliedCoupon,
         quitarCupon,
         isValidatingCoupon,
+        showMetodosExtra,
+        setShowMetodosExtra,
         totales: {
             subtotalServicios,
             subtotalProductosPrevios,

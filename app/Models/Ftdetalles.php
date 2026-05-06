@@ -54,7 +54,7 @@ class Ftdetalles extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['cantidad', 'numero', 'precioinicial', 'preciofinal', 'descuento', 'porcentajedescuento', 'totalapagar', 'fecha', 'observaciones', 'model_type', 'model_type_id', 'factura_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['cantidad', 'numero', 'precioinicial', 'preciofinal', 'descuento', 'porcentajedescuento', 'totalapagar', 'fecha', 'observaciones', 'liquidado', 'model_type', 'model_type_id', 'factura_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**

@@ -3,7 +3,7 @@ import AppMainLayout from '@/layouts/app-main-layout';
 import { Head, Link, useForm, usePage} from '@inertiajs/react';
 import avatar1 from '/public/assets/images/user/avatar-1.jpg';
 import avatar9 from '/public/assets/images/user/avatar-9.jpg'; 
-import avatar10 from '/public/assets/images/user/default.png';  
+import avatar10 from '/public/assets/images/user/default.png';
 import { router } from '@inertiajs/react';
 
 
@@ -128,81 +128,81 @@ export default function Show({ users, sedesComercio, perfilesList, sedesAsignada
             <div className="col-lg-3">
                 <div className="card border shadow-none">
 
-                <div className="card-body">
-                    <div className="text-center">
-                        {/* Contenedor Principal del Avatar */}
-                        <div className="position-relative d-inline-flex mb-4">
-                            <div 
-                                className="avatar avatar-xxl rounded-circle border border-white shadow-sm overflow-hidden bg-light d-flex align-items-center justify-content-center"
-                                style={{ width: '120px', height: '120px' }}
-                            >
-                                {/* LÓGICA DE VISUALIZACIÓN PRIORIZADA */}
-                                {data.logo ? (
-                                    // 1. Si el usuario acaba de seleccionar una foto nueva
-                                    <img 
-                                        src={URL.createObjectURL(data.logo as any)} 
-                                        className="w-100 h-100 object-fit-cover animate__animated animate__fadeIn" 
-                                        alt="Previsualización" 
+                    <div className="card-body">
+                        <div className="text-center">
+                            {/* Contenedor Principal del Avatar */}
+                            <div className="position-relative d-inline-flex mb-4">
+                                <div 
+                                    className="avatar avatar-xxl rounded-circle border border-white shadow-sm overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                                    style={{ width: '120px', height: '120px' }}
+                                >
+                                    {/* LÓGICA DE VISUALIZACIÓN PRIORIZADA */}
+                                    {data.logo ? (
+                                        // 1. Si el usuario acaba de seleccionar una foto nueva
+                                        <img 
+                                            src={URL.createObjectURL(data.logo as any)} 
+                                            className="w-100 h-100 object-fit-cover animate__animated animate__fadeIn" 
+                                            alt="Previsualización" 
+                                        />
+                                    ) : data.current_logo_path ? (
+                                        // 2. Si hay una foto guardada en el servidor
+                                        <img 
+                                            src={`..//storage/${data.current_logo_path}`} 
+                                            className="w-100 h-100 object-fit-cover" 
+                                            alt="Logo Actual" 
+                                        />
+                                    ) : (
+                                        // 3. FALLBACK: Si no hay nada, usamos la lógica de sexo o el default (avatar10)
+                                        <img 
+                                            src={
+                                                persona.personasnaturales.sexo_id === 46 ? avatar1 : 
+                                                persona.personasnaturales.sexo_id === 47 ? avatar9 : avatar10
+                                            } 
+                                            className="w-100 h-100 object-fit-cover opacity-75" 
+                                            alt="Avatar por defecto" 
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Botón de Acción (Cámara) */}
+                                <label 
+                                    className="btn btn-icon btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle shadow-sm border border-white" 
+                                    style={{ width: '32px', height: '32px', cursor: 'pointer' }}
+                                    title="Cambiar imagen"
+                                >
+                                    <i className="ti ti-camera fs-6"></i>
+                                    <input 
+                                        type="file" 
+                                        className="d-none" 
+                                        accept="image/*"
+                                        onChange={e => setData('logo', e.target.files?.[0] || null)} 
                                     />
-                                ) : data.current_logo_path ? (
-                                    // 2. Si hay una foto guardada en el servidor
-                                    <img 
-                                        src={`..//storage/${data.current_logo_path}`} 
-                                        className="w-100 h-100 object-fit-cover" 
-                                        alt="Logo Actual" 
-                                    />
-                                ) : (
-                                    // 3. FALLBACK: Si no hay nada, usamos la lógica de sexo o el default (avatar10)
-                                    <img 
-                                        src={
-                                            persona.personasnaturales.sexo_id === 46 ? avatar1 : 
-                                            persona.personasnaturales.sexo_id === 47 ? avatar9 : avatar10
-                                        } 
-                                        className="w-100 h-100 object-fit-cover opacity-75" 
-                                        alt="Avatar por defecto" 
-                                    />
-                                )}
+                                </label>
                             </div>
 
-                            {/* Botón de Acción (Cámara) */}
-                            <label 
-                                className="btn btn-icon btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle shadow-sm border border-white" 
-                                style={{ width: '32px', height: '32px', cursor: 'pointer' }}
-                                title="Cambiar imagen"
-                            >
-                                <i className="ti ti-camera fs-6"></i>
-                                <input 
-                                    type="file" 
-                                    className="d-none" 
-                                    accept="image/*"
-                                    onChange={e => setData('logo', e.target.files?.[0] || null)} 
-                                />
-                            </label>
-                        </div>
+                            {/* Textos Informativos */}
+                            <div className="mb-3">
+                                <h5 className="mb-1 text-uppercase fw-bold" style={{ fontSize: '0.95rem' }}>{nombreCompleto}</h5>
+                                <p className="text-muted small mb-0">
+                                    {data.logo ? (
+                                        <span className="text-success fw-medium animate__animated animate__flash">
+                                            <i className="ti ti-check me-1"></i>Imagen lista para subir
+                                        </span>
+                                    ) : (
+                                        "Formatos sugeridos: PNG, JPG o WEBP"
+                                    )}
+                                </p>
+                            </div>
 
-                        {/* Textos Informativos */}
-                        <div className="mb-3">
-                            <h5 className="mb-1 text-uppercase fw-bold" style={{ fontSize: '0.95rem' }}>{nombreCompleto}</h5>
-                            <p className="text-muted small mb-0">
-                                {data.logo ? (
-                                    <span className="text-success fw-medium animate__animated animate__flash">
-                                        <i className="ti ti-check me-1"></i>Imagen lista para subir
-                                    </span>
-                                ) : (
-                                    "Formatos sugeridos: PNG, JPG o WEBP"
-                                )}
-                            </p>
-                        </div>
-
-                        {/* Badge de Estado (Unificado) */}
-                        <div className="d-flex justify-content-center">
-                            <span className={`badge bg-light-${users.estado.observacion} text-${users.estado.observacion} border border-${users.estado.observacion} rounded-pill px-3 py-2`}>
-                                <i className="ti ti-point-filled me-1"></i>
-                                {users.estado.nombre}
-                            </span>
+                            {/* Badge de Estado (Unificado) */}
+                            <div className="d-flex justify-content-center">
+                                <span className={`badge bg-light-${users.estado.observacion} text-${users.estado.observacion} border border-${users.estado.observacion} rounded-pill px-3 py-2`}>
+                                    <i className="ti ti-point-filled me-1"></i>
+                                    {users.estado.nombre}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                     
                 </div>

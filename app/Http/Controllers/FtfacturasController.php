@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Movimientosproductos, Cfcupones, Personas};
+use App\Models\{Ftfacturas, Productos, User, Ftturnos, Cfmaestra, Comercios, Adcitas, Movimientosproductos, Cfcupones, Cfempleados, Personas};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{Auth,DB};
@@ -47,6 +47,7 @@ class FtfacturasController extends Controller
             // Subconsulta para obtener el ID de la persona real dependiendo del tipo
             DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END as persona_real_id"),
             // Cálculo de total
@@ -58,6 +59,7 @@ class FtfacturasController extends Controller
             // Unimos usando la lógica del CASE para normalizar el origen
             $join->on("p.id", "=", DB::raw("CASE 
                 WHEN ftfacturas.model_type = 921 THEN (SELECT adclientes.persona_id FROM adcitas, adclientes WHERE adcitas.cliente_id = adclientes.id and adcitas.id = ftfacturas.model_type_id)
+                WHEN ftfacturas.model_type = 1064 THEN (SELECT cfempleados.persona_id FROM cfempleados WHERE  cfempleados.id = ftfacturas.model_type_id)
                 ELSE ftfacturas.model_type_id 
             END"));
         })
@@ -194,11 +196,12 @@ class FtfacturasController extends Controller
                 $estado = $request->estado_id == 938 ? 'Factura finalizada' : 'Factura guardada';
                 // 2. Crear la Cabecera de la Factura
                 $factura = Ftfacturas::create([
-                    'codigoseguridad' => $this->generarCodigoseguridad(), 
+                    'codigoseguridad' => $this->generarCodigoseguridad(20), 
                     'numero' => $this->obtenerYActualizarNumeroResolucion($request->turno_id), // Buscar en resolucion
                     'fecha' => $request->fecha,
                     'subtotal' => $request->subtotal,
                     'descuento' => $request->descuento,
+                    'propina' => $request->propina,
                     'porcentajedescuento' => $request->porcentajedescuento,
                     'impuesto' => $request->impuesto,
                     'total' => $request->total,
@@ -245,7 +248,7 @@ class FtfacturasController extends Controller
                                 'unidad_id'     => 863,
                                 'impuesto_id'   => 1, // Excluido
                                 'categoria_id'  => 955,
-                                'tipo_id'       => 854,
+                                'tipo_id'       => 854, 
                                 'stock'         => 0, // Iniciamos en 0 si es nuevo
                                 'sede_id'       => $sedePredeterminada,
                                 'created_by'    => $userAuth->id,
@@ -413,12 +416,22 @@ class FtfacturasController extends Controller
             ])
             ->find($ftfactura->model_type_id);
         }
+
+        $empleado = null;
+        if($ftfactura->model_type===1064) {
+            // Cargamos el empleado con la persona y sus datos asociados
+            $empleado = Cfempleados::with([
+                'persona.personasnaturales'
+            ])
+            ->find($ftfactura->model_type_id);
+        }
         
         return Inertia::render('ftfacturas/show', [
             'ftfactura' => $ftfactura,
             'comercio' => $comercio,
             'cita' => $cita,
             'persona' => $persona,
+            'empleado' => $empleado,
         ]);
     }
 
@@ -610,7 +623,6 @@ class FtfacturasController extends Controller
                     'totalapagar' => $totalapagar,
                     'fecha' => now(),
                     'factura_id' => $factura->id,
-                    'producto_id' => $productoId,
                     'model_type' => $detalle_model_type,
                     'model_type_id' => $detalle_model_type_id,
                     'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
@@ -672,10 +684,10 @@ class FtfacturasController extends Controller
             ->with('success', 'Elemento eliminado correctamente.');
     }
 
-    private function generarCodigoseguridad()
+    private function generarCodigoseguridad($num)
     {
         // Genera una cadena aleatoria de 10 caracteres
-        $codigoseguridad = Str::random(20);
+        $codigoseguridad = Str::random($num);
 
         // Opcional: Validar que el código no exista ya en la base de datos (recursión)
         $existe = DB::table('ftfacturas')->where('codigoseguridad', $codigoseguridad)->exists();
@@ -709,5 +721,157 @@ class FtfacturasController extends Controller
         $resolucion->increment('actual');
 
         return $numeroFacturaCompleto;
+    }
+
+    public function storeMovimiento(Request $request)
+    {
+        //dd($request->all());
+        // 1. Validación estricta
+        $request->validate([
+            'monto' => 'required|numeric|min:1',
+            'tipo_id' => 'required|exists:cfmaestras,id',
+            'turno_id' => 'required|exists:ftturnos,id',
+            'model_type' => 'required', // Empleado o Categoría de Gasto
+            'model_type_id' => 'required', // ID del Empleado o de la Categoría de Gasto
+            'descripcion' => 'required|string|max:500',
+        ]);
+
+        try {
+            return DB::transaction(function () use ($request) {
+                $userAuth = Auth::user();
+                
+                // 2. Determinar la lógica según el tipo de movimiento
+                // 942: Gasto/Compra, 944: Adelanto (Vale) 1063: Pago nomina
+                
+                $observacionPrefix =  (int)$request->tipo_id === 942 ? "GASTO/COMPRA: " :  ((int)$request->tipo_id === 944 ? 'ADELANTO DE SUELDO: ' : ((int)$request->tipo_id === 1063 ? "PAGO NOMINA: " : 'MOVIMIENTO DE CAJA: '));
+
+                // 3. Crear la factura (Movimiento de caja)
+                $factura = Ftfacturas::create([
+                    'codigoseguridad' => $this->generarCodigoseguridad(10),
+                    'numero'          => 'COMPROBANTE ' . $observacionPrefix . $this->generarCodigoseguridad(5), // Asumo que tienes este método
+                    'fecha'           => now(),
+                    'subtotal'        => $request->monto,
+                    'total'           => $request->monto,
+                    'fechanavencimiento' => now(),
+                    'model_type'      => $request->model_type,
+                    'model_type_id'   => $request->model_type_id,
+                    'turno_id'        => $request->turno_id,
+                    'estado_id'       => $request->estado_id,
+                    'tipo_id'         => $request->tipo_id,
+                    'observaciones'   => $observacionPrefix . strtoupper($request->descripcion),
+                    'created_by'      => $userAuth->id,
+                    'created_at'      => now(),
+                ]);
+
+                $detalle_model_type_id = match ($request->model_type) {
+                    1064 => 1071, // 'cfempleados ---> Adelanto nomina
+                    1070 => $request->model_type_id, // cfmaestras ---> concepto
+                    default => null,
+                };
+
+                $factura->detalles()->create([
+                    'numero' => 1,
+                    'cantidad' => 1,
+                    'precioinicial' => $request->monto,
+                    'preciofinal' => $request->monto,
+                    'descuento' => 0,
+                    'porcentajedescuento' => 0,
+                    'totalapagar' => $request->monto,
+                    'fecha' => now(),
+                    'factura_id' => $factura->id,
+                    'model_type' => 1070, // Concepto que se traera de cfmaestras para el detalle
+                    'model_type_id' => $detalle_model_type_id,
+                    'estado_id' => 858, //858 ACTIVO / 859 INACTIVO
+                    'liquidado'   => $request->tipo_id === 944 ? 0 : 1,
+                    'observaciones' => $factura->observaciones,
+                    'updated_by' => Auth::user()->id, 
+                    'updated_at' => now(),
+                ]);
+
+                // 1. Marcar servicios como Liquidados
+                if ($request->has('servicios_ids') && is_array($request->servicios_ids)) {
+                    // 1. Obtenemos los detalles originales
+                    $detallesOriginales = DB::table('ftdetalles')
+                    ->whereIn('id', $request->servicios_ids)
+                    ->get();
+
+                    // 2. Insertamos copias asociadas a la nueva factura de nómina
+                    foreach ($detallesOriginales as $detalle) {
+                        DB::table('ftdetalles')->insert([
+                            'numero' => $detalle->numero,
+                            'cantidad' => $detalle->cantidad,
+                            'precioinicial' => $detalle->precioinicial,
+                            'preciofinal' => $detalle->preciofinal,
+                            'descuento' => $detalle->descuento,
+                            'porcentajedescuento' => $detalle->porcentajedescuento,
+                            'totalapagar' => $detalle->totalapagar,
+                            'fecha' => now(),
+                            'factura_id' => $factura->id, // El ID del nuevo comprobante de nómina
+                            'model_type' => $detalle->model_type, 
+                            'model_type_id' => $detalle->model_type_id,
+                            'estado_id' => $detalle->estado_id, 
+                            'observaciones' => "PAGO DE: " . ($detalle->observaciones ?? 'Servicio liquidado'),
+                            'liquidado'   => 1, // Esta copia nace ya liquidada
+                            'created_by' => Auth::user()->id, 
+                            'created_at' => now(),
+                        ]);
+                    }
+
+                    // 3. Marcamos los originales como liquidados para que no vuelvan a salir en el reporte
+                    DB::table('ftdetalles')
+                    ->whereIn('id', $request->servicios_ids)
+                    ->update(['liquidado' => 1]);
+                }
+
+                // 2. Marcar Vales previos como cerrados
+                if ($request->has('vales_ids') && is_array($request->vales_ids)) {
+                    // 1. Obtenemos los detalles originales
+                    $detallesOriginales = DB::table('ftdetalles')
+                    ->whereIn('factura_id', $request->vales_ids)
+                    ->get();
+
+                    // 2. Insertamos copias asociadas a la nueva factura de nómina
+                    foreach ($detallesOriginales as $detalle) {
+                        DB::table('ftdetalles')->insert([
+                            'numero' => $detalle->numero,
+                            'cantidad' => $detalle->cantidad,
+                            'precioinicial' => $detalle->precioinicial,
+                            'preciofinal' => $detalle->preciofinal,
+                            'descuento' => $detalle->descuento,
+                            'porcentajedescuento' => $detalle->porcentajedescuento,
+                            'totalapagar' => $detalle->totalapagar,
+                            'fecha' => now(),
+                            'factura_id' => $factura->id, // El ID del nuevo comprobante de nómina
+                            'model_type' => $detalle->model_type, 
+                            'model_type_id' => $detalle->model_type_id,
+                            'estado_id' => $detalle->estado_id, 
+                            'observaciones' => "LIQUIDACION DE: " . ($detalle->observaciones ?? 'Servicio liquidado'),
+                            'liquidado'   => 1, // Esta copia nace ya liquidada
+                            'created_by' => Auth::user()->id, 
+                            'created_at' => now(),
+                        ]);
+                    }
+                    // 3. Marcamos los originales como liquidados para que no vuelvan a salir en el reporte
+                    DB::table('ftdetalles')
+                    ->whereIn('factura_id', $request->vales_ids)
+                    ->update(['liquidado' => 1]);
+                }
+
+                
+
+                // Si la petición es AJAX (del hook), devolvemos JSON
+                /*if ($request->wantsJson()) {
+                    return response()->json(['message' => 'Movimiento registrado', 'id' => $factura->id]);
+                }*/
+
+                // 4. (Opcional) Si necesitas afectar el saldo de caja inmediatamente
+                // $this->registrarSalidaCaja($factura);
+
+                return back()->with('success', 'Movimiento registrado con éxito.');
+            });
+            
+        } catch (\Exception $e) {
+            return back()->with('success', 'Error al guardar la información: ' . $e->getMessage());
+        }
     }
 }

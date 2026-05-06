@@ -7,10 +7,21 @@ interface Props {
     comercio: any;
     cita: any;
     persona: any;
+    empleado: any;
 }
 
-export default function Show({ ftfactura, comercio, cita, persona }: Props) {
+export default function Show({ ftfactura, comercio, cita, persona, empleado }: Props) {
     
+    // Extraemos la persona base dependiendo del tipo de documento
+    // 921: Cita, 922: Persona (Venta Directa), 1064: Empleado (Nómina)
+    const datosPersona = cita?.cliente?.persona || persona || empleado?.persona;
+    const natural = datosPersona?.personasnaturales;
+
+    // Formateamos el nombre completo
+    const nombreReceptor = natural 
+        ? `${natural.nombres} ${natural.apellidos || ''}` 
+        : datosPersona?.nombre || 'Receptor No Identificado';
+
     // Función para manejar la impresión
     const handlePrint = () => {
         window.print();
@@ -119,14 +130,14 @@ export default function Show({ ftfactura, comercio, cita, persona }: Props) {
                                 <div className="col-sm-6">
                                     <div className="border rounded p-3 h-100">
                                         <h6 className="mb-0">
-                                            <i className="ti ti-user me-2"></i>Datos del receptor (cliente):
+                                            <i className="ti ti-user me-2"></i>{ftfactura.tipo_id === 1063 ? 'Datos del Beneficiario (Empleado)' : 'Datos del Receptor (Cliente)'}
                                         </h6>
-                                        <h5 className="fw-bold">{cita?.cliente?.persona?.personasnaturales?.nombrecompleto ? cita?.cliente?.persona?.personasnaturales?.nombrecompleto : persona?.personasnaturales?.nombrecompleto || 'Cliente'}</h5>
+                                        <h5 className="fw-bold">{nombreReceptor}</h5>
                                         <div className="d-flex flex-column gap-1">
-                                            <span className="mb-0"><i className="ti ti-id me-1"></i>{cita?.cliente?.persona?.identificacion ? cita?.cliente?.persona?.identificacion : persona?.identificacion || 'Sin identificación'}</span>
-                                            <span className="mb-0"><i className="ti ti-map-pin me-1"></i>{cita?.cliente?.persona?.direccion ? cita?.cliente?.persona?.direccion : persona?.direccion}</span>
-                                            <span className="mb-0"><i className="ti ti-phone me-1"></i>{cita?.cliente?.persona?.telefonomovil ? cita?.cliente?.persona?.telefonomovil : persona?.telefonomovil || 'Sin telefono'}</span>
-                                            <span className="mb-0"><i className="ti ti-mail me-1"></i>{cita?.cliente?.persona?.email ? cita?.cliente?.persona?.email : persona?.email || 'Sin email'}</span>
+                                            <span className="mb-0"><i className="ti ti-id me-1"></i>{datosPersona?.identificacion || 'Sin identificación'}</span>
+                                            <span className="mb-0"><i className="ti ti-map-pin me-1"></i>{datosPersona?.telefonomovil || 'Sin teléfono'}</span>
+                                            <span className="mb-0"><i className="ti ti-phone me-1"></i>{datosPersona?.direccion || 'Sin dirección'}</span>
+                                            <span className="mb-0"><i className="ti ti-mail me-1"></i>{datosPersona.email || 'Sin email'}</span>
                                         </div>
                                     </div>
                                 </div>
