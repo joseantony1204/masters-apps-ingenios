@@ -130,5 +130,32 @@ class LandingController extends Controller
             'citas' => $cfempleados
         ]);
     }
+
+    public function facturations(Request $request)
+    {
+        $token = $request->query('token');
+        $empleado = $request->query('empleado');
+        $request['empleado_id'] = $empleado;
+        // Si no vienen fechas, le asignamos "hoy" por defecto antes de consultar
+        $fechaHoy = now()->format('Y-m-d');
+        $request->merge([
+            'fecha_inicio' => $request->query('fecha_inicio', $fechaHoy),
+            'fecha_fin' => $request->query('fecha_fin', $fechaHoy),
+            'empleado_id' => $empleado
+        ]);
+
+        // 0. Buscamos el comercio y sus sedes
+        $comercio = Comercios::with(['sedes'])->where('token', $token)->firstOrFail();
+        $data = Cfempleados::productividad($request);
+
+        return Inertia::render('facturations', [
+            'reporte' => $data['reporte'],
+            'comercio' => $comercio,
+            'filtros' => [
+                'fecha_inicio' => $request->fecha_inicio,
+                'fecha_fin' => $request->fecha_fin,
+            ]
+        ]);
+    }
 }
 ?>

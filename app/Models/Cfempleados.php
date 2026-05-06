@@ -238,6 +238,7 @@ class Cfempleados extends Model
                 $q->select('ftfacturas.*')
                 ->whereDate('fecha', '>=', $fecha_inicio)
                 ->whereDate('fecha', '<=', $fecha_fin)
+                ->orderby('fecha', 'DESC')
                 
                 // Filtro dinámico en los detalles de los vales (adelantos)
                 ->whereHas('detalles', function($query) use ($liquidado) {
