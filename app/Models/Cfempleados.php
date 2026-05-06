@@ -201,9 +201,13 @@ class Cfempleados extends Model
 
     public static function productividad($request)
     {
-        $userAuth = Auth::user();
-        $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
-
+        $comercio = null;
+        if($request->token){
+            $comercio = Comercios::where('token', $request->token)->first();
+        } else {
+            $userAuth = Auth::user();
+            $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
+        }
         // 1. Normalizar filtros
         $fecha_inicio = $request->fecha_inicio ?? now()->startOfMonth()->format('Y-m-d');
         $fecha_fin = $request->fecha_fin ?? now()->format('Y-m-d');

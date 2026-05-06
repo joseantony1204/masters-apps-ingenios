@@ -136,6 +136,7 @@ class LandingController extends Controller
         $token = $request->query('token');
         $empleado = $request->query('empleado');
         $request['empleado_id'] = $empleado;
+        $request['token'] = $token;
         // Si no vienen fechas, le asignamos "hoy" por defecto antes de consultar
         $fechaHoy = now()->format('Y-m-d');
         $request->merge([
