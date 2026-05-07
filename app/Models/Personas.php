@@ -90,7 +90,7 @@ class Personas extends Model
 
     public function admincomercios()
     {
-        return $this->hasMany('App\Models\cfpersonascomercios', 'persona_id');
+        return $this->hasMany('App\Models\Cfpersonascomercios', 'persona_id');
     }
 
     public function cupones()
