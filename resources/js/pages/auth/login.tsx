@@ -48,10 +48,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
                 
                 <div className="form-group mb-3">
-                        <Label htmlFor="email" className="form-label">Correo electrónico</Label>
+                        <Label htmlFor="email" className="form-label">Correo electrónico / usuario / teléfono movil</Label>
                         <Input
                             id="email"
-                            type="email"
                             className="form-control"
                             required
                             autoFocus
@@ -59,7 +58,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="email"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@ejemplo.com"
+                            placeholder="email@ejemplo.com / usuario / teléfono"
                         />
                         <InputError message={errors.email} />
                     </div>

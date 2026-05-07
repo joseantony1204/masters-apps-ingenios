@@ -6,13 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class Cfsedesusers
+ * Class Cfpersonascomercios
  *
  * @property $id
- * @property $orden
- * @property $predeterminada
- * @property $usuario_id
- * @property $sede_id
+ * @property $activo
+ * @property $persona_id
+ * @property $comercio_id
  * @property $created_at
  * @property $created_by
  * @property $updated_at
@@ -20,22 +19,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property $deleted_at
  * @property $deleted_by
  *
- * @property Cfsede $cfsede
- * @property User $user
+ * @property Comercio $comercio
+ * @property Persona $persona
  * @package App
  * @mixin \Illuminate\Database\Eloquent\Builder
  */
-class Cfsedesusers extends Model
+class Cfpersonascomercios extends Model
 {
     use SoftDeletes;
 
     protected $perPage = 20;
     static $rules = [
-			'orden' => 'required',
-			'predeterminada' => 'required',
-			'usuario_id' => 'required',
-			'sede_id' => 'required',
-			'estado_id' => 'required',
+			'activo' => 'required',
+			'persona_id' => 'required',
+			'comercio_id' => 'required',
 			'created_by' => 'required',];
 
     /**
@@ -43,23 +40,23 @@ class Cfsedesusers extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['orden', 'predeterminada', 'usuario_id', 'sede_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['activo', 'persona_id', 'comercio_id', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function sedes()
+    public function comercios()
     {
-        return $this->belongsTo(\App\Models\Cfsedes::class, 'sede_id', 'id');
+        return $this->belongsTo(\App\Models\Comercios::class, 'comercio_id', 'id');
     }
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function user()
+    public function persona()
     {
-        return $this->belongsTo(\App\Models\User::class, 'usuario_id', 'id');
+        return $this->belongsTo(\App\Models\Personas::class, 'persona_id', 'id');
     }
     
 }

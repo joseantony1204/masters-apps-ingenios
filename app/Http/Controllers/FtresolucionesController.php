@@ -56,8 +56,7 @@ class FtresolucionesController extends Controller
             'hasta.required' => 'El campo hasta es requerido',
         ]);
 
-        $user = Auth::user();
-        $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
+        $comercio =Auth::user()->comercio;
         $request['comercio_id'] = $comercio->id;
         //dd($request->all());
         try {    

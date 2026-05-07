@@ -38,23 +38,18 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $comercioId = null;
-
-        // Si hay un usuario logueado, buscamos el comercio asociado a su persona_id
-        if ($user) {
-            $comercioId = \App\Models\Comercios::where('persona_id', $user->persona_id)
-                ->value('id'); // 'value' obtiene directamente el ID sin cargar todo el modelo
-        }
 
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $user,
-                'comercio' => $comercioId, // Ya lo tienes global en el frontend
+                // Al usar $user->comercio, Laravel dispara el Accessor que creamos en el modelo User
+                // el cual ya trae el comercio activo, sus suscripciones y hace el blindaje.
+                'comercio' => $user ? $user->comercio : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'info'   => fn () => $request->session()->get('info'),
-                'warning'   => fn () => $request->session()->get('warning'),
+                'info'    => fn () => $request->session()->get('info'),
+                'warning' => fn () => $request->session()->get('warning'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
             'ziggy' => fn (): array => [

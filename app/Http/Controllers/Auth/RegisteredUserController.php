@@ -73,7 +73,14 @@ class RegisteredUserController extends Controller
                     'nombre' => $request->name,
                 ] + $audt);
 
-                // 4. Crear Usuario para el cliente (opcional, según tu lógica de negocio)
+                // 4. Asociar Persona con Comercio 
+                DB::table('cfpersonascomercios')->insert([
+                    'activo'=>1, 
+                    'persona_id' => $persona->id, 
+                    'comercio_id' => $comercio->id,
+                ] + $audt);
+
+                // 5. Crear Usuario para el cliente (opcional, según tu lógica de negocio)
                 $nuevoUsuario = $persona->user()->create([
                     'username'    => trim($persona->email),
                     'password'    => Hash::make($request->password),
@@ -84,9 +91,7 @@ class RegisteredUserController extends Controller
                     'persona_id'  => $persona->id,
                 ] + $audt);
 
-                // --- LÓGICA DE DATOS POR DEFECTO ---
-
-                // 4. Crear Sede por defecto
+                // 6. Crear Sede por defecto
                 $sede = DB::table('cfsedes')->insertGetId([
                     'nombre' => 'SEDE PRINCIPAL',
                     'ciudad' => 'CIUDAD', // Según tu dataSedes
@@ -95,7 +100,7 @@ class RegisteredUserController extends Controller
                     'comercio_id' => $comercio->id,
                 ] + $audt);
 
-                // 5. Crear Resolución por defecto (para facturación)
+                // 7. Crear Resolución por defecto (para facturación)
                 $resolucionId = DB::table('ftresoluciones')->insertGetId([
                     'numero' => '123456789',
                     'fecha' => '2000-01-01',
@@ -106,14 +111,14 @@ class RegisteredUserController extends Controller
                     'comercio_id' => $comercio->id,
                 ] + $audt);
 
-                // 6. Crear Terminal (Caja) por defecto
+                // 8. Crear Terminal (Caja) por defecto
                 DB::table('ftterminales')->insert([
                     'nombre' => 'Caja 1',
                     'sede_id' => $sede,
                     'resolucion_id' => $resolucionId,
                 ] + $audt);
 
-                // 7. Asociar a sedes (cfsedesusers)
+                // 9. Asociar a sedes (cfsedesusers)
                 $sedesIds = $comercio->sedes->pluck('id')->toArray();
 
                 if (!empty($sedesIds)) {
@@ -131,7 +136,7 @@ class RegisteredUserController extends Controller
                     ]);
                 }
 
-                // 8. Crear Suscripcion por defecto
+                // 10. Crear Suscripcion por defecto
                 $suscripcionId = DB::table('scsuscripciones')->insertGetId([
                         'fecha_inicio'=>Carbon::now()->format('Y/m/d'), 
                         'fecha_vencimiento'=>Carbon::now()->addDays(15)->format('Y/m/d'), 
@@ -140,7 +145,7 @@ class RegisteredUserController extends Controller
                         'comercio_id' => $comercio->id,
                 ] + $audt);
 
-                // 9. Crear pago por defecto
+                //11. Crear pago por defecto
                 DB::table('scpagos')->insert([
                         'valor'=>0, 
                         'fecha'=>Carbon::now(), 

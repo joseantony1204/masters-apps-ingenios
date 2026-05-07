@@ -12,7 +12,7 @@ use App\Http\Controllers\{
     FtserialesController,CfsedesController,UsersController,
     CfhorariosController, CfpromocionesController, CfcuponesController,
     CfmaestrasController, ScsuscripcionesController, ScpagosController, ScplanesController,
-    ReportesController, MovimientosproductosController};
+    ReportesController, MovimientosproductosController, CfpersonascomerciosController};
 
 use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
@@ -39,6 +39,8 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::resource('sgrolesperfiles', SgrolesperfilesController::class);
     Route::resource('cfsedes', CfsedesController::class);
     Route::resource('users', UsersController::class);
+    Route::post('cfpersonascomercios/toggle/{id}', [CfpersonascomerciosController::class, 'toggle'])->name('cfpersonascomercios.toggle');
+    Route::resource('cfpersonascomercios', CfpersonascomerciosController::class);
 
     // --- MÓDULO: ENTIDADES PRINCIPALES (CRM) ---
     Route::resource('personas', PersonasController::class);
@@ -146,8 +148,13 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
     Route::get('dashboard', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('suscripciones')->where('persona_id', $user->persona_id)->first();
-        
+        $comercio = Auth::user()->comercio;
+
+        if (!$comercio) {
+            // Redirigir o mostrar error si no hay ningún comercio asignado o activo
+            return; // redirect()->route('selector.comercio')->with('error', 'No tienes un comercio activo.');
+        }
+
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
@@ -214,11 +221,15 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
         ])
         ->where('su.predeterminada', 1)
         // Usamos el ID del comercio del usuario autenticado
-        ->where('c.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+
+        ->where('c.comercio_id', $comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
         })
         ->whereNull('adcitas.deleted_at');
 
@@ -325,7 +336,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('dashboard/analytics', function () {
 
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('suscripciones')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
@@ -390,11 +401,14 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         ])
         ->where('su.predeterminada', 1)
         // Usamos el ID del comercio del usuario autenticado
-        ->where('c.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        ->where('c.comercio_id', $comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
         })
         ->whereNull('adcitas.deleted_at');
 

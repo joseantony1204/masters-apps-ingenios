@@ -23,8 +23,9 @@ class CfempleadosController extends Controller
      */
     public function index(Request $request)
     {
+        $empleados = Cfempleados::search($request)->get();
         return Inertia::render('cfempleados/index', [
-            'empleados' => Cfempleados::search($request)->get(),
+            'empleados' => $empleados,
         ]);
     }
 
@@ -57,9 +58,7 @@ class CfempleadosController extends Controller
             return DB::transaction(function () use ($request) {
                
                 // 0. Obtener el comercio del usuario autenticado
-                $userAuth = User::where('persona_id', Auth::user()->persona_id)->first();
-                $comercio = Comercios::with('sedes')->where('persona_id', $userAuth->persona_id)->first();
-
+                $comercio = Auth::user()->comercio;
                 $audt = ['created_by' => Auth::user()->id, 'created_at' => now()]; 
                 
                 // 1. Buscamos o creamos la persona
@@ -72,8 +71,22 @@ class CfempleadosController extends Controller
                     ] + $audt
                 );
 
-                 // 2. Crear Persona Natural
-                 $persona->personasnaturales()->updateOrCreate(
+                // 1.1. GESTIÓN DE COMERCIO ACTIVO (Blindaje)
+                // Desactivamos cualquier otro comercio que la persona tenga como "activo"
+                DB::table('cfpersonascomercios')
+                ->where('persona_id', $persona->id)
+                ->where('activo', 1)
+                ->update(['activo' => 0, 'updated_at' => now(), 'updated_by' => Auth::user()->id]);
+
+                // Asociamos o actualizamos la relación con el comercio actual como ACTIVO
+                // Usamos updateOrInsert para evitar duplicados en la tabla pivote
+                DB::table('cfpersonascomercios')->updateOrInsert(
+                    ['persona_id' => $persona->id, 'comercio_id' => $comercio->id],
+                    ['activo' => 1] + $audt
+                );
+
+                // 2. Crear Persona Natural
+                $persona->personasnaturales()->updateOrCreate(
                     ['persona_id' => $persona->id], // Condición de búsqueda
                     [
                         'nombre' => $request->nombre,
@@ -158,7 +171,7 @@ class CfempleadosController extends Controller
         ->wherePivot('predeterminada', 1)
         ->first();
 
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         // Todas las sedes del comercio para la lista de la izquierda
         $sedesComercio = $comercio->sedes;
 
@@ -396,7 +409,13 @@ class CfempleadosController extends Controller
         try {   
             return DB::transaction(function () use ($request, $cfempleados) {                     
                 $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
-                $empleado = Cfempleados::findOrFail($cfempleados);
+
+                // 1. Buscamos el empleado asegurándonos que pertenezca al comercio en sesión
+                // Esto evita que alguien intente editar un empleado de otro comercio vía ID
+                $empleado = Cfempleados::where('id', $cfempleados)
+                ->where('comercio_id', Auth::user()->comercio->id)
+                ->firstOrFail();
+
                 // 1. Actualizar persona
                 $persona = Personas::where('id',$empleado->persona_id)->first();
                 $persona->update($request->only(['tipoidentificacion_id', 'identificacion', 'telefonomovil', 'email']) + $audt);
@@ -406,11 +425,26 @@ class CfempleadosController extends Controller
                     'nombre', 'segundonombre', 'apellido', 'segundoapellido', 
                     'fechanacimiento', 'sexo_id', 'ocupacion_id'
                 ]) + $audt);
-
-                // 3. Actualizar empleado
-                $persona->empleados()->update($request->only([
+                
+                // 3. Actualizar Empleado (FILTRADO POR ID DEL REGISTRO ESPECÍFICO)
+                // Usamos el objeto $empleado directamente para no afectar otros comercios
+                $empleado->update($request->only([
                     'fechaingreso', 'estado_id', 'observaciones'
                 ]) + $audt);
+
+                // 4. GESTIÓN DE COMERCIO ACTIVO (Blindaje)
+                // Desactivamos cualquier otro comercio que la persona tenga como "activo"
+                DB::table('cfpersonascomercios')
+                ->where('persona_id', $persona->id)
+                ->where('activo', 1)
+                ->update(['activo' => 0, 'updated_at' => now(), 'updated_by' => Auth::user()->id]);
+
+                // Asociamos o actualizamos la relación con el comercio actual como ACTIVO
+                // Usamos updateOrInsert para evitar duplicados en la tabla pivote
+                DB::table('cfpersonascomercios')->updateOrInsert(
+                    ['persona_id' => $persona->id, 'comercio_id' => $empleado->comercio_id],
+                    ['activo' => 1] + $audt
+                );
                 
                 return redirect()->route('cfempleados.show',$empleado->id)->with('success', 'Elemento actualizado exitosamente.');
             });

@@ -87,7 +87,7 @@ export default function Analitics({ auth, comercio, citas, facturas, cumpleanosH
 
     // Función para asignar colores aleatorios a los avatares
     const colors = ['primary', 'info', 'success', 'danger', 'warning'];
-    const user = auth.user.personas.comercios;
+    const user = auth.comercio;
     const token = user.token;
     //console.log("mostrando: ",user);
     //console.log("mostrando token: ",user.personas.comercios.token);
@@ -618,7 +618,7 @@ export default function Analitics({ auth, comercio, citas, facturas, cumpleanosH
                                     </div>
                                     
                                     <h3 className="fw-bold text-dark mb-1">
-                                        ¡Bienvenido a Vantify Pro, {auth.user.nombreComercio || auth.user.name}! 🚀
+                                        ¡Bienvenido a Vantify Pro, {auth.comercio.nombre || auth.user.username}! 🚀
                                     </h3>
 
                                     {/* ACCIONES MOVIDAS AQUÍ PARA NO TAPAR EL FONDO */}

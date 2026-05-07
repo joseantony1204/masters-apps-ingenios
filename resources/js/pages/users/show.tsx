@@ -7,7 +7,7 @@ import avatar10 from '/public/assets/images/user/default.png';
 import { router } from '@inertiajs/react';
 
 
-export default function Show({ users, sedesComercio, perfilesList, sedesAsignadasIds, sedePredeterminadaId, estadosList}: any) {
+export default function Show({ users, comercioActivo, sedesComercio, perfilesList, sedesAsignadasIds, sedePredeterminadaId, estadosList}: any) {
     const { auth } = usePage().props as any;
     const persona = users.personas;
     const nombreCompleto = `${persona.personasnaturales.nombres} ${persona.personasnaturales.apellidos}`;
@@ -259,6 +259,16 @@ export default function Show({ users, sedesComercio, perfilesList, sedesAsignada
                         {/* --- TAB: PERFIL (GENERAL SETTINGS & SEDES) --- */}
                         {activeTab === 'perfil' && (
                             <div className="animate__animated animate__fadeIn">
+                                {/* INDICADOR DE COMERCIO ACTIVO */}
+                                <div className="alert alert-info border-0 shadow-sm d-flex align-items-center rounded-4 mb-4">
+                                    <div className="bg-white rounded-3 p-2 me-3 text-primary shadow-sm">
+                                        <i className="ti ti-building-store fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 className="mb-0 fw-bold">Gestionando acceso para: {comercioActivo.nombre}</h6>
+                                        <small className="opacity-75">Las sedes mostradas corresponden únicamente a este comercio.</small>
+                                    </div>
+                                </div>
                                 <div className="card border shadow-none mb-0">
                                     <div className="card-header bg-transparent border-bottom py-3">
                                         <h5 className="mb-0 text-dark">Configuración de la cuenta</h5>
@@ -365,23 +375,29 @@ export default function Show({ users, sedesComercio, perfilesList, sedesAsignada
                                             </div>
                                         </form>
                                         <hr className="my-4" />
+                                        <div className="d-flex align-items-center mb-4">
+                                            <div className="bg-light rounded-pill px-3 py-1 fw-bold text-muted small border">
+                                                <i className="ti ti-map-pin me-1"></i> Gestión de Sedes
+                                            </div>
+                                        </div>
                                         {/* --- SECCIÓN DE SEDES DINÁMICAS --- */}
                                         <div className="row mt-4 g-4">
                                             {/* LISTA IZQUIERDA: Sedes del Comercio */}
                                             <div className="col-md-6">
-                                                <div className="card border shadow-none">
-                                                    <div className="card-header bg-transparent py-3">
-                                                        <h6 className="mb-0">Sedes habilitadas para el usuario</h6>
+                                                <div className="card border-light shadow-sm rounded-3 h-100">
+                                                    <div className="card-header bg-light-subtle py-3 border-bottom-0">
+                                                        <h6 className="mb-0 fw-bold">Sedes del Comercio</h6>
+                                                        <p className="text-muted small mb-0">Habilita las sedes donde el usuario trabajará.</p>
                                                     </div>
                                                     <div className="card-body p-0">
                                                         <ul className="list-group list-group-flush">
                                                             {sedesComercio.map((sede: any) => {
                                                                 const isHabilitada = sedesAsignadasIds.includes(sede.id);
                                                                 return (
-                                                                    <li key={sede.id} className="list-group-item d-flex justify-content-between align-items-center py-3">
+                                                                    <li key={sede.id} className="list-group-item d-flex justify-content-between align-items-center py-3 border-light">
                                                                         <div>
-                                                                            <h6 className="mb-0 text-uppercase" style={{ fontSize: '0.8rem' }}>{sede.nombre}</h6>
-                                                                            <small className="text-muted">{sede.direccion}</small>
+                                                                            <h6 className="mb-1 text-uppercase fw-bold" style={{ fontSize: '0.75rem' }}>{sede.nombre}</h6>
+                                                                            <div className="text-muted small"><i className="ti ti-map-pin me-1"></i>{sede.direccion}</div>
                                                                         </div>
                                                                         <div className="form-check form-switch">
                                                                             <input 
@@ -399,52 +415,53 @@ export default function Show({ users, sedesComercio, perfilesList, sedesAsignada
                                                     </div>
                                                 </div>
                                             </div>
+                                            
                                             {/* LISTA DERECHA: Sede Predeterminada (Solo muestra las habilitadas) */}
                                             <div className="col-md-6">
-                                                <div className="card border shadow-none">
-                                                    <div className="card-header bg-transparent py-3">
-                                                        <h6 className="mb-0">Sede predeterminada</h6>
+                                                <div className="card border-light shadow-sm rounded-3 h-100">
+                                                    <div className="card-header bg-light-subtle py-3 border-bottom-0">
+                                                        <h6 className="mb-0 fw-bold">Sede de Inicio</h6>
+                                                        <p className="text-muted small mb-0">Sede que cargará por defecto al iniciar sesión.</p>
                                                     </div>
                                                     <div className="card-body p-0">
                                                         <ul className="list-group list-group-flush">
-                                                            {/* LISTA DERECHA: Sede Predeterminada */}
                                                             {sedesComercio
-                                                                .filter((s: any) => sedesAsignadasIds.includes(s.id)) // Solo muestra las que tienen estado_id activo
-                                                                .map((sede: any) => (
-                                                                    <li 
-                                                                        key={`def-${sede.id}`} 
-                                                                        className="list-group-item d-flex justify-content-between align-items-center py-3"
-                                                                        onClick={() => handleSetDefault(sede.id)}
-                                                                        style={{ 
-                                                                            cursor: 'pointer', 
-                                                                            backgroundColor: sedePredeterminadaId?.toString() === sede.id.toString() ? '#f0f9ff' : '' 
-                                                                        }}
-                                                                    >
-                                                                        <div className="d-flex align-items-center">
-                                                                        <input 
-                                                                            className="form-check-input" 
-                                                                            type="radio" 
-                                                                            checked={sedePredeterminadaId === sede.id}
-                                                                            readOnly 
-                                                                        />
-                                                                        <div className="ms-3">
-                                                                            <h6 className="mb-0 text-uppercase" style={{ fontSize: '0.8rem' }}>{sede.nombre}</h6>
-                                                                            <small className="text-muted">
-                                                                                {sedePredeterminadaId === sede.id ? 'Sede de inicio' : 'Alternativa'}
-                                                                            </small>
-                                                                        </div>
-                                                                    </div>
-                                                                    {sedePredeterminadaId === sede.id && (
-                                                                        <span className="badge bg-light-success text-success">Activa</span>
-                                                                    )}
-                                                                    </li>
-                                                                ))
+                                                                .filter((s: any) => sedesAsignadasIds.includes(s.id))
+                                                                .map((sede: any) => {
+                                                                    const isDefault = sedePredeterminadaId === sede.id;
+                                                                    return (
+                                                                        <li 
+                                                                            key={`def-${sede.id}`} 
+                                                                            className={`list-group-item d-flex justify-content-between align-items-center py-3 transition-all ${isDefault ? 'bg-light-primary border-primary-subtle' : ''}`}
+                                                                            onClick={() => handleSetDefault(sede.id)}
+                                                                            style={{ cursor: 'pointer' }}
+                                                                        >
+                                                                            <div className="d-flex align-items-center">
+                                                                                <input 
+                                                                                    className="form-check-input" 
+                                                                                    type="radio" 
+                                                                                    checked={sedePredeterminadaId === sede.id}
+                                                                                    readOnly 
+                                                                                />
+                                                                                <div className="ms-3">
+                                                                                    <h6 className="mb-0 text-uppercase" style={{ fontSize: '0.8rem' }}>{sede.nombre}</h6>
+                                                                                    <small className="text-muted">
+                                                                                        {sedePredeterminadaId === sede.id ? 'Sede Predeterminada' : 'Click para establecer'}
+                                                                                    </small>
+                                                                                </div>
+                                                                            </div>
+                                                                            {isDefault && <span className="badge bg-success rounded-pill">PRINCIPAL</span>}
+                                                                        </li>
+                                                                    );
+                                                                })
                                                             }
-                                                            
+                                                            {sedesAsignadasIds.length === 0 && (
+                                                                <div className="p-5 text-center">
+                                                                    <i className="ti ti-arrow-left-square fs-1 text-muted opacity-25"></i>
+                                                                    <p className="text-muted small mt-2">Habilita una sede de la lista izquierda.</p>
+                                                                </div>
+                                                            )}
                                                         </ul>
-                                                        {sedesAsignadasIds.length === 0 && (
-                                                            <div className="p-4 text-center text-muted small">Habilita una sede a la izquierda primero.</div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

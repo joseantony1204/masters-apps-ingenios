@@ -53,8 +53,7 @@ class AdclientesController extends Controller
             return DB::transaction(function () use ($request) {
                
                 // 0. Obtener el comercio del usuario autenticado
-                $userAuth = User::where('persona_id', Auth::user()->persona_id)->first();
-                $comercio = Comercios::with('sedes')->where('persona_id', $userAuth->persona_id)->first();
+                $comercio = Auth::user()->comercio;
 
                 $audt = ['created_by' => Auth::user()->id, 'created_at' => now()]; 
 
@@ -150,7 +149,7 @@ class AdclientesController extends Controller
     {
         // Obtenemos el comercio del usuario autenticado (dueño/admin)
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         // Todas las sedes del comercio para la lista de la izquierda
         $sedesComercio = $comercio->sedes;
 
@@ -296,32 +295,50 @@ class AdclientesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $adclientes)
+    public function update(Request $request, $id)
     {
         try {   
-            return DB::transaction(function () use ($request, $adclientes) {                     
-                $audt = ['updated_by' => Auth::user()->id, 'updated_at' => now()];
-                $cliente = Adclientes::findOrFail($adclientes);
-                // 1. Actualizar persona
-                $persona = Personas::where('id',$cliente->persona_id)->first();
-                $persona->update($request->only(['tipoidentificacion_id', 'identificacion', 'telefonomovil', 'email']) + $audt);
+            return DB::transaction(function () use ($request, $id) {                     
+                $authId = Auth::user()->id;
+                $comercioId = Auth::user()->comercio->id; // Comercio activo en sesión
+                $audt = ['updated_by' => $authId, 'updated_at' => now()];
+
+                // 1. Buscamos el cliente asegurándonos que pertenezca al comercio en sesión
+                // Evita que se editen clientes de otros comercios mediante manipulación de ID
+                $cliente = Adclientes::where('id', $id)
+                    ->where('comercio_id', $comercioId)
+                    ->firstOrFail();
+
+                // 2. Actualizar datos de la Persona (Globales: Email, Teléfono, etc.)
+                $persona = $cliente->persona;
+                $persona->update($request->only([
+                    'tipoidentificacion_id', 
+                    'identificacion', 
+                    'telefonomovil', 
+                    'email'
+                ]) + $audt);
                 
-                // 2. Actualizar persona natural
+                // 3. Actualizar Persona Natural
                 $persona->personasnaturales()->update($request->only([
                     'nombre', 'segundonombre', 'apellido', 'segundoapellido', 
                     'fechanacimiento', 'sexo_id', 'ocupacion_id'
                 ]) + $audt);
 
-                // 3. Actualizar empleado
-                $persona->clientes()->update($request->only([
+                // 4. Actualizar Cliente (ESPECÍFICO de este comercio)
+                // Usamos la instancia $cliente para que el update sea quirúrgico
+                $cliente->update($request->only([
                     'fechaingreso', 'estado_id', 'referido_id'
                 ]) + $audt);
                 
-                return redirect()->route('adclientes.index')->with('success', 'Elemento actualizado exitosamente.');
+                return redirect()->route('adclientes.index')
+                    ->with('success', 'Cliente actualizado correctamente en este comercio.');
             });
-        }catch (\Exception $e){
-            return response()->json(['message' => $e->getMessage()]);
-        }  
+        } catch (\Exception $e) {
+            // Devolvemos al formulario con el mensaje de error y los datos intactos
+            return redirect()->back()
+                ->withErrors(['error' => 'No se pudo actualizar el cliente: ' . $e->getMessage()])
+                ->withInput();
+        }   
     }
 
     public function updatePerfil(Request $request, Adclientes $cliente)

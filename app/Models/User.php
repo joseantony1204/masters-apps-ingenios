@@ -69,6 +69,32 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Accesor para obtener el comercio activo globalmente
+     */
+    public function getComercioAttribute()
+    {
+        // Usamos memoización (caché en memoria por cada request) 
+        // para no repetir la consulta a la DB varias veces en el mismo ciclo.
+        if (!array_key_exists('comercio_activo', $this->relations)) {
+            $comercio = $this->personas->comercioActivo()
+                ->with([
+                    'persona',
+                    'suscripciones',
+                    'sedes',
+                    'promociones',
+                    'soportes' => function($q) {
+                        $q->where('tipo_id', 1)->where('predeterminado', 1);
+                    }
+                    ]) // Carga relaciones necesarias para evitar N+1
+                ->latest()
+                ->first(); 
+            $this->setRelation('comercio_activo', $comercio);
+        }
+
+        return $this->getRelation('comercio_activo');
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
@@ -232,7 +258,14 @@ class User extends Authenticatable implements MustVerifyEmail
         ->join("cfmaestras AS e","e.id","=","users.estado_id")
         ->join('cfsedesusers AS su', 'users.id', '=', 'su.usuario_id')
         ->where('su.predeterminada',1)
-        ->whereIn('su.sede_id',(Cfsedesusers::select('sede_id')->where('usuario_id',Auth::user()->id)->get()))
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
+        })
         ->whereNull('users.deleted_at')
         ->select(
             'users.id',

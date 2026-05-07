@@ -54,8 +54,7 @@ class CfsedesController extends Controller
             'telefono.required' => 'El telefono de factura es requerido',
         ]);
 
-        $user = Auth::user();
-        $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         $request['comercio_id'] = $comercio->id;
         try {    
             $audt = ['created_by' => Auth::user()->id, 'created_at' => now()];    

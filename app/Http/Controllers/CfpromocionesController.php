@@ -21,8 +21,7 @@ class CfpromocionesController extends Controller
      */
     public function index(Request $request)
     {
-        $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first(); 
+        $comercio = Auth::user()->comercio; 
 
         $cfpromociones = Cfpromociones::with('cupones')->where('comercio_id',$comercio->id)->whereNull('deleted_at')->get();
 
@@ -48,8 +47,7 @@ class CfpromocionesController extends Controller
     {
         request()->validate(Cfpromociones::$rules);
         try {    
-            $user = User::where('persona_id',Auth::user()->persona_id)->first();
-            $comercio = Comercios::where('persona_id', $user->persona_id)->first(); 
+            $comercio = Auth::user()->comercio; 
 
             $audt = ['comercio_id' => $comercio->id, 'created_by' => Auth::user()->id, 'created_at' => now()]; 
             $cfpromociones = Cfpromociones::create($request->all() + $audt);

@@ -88,6 +88,11 @@ class Personas extends Model
         return $this->hasOne('App\Models\Comercios', 'persona_id', 'id');
     }
 
+    public function admincomercios()
+    {
+        return $this->hasMany('App\Models\cfpersonascomercios', 'persona_id');
+    }
+
     public function cupones()
     {
         return $this->hasMany('App\Models\Cfcupones', 'persona_id', 'id');
@@ -102,10 +107,19 @@ class Personas extends Model
         return $this->hasOne(\App\Models\User::class, 'persona_id', 'id');
     }
 
-    // En el modelo
     public function soportes()
     {
         return $this->hasMany(Soportes::class, 'model_type_id')->where('model_type', 922); // 922 es el identificador de tabla padre para personas
+    }
+
+    public function comercioActivo()
+    {
+        return $this->belongsToMany(Comercios::class, 'cfpersonascomercios', 'persona_id', 'comercio_id')
+            ->wherePivot('activo', 1)
+            ->withPivot('activo', 'created_at')
+            // Ordenamos por la fecha de la tabla pivote para saber cuál se activó de último
+            ->orderByPivot('created_at', 'desc')
+            ->limit(1); // Forzamos el límite a nivel de base de datos
     }
 
     public function generateAndSendOpt($identificacion,$telefono)

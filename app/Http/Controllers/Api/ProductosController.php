@@ -18,9 +18,8 @@ class ProductosController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Usuario no autenticado'], 401);
         }
-
-        $user = Auth::user();
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        
+        $comercio = Auth::user()->comercio;
 
         $sedesIds = $comercio->sedes()
         ->pluck('cfsedes.id')
@@ -63,7 +62,7 @@ class ProductosController extends Controller
             return response()->json(['error' => 'Usuario no autenticado'], 401);
         }
 
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         $sedesIds = $comercio->sedes()->pluck('cfsedes.id')->toArray();
 
         // 1. Obtener los PRODUCTOS (Venta directa, sin empleado asignado)

@@ -22,7 +22,7 @@ class ProductosController extends Controller
      */
     public function index(Request $request)
     {
-        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
+        $comercio = Auth::user()->comercio;
 
         $query = Productos::with([
             'categoria:id,nombre,observacion',
@@ -119,7 +119,7 @@ class ProductosController extends Controller
     {
      
         // Obtenemos el comercio del usuario autenticado
-        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
+        $comercio = Auth::user()->comercio;
         // Obtenemos las sedes vinculadas a ese comercio
         $sedes = $comercio->sedes()->pluck('nombre', 'id');
       
@@ -168,7 +168,7 @@ class ProductosController extends Controller
     public function edit($id)
     {
         // Obtenemos el comercio del usuario autenticado
-        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->firstOrFail();
+        $comercio = Auth::user()->comercio;
         // Obtenemos las sedes vinculadas a ese comercio
         $sedes = $comercio->sedes()->pluck('nombre', 'id');
 

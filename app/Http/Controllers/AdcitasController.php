@@ -34,7 +34,7 @@ class AdcitasController extends Controller
 
         // Obtenemos el comercio del usuario autenticado (dueño/admin)
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         $padre = Cfmaestra::select('id')->where('codigo','=',strtoupper('LIS_ESTADOSCITAS'))->first();
         // 1. Iniciamos la Query (sin el get al final todavía)
         $query = Adcitas::
@@ -77,11 +77,15 @@ class AdcitasController extends Controller
         ])
         ->where('su.predeterminada', 1)
         // Usamos el ID del comercio del usuario autenticado
-        ->where('c.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        ->where('c.comercio_id', Auth::user()->comercio->id)
+       
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
         })
         ->whereNull('adcitas.deleted_at');
 
@@ -233,7 +237,7 @@ class AdcitasController extends Controller
                 $userAuth = Auth::user();
                 $audt = ['created_by' => $userAuth->id, 'created_at' => now()]; 
                 // 1. Obtener Comercio y Sedes del Admin actual
-                $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
+                $comercio = Auth::user()->comercio;
                 
                 // --- LÓGICA DE CLIENTE ---
                 $clienteId = $request->cliente_id;

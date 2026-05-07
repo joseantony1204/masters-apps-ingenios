@@ -21,7 +21,6 @@ class ScsuscripcionesController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
         $query = Scsuscripciones::with([
             'comercio',
             'plan',
@@ -29,9 +28,7 @@ class ScsuscripcionesController extends Controller
             'pagos.estado',
             'pagos.metodo'
         ])
-        ->where('comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
+        ->where('comercio_id', Auth::user()->comercio->id)
         ->whereNull('deleted_at');
         $scsuscripciones = $query->get();
 
@@ -122,10 +119,9 @@ class ScsuscripcionesController extends Controller
         $request->validate(['plan_id' => 'required|exists:cfmaestras,id']);
         
         $plan = Cfmaestras::find($request->plan_id);
-        $user = Auth::user();
 
         // 0. Buscar el comercio asociado a la persona (usuario)
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         // 1. Gestionar la Suscripción (Buscamos si ya tiene una pendiente o creamos nueva)
         // Esto evita duplicar suscripciones si el usuario intenta pagar varias veces el mismo plan

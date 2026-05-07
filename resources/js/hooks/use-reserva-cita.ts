@@ -4,7 +4,7 @@ import {usePage } from '@inertiajs/react';
 
 export const useReservaCita = () => {
     const { auth } = usePage().props as any;
-    const token = auth.user.personas.comercios.token;
+    const token = auth.comercio.token;
     const [show, setShow] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [servicios, setServicios] = useState<any[]>([]);

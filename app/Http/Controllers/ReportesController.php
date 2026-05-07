@@ -18,8 +18,7 @@ class ReportesController extends Controller
 
     public function empleados(Request $request)
     {
-        $userAuth = Auth::user();
-        $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
         // Usamos first() para tener el objeto directamente
@@ -69,8 +68,7 @@ class ReportesController extends Controller
 
     public function citas(Request $request)
     {
-        $userAuth = Auth::user();
-        $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         $comercio_id = $comercio->id;
 
         // Captura de filtros vía GET (con valores por defecto)

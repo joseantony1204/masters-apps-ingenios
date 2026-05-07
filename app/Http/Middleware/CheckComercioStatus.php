@@ -16,12 +16,10 @@ class CheckComercioStatus
             return $next($request);
         }
 
-        $user = Auth::user();
-
         // Traemos el comercio con sus suscripciones que podrían darle acceso
         $comercio = Comercios::with(['suscripciones.pagos' => function($query) {
             $query->whereIn('estado_id', [980, 981]);
-        }])->where('persona_id', $user->persona_id)->first();
+        }])->where('id', Auth::user()->comercio->id)->first();
 
         if (!$comercio) {
             return $next($request);

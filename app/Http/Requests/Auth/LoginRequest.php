@@ -21,31 +21,65 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            // Quitamos la regla 'email' para que permita texto normal (username)
+            'email' => ['required', 'string'], 
             'password' => ['required', 'string'],
         ];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $loginValue = $this->input('email');
+        $password = $this->password;
+        $remember = $this->boolean('remember');
+
+        // 1. Identificar el campo primario
+        if (filter_var($loginValue, FILTER_VALIDATE_EMAIL)) {
+            $field = 'email';
+            $attempt = Auth::attempt([$field => $loginValue, 'password' => $password], $remember);
+        } else {
+            // Si es numérico, intentamos PRIMERO por username (que es lo más común en tu caso)
+            // y si falla, intentamos por telefonomovil.
+            
+            // Intento A: Por Username
+            $attempt = Auth::attempt(['username' => $loginValue, 'password' => $password], $remember);
+
+            // Intento B: Si falló el A y es numérico, probamos por Teléfono
+            if (!$attempt && is_numeric($loginValue)) {
+                $attempt = Auth::attempt(['telefonomovil' => $loginValue, 'password' => $password], $remember);
+            }
+        }
+
+        // 2. Verificar si alguno de los intentos fue exitoso
+        if (! $attempt) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
+            ]);
+        }
+
+        // 3. REGLA DE ORO: Una vez autenticado, verificamos que tenga un comercio activo
+        $user = Auth::user();
+        
+        // Si tu lógica de "regla de oro" requiere que el usuario tenga un comercio activo para entrar:
+        $tieneAcceso = \App\Models\Cfpersonascomercios::where('persona_id', $user->persona_id)
+            ->where('activo', 1)
+            ->exists();
+
+        if (!$tieneAcceso && $user->perfil_id != 1) { // Suponiendo que el perfil 1 es SuperAdmin y no necesita esto
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'Su usuario no tiene un comercio activo asignado actualmente.',
             ]);
         }
 
@@ -54,8 +88,6 @@ class LoginRequest extends FormRequest
 
     /**
      * Ensure the login request is not rate limited.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -80,6 +112,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
+        // Usamos el string plano del input para la llave del limitador
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
     }
 }

@@ -23,8 +23,7 @@ class FtfacturasController extends Controller
     public function index(Request $request)
     {
         // 1. Obtenemos el comercio del usuario
-        $user = User::where('persona_id', Auth::user()->persona_id)->first();
-        $comercio = Comercios::where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         if (!$comercio) {
             return back()->with('error', 'No se encontró un comercio asociado a este usuario.');
@@ -101,7 +100,7 @@ class FtfacturasController extends Controller
     {
         // 0. Obtenemos la sede de la sesión (asumiendo que la guardas al hacer login)
         $user = User::with('sedes')->where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes', 'persona')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         // 1. Obtenemos la sede predeterminada del usuario
         // Usamos first() para tener el objeto directamente
@@ -389,8 +388,7 @@ class FtfacturasController extends Controller
     public function show($id)
     {
         // 0. Obtenemos la sede de la sesión (asumiendo que la guardas al hacer login)
-        $user = User::with('sedes')->where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes', 'persona')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         //5. --- LÓGICA PARA CARGAR LA FACTURA ---
         $ftfactura = Ftfacturas::with([
@@ -442,7 +440,7 @@ class FtfacturasController extends Controller
     {
         // 0. Obtenemos la sede de la sesión (asumiendo que la guardas al hacer login)
         $user = User::with('sedes')->where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes', 'persona')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         // 1. Obtenemos la sede predeterminada del usuario
         // Usamos first() para tener el objeto directamente

@@ -166,7 +166,7 @@ class CfcuponesController extends Controller
     public function validar(Request $request)
     {
         // 1. Obtención de datos del comercio (Optimizado en una sola consulta)
-        $comercio = Comercios::where('persona_id', Auth::user()->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         if (!$comercio) {
             return response()->json(['valido' => false, 'mensaje' => 'Comercio no encontrado'], 404);
@@ -239,8 +239,7 @@ class CfcuponesController extends Controller
     }
 
     public function generarCuponesMasivos(Request $request) {
-        $user = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         $comercioId = $comercio->id;
         $categoria = $request->categoria;
 

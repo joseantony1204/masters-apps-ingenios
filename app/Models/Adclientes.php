@@ -99,8 +99,15 @@ class Adclientes extends Model
         ])
         ->where('su.predeterminada',1)
         ->whereNull('adclientes.deleted_at')
-        ->where('adclientes.comercio_id',Comercios::where('persona_id', Auth::user()->persona_id)->first()->id)
-        ->whereIn('su.sede_id',(Cfsedesusers::select('sede_id')->where('usuario_id',Auth::user()->id)->get()))
+        ->where('adclientes.comercio_id',Auth::user()->comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
+        })
         ->orderby('pn.nombre', 'ASC')
         ->orderby('pn.apellido', 'ASC');
 
@@ -137,11 +144,14 @@ class Adclientes extends Model
             ->where('su.predeterminada', 1)
             ->whereRaw("MONTH(pn.fechanacimiento) = ?", [$fecha->month])
             ->whereRaw("DAY(pn.fechanacimiento) = ?", [$fecha->day])
-            ->where('adclientes.comercio_id', function($q) use ($user) {
-                $q->select('id')->from('comercios')->where('persona_id', $user->persona_id);
-            })
-            ->whereIn('su.sede_id', function($q) use ($user) {
-                $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+            ->where('adclientes.comercio_id', Auth::user()->comercio->id)
+            ->whereIn('su.sede_id', function($q) {
+                $q->select('us.sede_id')
+                    ->from('cfsedesusers AS us')
+                    ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                    ->where('us.usuario_id', Auth::id())
+                    ->where('s.comercio_id', Auth::user()->comercio->id)
+                    ->whereNull('us.deleted_at');
             })
             ->orderBy('pn.nombre', 'ASC')
             ->get();

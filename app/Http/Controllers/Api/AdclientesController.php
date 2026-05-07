@@ -40,11 +40,14 @@ class AdclientesController extends Controller
         ])
         ->where('su.predeterminada', 1)
         // Usamos el ID del comercio del usuario autenticado
-        ->where('adclientes.comercio_id', function($q) use ($user) {
-            $q->select('id')->from('comercios')->where('persona_id', $user->persona_id)->first();
-        })
-        ->whereIn('su.sede_id', function($q) use ($user) {
-            $q->select('sede_id')->from('cfsedesusers')->where('usuario_id', $user->id);
+        ->where('adclientes.comercio_id', Auth::user()->comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
         })
         ->orderby('pn.nombre', 'ASC')
         ->orderby('pn.apellido', 'ASC');

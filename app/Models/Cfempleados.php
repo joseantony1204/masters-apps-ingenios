@@ -158,8 +158,15 @@ class Cfempleados extends Model
         ])
         ->where('su.predeterminada',1)
         ->whereNull('cfempleados.deleted_at')
-        ->where('cfempleados.comercio_id',Comercios::where('persona_id', Auth::user()->persona_id)->first()->id)
-        ->whereIn('su.sede_id',(Cfsedesusers::select('sede_id')->where('usuario_id',Auth::user()->id)->get()))
+        ->where('cfempleados.comercio_id',Auth::user()->comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
+        })
         ->orderby('pn.nombre', 'ASC')
         ->orderby('pn.apellido', 'ASC');
 
@@ -191,8 +198,15 @@ class Cfempleados extends Model
         ])
         ->where('su.predeterminada',1)
         ->whereNull('cfempleados.deleted_at')
-        ->where('cfempleados.comercio_id',Comercios::where('persona_id', Auth::user()->persona_id)->first()->id)
-        ->whereIn('su.sede_id',(Cfsedesusers::select('sede_id')->where('usuario_id',Auth::user()->id)->get()))
+        ->where('cfempleados.comercio_id',Auth::user()->comercio->id)
+        ->whereIn('su.sede_id', function($q) {
+            $q->select('us.sede_id')
+                ->from('cfsedesusers AS us')
+                ->join('cfsedes AS s', 's.id', '=', 'us.sede_id')
+                ->where('us.usuario_id', Auth::id())
+                ->where('s.comercio_id', Auth::user()->comercio->id)
+                ->whereNull('us.deleted_at');
+        })
         ->orderby('pn.nombre', 'ASC')
         ->orderby('pn.apellido', 'ASC');
 
@@ -205,8 +219,7 @@ class Cfempleados extends Model
         if($request->token){
             $comercio = Comercios::where('token', $request->token)->first();
         } else {
-            $userAuth = Auth::user();
-            $comercio = Comercios::where('persona_id', $userAuth->persona_id)->first();
+            $comercio = Auth::user()->comercio;
         }
         // 1. Normalizar filtros
         $fecha_inicio = $request->fecha_inicio ?? now()->startOfMonth()->format('Y-m-d');

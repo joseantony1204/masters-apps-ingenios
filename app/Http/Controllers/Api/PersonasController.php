@@ -76,7 +76,7 @@ class PersonasController extends Controller
             
                 // 0. Obtener el comercio del usuario autenticado
                 $userAuth = Auth::user();
-                $comercio = Comercios::with('sedes')->where('persona_id', $userAuth->persona_id)->first();
+                $comercio = Auth::user()->comercio;
 
                 $audt = ['created_by' => $userAuth->id, 'created_at' => now()]; 
                 

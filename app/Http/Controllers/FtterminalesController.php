@@ -50,8 +50,8 @@ class FtterminalesController extends Controller
             'sede_id.required' => 'El campo sede es requerido',
             'resolucion_id.required' => 'El campo resolucion es requerido',
         ]);
-        $user = Auth::user();
-        $comercio = Comercios::with('persona')->where('persona_id', $user->persona_id)->first();
+        
+        $comercio = Auth::user()->comercio;
         $request['comercio_id'] = $comercio->id;
         try {    
             $audt = ['created_by' => Auth::user()->id, 'created_at' => now()];    

@@ -23,14 +23,7 @@ class ComerciosController extends Controller
     public function index(Request $request)
     {
         // 1. Obtenemos el comercio del usuario con su persona
-        $comercio = Comercios::with([
-            'persona', 
-            'soportes' => function($q) {
-                $q->where('tipo_id', 1)->where('predeterminado', 1);
-            }
-        ])
-        ->where('persona_id', Auth::user()->persona_id)
-        ->first();
+        $comercio = Auth::user()->comercio;
 
         if (!$comercio) {
             abort(403, 'Usuario no vinculado a un comercio.');

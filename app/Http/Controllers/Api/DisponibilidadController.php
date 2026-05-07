@@ -168,39 +168,45 @@ class DisponibilidadController extends Controller
 
     public function servicios(Request $request)
     {
-        $user = Auth::user();
-        $comercio = Comercios::with('sedes')->where('persona_id', $user->persona_id)->first();
+        $comercio = Auth::user()->comercio;
 
         $sedesIds = $comercio->sedes()
-        ->pluck('cfsedes.id')
-        ->toArray();
+            ->pluck('cfsedes.id')
+            ->toArray();
 
-        $servicios = Productos::with(['categoria','empleadosasignados',])
-        ->where('estado_id', 858)
-        ->whereIn('sede_id', $sedesIds)
-        ->whereHas('empleadosasignados', function($q) {
-            $q->where('cfempleados.estado_id', 850); // Filtro: Empleado activo
-        })  
-        ->get()
-        ->map(function($servicio) {
-            return [
-                'id' => $servicio->id,
-                'nombre' => $servicio->nombre,
-                'categoria_id' => $servicio->categoria_id,
-                'categoria' => $servicio->categoria,
-                'icon' => $servicio->categoria->observacion,
-                'preciobase' => $servicio->preciosalida,
-                'duracion' => $servicio->duracion,
-                // Mapeamos los empleados para que el Front los pinte fácil
-                'asignaciones' => $servicio->empleadosasignados->map(fn($emp) => [
-                    'empleado_id' => $emp->id,
-                    'nombre' => $emp->persona->personasnaturales->nombres . ' ' . $emp->persona->personasnaturales->apellidos,
-                    'avatar' => $emp->persona->foto,
-                    'preciopersonalizado' => $emp->pivot->preciopersonalizado ?: $servicio->duracion,
-                    'duracionpersonalizado' => $emp->pivot->duracionpersonalizado ?: $servicio->duracion
-                ])
-            ];
-        });
+        $servicios = Productos::with([
+                'categoria',
+                // FILTRO 1: Cargar solo empleados activos en la relación
+                'empleadosasignados' => function($q) {
+                    $q->where('cfempleados.estado_id', 850); 
+                },
+                'empleadosasignados.persona.personasnaturales'
+            ])
+            ->where('estado_id', 858)
+            ->whereIn('sede_id', $sedesIds)
+            // FILTRO 2: Asegurar que el servicio tenga al menos un empleado activo
+            ->whereHas('empleadosasignados', function($q) {
+                $q->where('cfempleados.estado_id', 850);
+            })  
+            ->get()
+            ->map(function($servicio) {
+                return [
+                    'id' => $servicio->id,
+                    'nombre' => $servicio->nombre,
+                    'categoria_id' => $servicio->categoria_id,
+                    'categoria' => $servicio->categoria,
+                    'icon' => $servicio->categoria->observacion,
+                    'preciobase' => $servicio->preciosalida,
+                    'duracion' => $servicio->duracion,
+                    'asignaciones' => $servicio->empleadosasignados->map(fn($emp) => [
+                        'empleado_id' => $emp->id,
+                        'nombre' => ($emp->persona->personasnaturales->nombre ?? '') . ' ' . ($emp->persona->personasnaturales->apellido ?? ''),
+                        'avatar' => $emp->persona->foto,
+                        'preciopersonalizado' => $emp->pivot->preciopersonalizado ?: $servicio->preciosalida,
+                        'duracionpersonalizado' => $emp->pivot->duracionpersonalizado ?: $servicio->duracion
+                    ])
+                ];
+            });
 
         return response()->json($servicios);
     }

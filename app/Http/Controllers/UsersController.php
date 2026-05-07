@@ -59,10 +59,9 @@ class UsersController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function shows($id)
     {
-        $userAuth = User::where('persona_id',Auth::user()->persona_id)->first();
-        $comercio = Comercios::with('sedes')->where('persona_id', $userAuth->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         // Todas las sedes del comercio para la lista de la izquierda
         $sedesComercio = $comercio->sedes;
 
@@ -94,6 +93,51 @@ class UsersController extends Controller
             'sedesComercio' => $sedesComercio,
             'sedesAsignadasIds' => $sedesIds,
             'sedePredeterminadaId' => $sedePredeterminada,
+            'perfilesList' => Cfmaestra::getlistatipos('LIS_PERFILES'),
+            'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOS'),
+        ]);
+    }
+    
+    public function show($id)
+    {
+        // Obtenemos el comercio activo GLOBAL que ya definimos en el Accessor del User
+        $comercioActivo = Auth::user()->comercio;
+
+        if (!$comercioActivo) {
+            return redirect()->back()->with('error', 'No tienes un comercio activo configurado.');
+        }
+
+        $user = User::with([
+            'personas.personasnaturales', 
+            'perfil',
+            'estado',
+            'soportes' => function($q) {
+                $q->where('tipo_id', 1)->where('predeterminado', 1);
+            }
+        ])->findOrFail($id);
+
+        // 1. Sedes del comercio actual para la lista de "Habilitar"
+        $sedesDelComercio = $comercioActivo->sedes; 
+
+        // 2. IDs de las sedes que el usuario tiene asignadas SOLO en este comercio
+        $sedesAsignadasIds = $user->sedes()
+            ->wherePivot('estado_id', 858)
+            ->where('comercio_id', $comercioActivo->id) // Filtro clave
+            ->pluck('cfsedes.id')
+            ->toArray();
+
+        // 3. Obtener el ID de la sede predeterminada dentro de este comercio
+        $sedePredeterminadaId = $user->sedes()
+            ->wherePivot('predeterminada', 1)
+            ->where('comercio_id', $comercioActivo->id) // Filtro clave
+            ->first()?->id;
+
+        return Inertia::render('users/show', [
+            'users' => $user,
+            'sedesComercio' => $sedesDelComercio,
+            'sedesAsignadasIds' => $sedesAsignadasIds,
+            'sedePredeterminadaId' => $sedePredeterminadaId,
+            'comercioActivo' => $comercioActivo, // Lo pasamos para mostrar info en el front
             'perfilesList' => Cfmaestra::getlistatipos('LIS_PERFILES'),
             'estadosList' => Cfmaestra::getlistatipos('LIS_ESTADOS'),
         ]);
