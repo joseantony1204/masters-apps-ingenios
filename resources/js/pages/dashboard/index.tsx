@@ -833,7 +833,7 @@ useEffect(() => {
 
     // 1. Extraer todos los nombres de servicios del JSON
     const serviciosExtraidos = citas.flatMap((cita: any) => 
-        cita.detalle_con_empleadoservicio.map((det: any) => det.empleadoservicio.servicio.nombre)
+        cita.detalle_con_empleadoservicio.map((det: any) => det.empleadoservicio?.servicio?.nombre)
     );
 
     // 2. Contar frecuencias
