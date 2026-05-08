@@ -135,7 +135,7 @@ class AdclientesController extends Controller
                 DB::table('cfpersonascomercios')
                 ->where('persona_id', $persona->id)
                 ->where('activo', 1)
-                ->update(['activo' => 0, 'updated_at' => now(), 'updated_by' => Auth::user()->id]);
+                ->update(['activo' => 0, 'updated_at' => now(), 'updated_by' => $request->telefonomovil]);
 
                 // Asociamos o actualizamos la relación con el comercio actual como ACTIVO
                 // Usamos updateOrInsert para evitar duplicados en la tabla pivote

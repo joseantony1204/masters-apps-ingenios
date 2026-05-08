@@ -38,7 +38,7 @@ export default function AppLandingLayout({ children, comercio }: AppLandingLayou
                     position: 'relative',
                     paddingBottom: '100px' // ESPACIO CRÍTICO: Evita que el contenido y el botón choquen con la nav
                 }}>
-
+                    
 
                     {/* HEADER: MODERN APP BAR STYLE */}
                     <div className="header-app-bar" style={{
@@ -56,13 +56,13 @@ export default function AppLandingLayout({ children, comercio }: AppLandingLayou
                                 <div className="flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm" style={{
                                     width: '40px',
                                     height: '40px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                    backgroundColor: '#FFFFFF', // Fondo blanco sólido
                                     borderRadius: '50%',
-                                    backdropFilter: 'blur(10px)',
                                     border: '1.5px solid rgba(255, 255, 255, 0.4)',
-                                    color: 'white',
+                                    color: '#1FBCC5', // Letra en el tono verde/turquesa del header
                                     fontWeight: '800',
-                                    fontSize: '16px'
+                                    fontSize: '16px',
+                                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.05)' // Sombra sutil para resaltar sobre el azul
                                 }}>
                                     {comercio.nombre?.charAt(0)}
                                 </div>
@@ -225,75 +225,6 @@ export default function AppLandingLayout({ children, comercio }: AppLandingLayou
                             )}
                         </nav>
                     </div>
-
-                    {/* NAVEGACIÓN INFERIOR INTELIGENTE 
-                    <div className="nav-container fixed-bottom mx-auto" style={{ maxWidth: '500px', zIndex: 1100 }}>
-                        <nav style={{
-                            backgroundColor: '#FFFFFF',
-                            padding: '10px 10px 10px 10px', // Bajamos el alto: 10px arriba, 10px abajo (para el área del pulgar)
-                            borderTopLeftRadius: '25px',
-                            borderTopRightRadius: '25px',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            boxShadow: '0 -8px 30px rgba(0,0,0,0.06)',
-                            borderTop: '1px solid rgba(0,0,0,0.02)'
-                        }}>
-                            <Link 
-                                href={rutaHome} 
-                                className="d-flex flex-column align-items-center text-decoration-none"
-                                style={{ 
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    width: '80px' // Área de click más cómoda
-                                }}
-                            >
-                                <div style={{
-                                    width: '15px', // Un poco más pequeña y balanceada
-                                    height: '15px',
-                                    borderRadius: '16px',
-                                    backgroundColor: esPaginaActiva ? 'rgba(36, 210, 219, 0.12)' : 'transparent',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.3s ease',
-                                    // Efecto de escala suave cuando está activo en lugar de subirlo tanto
-                                    transform: esPaginaActiva ? 'scale(1.1)' : 'scale(1)',
-                                    position: 'relative'
-                                }}>
-                                    <i className={empleadoId ? "ti ti-calendar-week" : "ti ti-smart-home"} 
-                                    style={{ 
-                                        color: esPaginaActiva ? '#24D2DB' : '#A0A0A0', 
-                                        fontSize: '24px', // Tamaño estándar de icono de app
-                                        transition: 'color 0.3s ease'
-                                    }}></i>
-                                    
-                                    //Puntito indicador inferior para el estado activo 
-                                    {esPaginaActiva && (
-                                        <div style={{
-                                            position: 'absolute',
-                                            bottom: '-20px',
-                                            width: '4px',
-                                            height: '4px',
-                                            borderRadius: '50%',
-                                            backgroundColor: '#24D2DB'
-                                        }}></div>
-                                    )}
-                                </div>
-                                
-                                <span style={{ 
-                                    fontSize: '10px', // Aumentamos de 6px a 10px para legibilidad
-                                    fontWeight: '750', 
-                                    color: esPaginaActiva ? '#24D2DB' : '#A0A0A0',
-                                    marginTop: '4px', // Reducimos margen
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.3px',
-                                    transition: 'color 0.3s ease'
-                                }}>
-                                    {empleadoId ? 'Agenda' : 'Inicio'}
-                                </span>
-                            </Link>
-                        </nav>
-                    </div>*/}
                 </div>
             </div> 
 

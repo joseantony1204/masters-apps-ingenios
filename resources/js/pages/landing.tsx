@@ -628,18 +628,30 @@ export default function Landing({ comercio, servicios }: any) {
                                       )}
                                   </div>
 
-                                  {!isRegistered && (
-                                      <div className="row g-2 animate__animated animate__fadeInDown">
-                                          <div className="col-6 mb-3">
-                                              <label className="small fw-bold text-muted mb-1">NOMBRE</label>
-                                              <input type="text" className="form-control rounded-3" value={nombreNuevo} onChange={(e)=>setNombreNuevo(e.target.value)} />
-                                          </div>
-                                          <div className="col-6 mb-3">
-                                              <label className="small fw-bold text-muted mb-1">APELLIDO</label>
-                                              <input type="text" className="form-control rounded-3" value={apellidoNuevo} onChange={(e)=>setApellidoNuevo(e.target.value)} />
-                                          </div>
-                                      </div>
-                                  )}
+                                  
+                                <div className="row g-2 animate__animated animate__fadeInDown">
+                                    <div className="col-6 mb-3">
+                                        <label className="small fw-bold text-muted mb-1">NOMBRE</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control rounded-3 ${errores.nombre ? 'is-invalid' : ''}`}
+                                            value={nombreNuevo} 
+                                            onChange={(e)=>setNombreNuevo(e.target.value)} 
+                                        />
+                                        {errores.nombre && (<div className="invalid-feedback fw-bold">{errores.nombre[0]}</div>)}
+                                    </div>
+                                    <div className="col-6 mb-3">
+                                        <label className="small fw-bold text-muted mb-1">APELLIDO</label>
+                                        <input 
+                                            type="text" 
+                                            className={`form-control rounded-3 ${errores.apellido ? 'is-invalid' : ''}`}
+                                            value={apellidoNuevo} 
+                                            onChange={(e)=>setApellidoNuevo(e.target.value)} 
+                                        />
+                                        {errores.apellido && (<div className="invalid-feedback fw-bold">{errores.apellido[0]}</div>)}
+                                    </div>
+                                </div>
+                               
 
                                   <div className="mb-4">
                                       <label className="small fw-bold text-muted mb-1 text-uppercase" style={{ fontSize: '10px' }}>
@@ -736,7 +748,7 @@ export default function Landing({ comercio, servicios }: any) {
 
                                   <button 
                                       onClick={enviarVerificacion}
-                                      disabled={!telefono || !nombreNuevo || isChecking}
+                                      disabled={!telefono || !nombreNuevo || !apellidoNuevo || isChecking}
                                       className="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-lg border-0"
                                       style={{ backgroundColor: '#24D2DB' }}>
                                       {isChecking ? <span className="spinner-border spinner-border-sm"></span> : 'Siguiente: Verificar celular'}

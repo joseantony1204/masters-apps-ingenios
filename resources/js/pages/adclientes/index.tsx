@@ -23,7 +23,7 @@ export default function Index({ clientes }: Props) {
                         </ul>
                     </div>
                     <div className="col-md-12">
-                        <div className="page-header-title"><h2 className="mb-0">Listado</h2></div>
+                        <div className="page-header-title"><h2 className="mb-0">Directorio de Clientes</h2></div>
                     </div>
                 </div>
             </div>
@@ -37,7 +37,9 @@ export default function Index({ clientes }: Props) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span id="card_title">
                                 Gestión de clientes
+                                <p className="text-muted f-14 mb-0">Administra, filtra y contacta a tus clientes de forma eficiente.</p>
                             </span>
+                            
                             <div className="float-right">
                                 <a className="btn btn-sm btn-light-primary " href={ route('adclientes.create') }><i className="fa fa-fw fa-plus"></i> Agregar</a>
                             </div>

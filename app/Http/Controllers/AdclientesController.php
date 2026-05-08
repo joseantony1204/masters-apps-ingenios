@@ -22,8 +22,10 @@ class AdclientesController extends Controller
      */
     public function index(Request $request)
     {
+        $clientes = Adclientes::search($request)->get();
+
         return Inertia::render('adclientes/index', [
-            'clientes' => Adclientes::search($request)->get() 
+            'clientes' => $clientes,
         ]);
     }
 

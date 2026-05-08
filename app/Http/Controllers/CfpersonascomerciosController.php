@@ -21,6 +21,7 @@ class CfpersonascomerciosController extends Controller
      */
     public function index(Request $request)
     {
+        $comercio = Auth::user()->comercio;
         $cfpersonascomercios = Personas::with(
             [
                 'personasnaturales',
