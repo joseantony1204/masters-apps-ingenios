@@ -40,17 +40,17 @@ export default function Table({ clientes }: Props) {
             <table ref={tableRef} className="table table-hover align-middle table-borderless">
                 <thead className="text-muted" style={{ borderBottom: '1px solid #f1f1f1', backgroundColor: '#fcfcfd' }}>
                     <tr>
+                        <th className="text-center">Editar</th>
                         <th className="ps-4 py-3" style={{ width: '10%' }}>Cliente</th>
                         <th className="py-3">Contacto</th>
                         <th className="py-3">F. Ingreso</th>
                         <th className="py-3 text-center">Estado</th>
-                        <th className="text-end pe-4 py-3">Acciones</th>
                     </tr>
                 </thead>
                 <tbody style={{ borderTop: 'none' }}>
                     {clientes.map((item) => (
                         <tr key={item.id} className="transition-all">
-                            <td>
+                            <td className="text-center">
                                 <ul className="list-inline mb-0">
                                    
                                     <li className="list-inline-item">
