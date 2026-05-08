@@ -18,7 +18,6 @@ use App\Http\Controllers\Public\{LandingController};
 use App\Models\{Adclientes, User, Adcitas, Ftfacturas, Comercios, Cfmaestra, Ftturnos};
 use Illuminate\Support\Facades\{Auth,DB,Hash};
 
-
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->middleware('guest')->name('welcome');
@@ -28,7 +27,6 @@ Route::get('/landing', [LandingController::class, 'index'])->name('public.landin
 Route::get('/appointments', [LandingController::class, 'appointments'])->name('public.appointments');
 Route::get('/facturations', [LandingController::class, 'facturations'])->name('public.facturations');
 Route::get('/confirmada', [LandingController::class, 'confirmada'])->name('public.confirmada');
-
 
 Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
