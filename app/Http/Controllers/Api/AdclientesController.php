@@ -130,7 +130,21 @@ class AdclientesController extends Controller
                     ] + $audt
                 );
 
-                // 4. Obtener o crear el usuario de forma segura
+                // 4. GESTIÓN DE COMERCIO ACTIVO (Blindaje)
+                // Desactivamos cualquier otro comercio que la persona tenga como "activo"
+                DB::table('cfpersonascomercios')
+                ->where('persona_id', $persona->id)
+                ->where('activo', 1)
+                ->update(['activo' => 0, 'updated_at' => now(), 'updated_by' => Auth::user()->id]);
+
+                // Asociamos o actualizamos la relación con el comercio actual como ACTIVO
+                // Usamos updateOrInsert para evitar duplicados en la tabla pivote
+                DB::table('cfpersonascomercios')->updateOrInsert(
+                    ['persona_id' => $persona->id, 'comercio_id' => $cliente->comercio_id],
+                    ['activo' => 1] + $audt
+                );
+
+                // 5. Obtener o crear el usuario de forma segura
                 // Buscamos por persona_id para evitar duplicados si la identificación cambió
                 $nuevoUsuario = $persona->user ?: User::updateOrCreate(
                     ['persona_id' => $persona->id],
