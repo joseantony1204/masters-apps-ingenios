@@ -24,6 +24,7 @@ class ReportesController extends Controller
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id)
         ->wherePivot('predeterminada', 1)
         ->first();
 
@@ -41,7 +42,7 @@ class ReportesController extends Controller
         ->orderBy('fechaapertura', 'DESC')
         ->get();
         //Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+       $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
         
         // Llamamos al método del modelo
         $data = Cfempleados::productividad($request);

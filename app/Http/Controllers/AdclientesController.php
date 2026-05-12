@@ -229,7 +229,7 @@ class AdclientesController extends Controller
         ->orderBy('fechaapertura', 'DESC')
         ->get();
         //Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+        $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         return Inertia::render('adclientes/show', [
             'cliente' => $cliente,

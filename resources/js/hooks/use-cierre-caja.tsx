@@ -17,24 +17,33 @@ export const useCierreCaja = () => {
             setResumenCierre(response.data);
             setShowCierre(true);
         } catch (error) {
-            alert("No se pudo obtener el resumen de ventas. Noy hay turnos abiertos.");
+            alert("No se pudo obtener el resumen de ventas.");
         } finally {
             setLoadingResumen(false);
         }
     };
 
-    const confirmarCierre = () => {
+    // 1. MODIFICACIÓN: Aceptamos el objeto 'datosArqueo'
+    const confirmarCierre = (datosArqueo: { efectivo_real: number, diferencia: number }) => {
         if (!turnoParaCerrar) return;
         
-        // Cambiamos .post por .patch
-        router.patch(route('ftturnos.cerrar', turnoParaCerrar.id), {}, {
+        // 2. ENVIAMOS LOS DATOS: El segundo parámetro es el cuerpo del PATCH
+        router.patch(route('ftturnos.cerrar', turnoParaCerrar.id), {
+            efectivo_real: datosArqueo.efectivo_real,
+            diferencia: datosArqueo.diferencia,
+            total_sistema: resumenCierre.total_sistema // Opcional: enviar lo que el sistema esperaba
+        }, {
             onBefore: () => setProcessing(true),
             onFinish: () => {
                 setProcessing(false);
                 setShowCierre(false);
             },
             onSuccess: () => {
-                // Aquí puedes disparar una notificación de éxito
+                // Notificación de éxito opcional
+            },
+            onError: (errors) => {
+                console.error("Error al cerrar caja:", errors);
+                alert("Hubo un error al procesar el cierre.");
             }
         });
     };

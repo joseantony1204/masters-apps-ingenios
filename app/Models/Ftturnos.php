@@ -51,7 +51,7 @@ class Ftturnos extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['codigo', 'descripcion', 'observaciones', 'baseinicial', 'fecha', 'fechaapertura', 'fechacierre', 'persona_id', 'terminal_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['codigo', 'descripcion', 'observaciones', 'baseinicial', 'fecha', 'fechaapertura', 'efectivoreal', 'diferencia', 'fechacierre', 'persona_id', 'terminal_id', 'estado_id', 'created_by', 'updated_by', 'deleted_by'];
 
 
     /**

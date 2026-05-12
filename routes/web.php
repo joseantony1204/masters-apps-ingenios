@@ -156,11 +156,12 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id) // Aseguramos que la sede también pertenezca al comercio actual
         ->wherePivot('predeterminada', 1)
         ->first();
 
         //Consultar turnos abiertos filtrados por Sede y Comercio
-        $turnosAbiertos = Ftturnos::with(['terminal.sede'])
+        $turnosAbiertos = Ftturnos::with(['terminal.sede','persona.personasnaturales'])
         ->where('estado_id', 924) // 924 = ABIERTO
         ->whereHas('terminal', function ($query) use ($sedePredeterminada) {
             // Filtramos directamente por el ID de la sede que ya obtuvimos
@@ -173,7 +174,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
         ->orderBy('fechaapertura', 'DESC')
         ->get();
         //Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+        $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         // 1. Para las citas Iniciamos la Query (sin el get al final todavía)
         $adcitas = Adcitas::
@@ -339,6 +340,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id)
         ->wherePivot('predeterminada', 1)
         ->first();
 
@@ -356,7 +358,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
         ->orderBy('fechaapertura', 'DESC')
         ->get();
         //Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+       $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         // 1. Para las citas Iniciamos la Query (sin el get al final todavía)
         $adcitas = Adcitas::

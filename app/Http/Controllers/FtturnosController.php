@@ -120,26 +120,57 @@ class FtturnosController extends Controller
 
     public function resumen(Request $request)
     {
-        // Obtenemos el turno con la sumatoria de sus pagos a través de las ftfacturas
-        $resumen = Ftturnos::where('id', $request->id)->with(['terminal.sede'])->first();
+        $turnoId = $request->id;
+        $turno = Ftturnos::where('id', $turnoId)->with('persona.personasnaturales')->firstOrFail();
 
-        // Sumamos los pagos agrupados por tipo
-        $pagos = DB::table('ftpagos')
+        // 1. VENTAS POR MÉTODO DE PAGO
+        $pagosVentas = DB::table('ftpagos')
             ->join('ftfacturas', 'ftpagos.factura_id', '=', 'ftfacturas.id')
             ->join('cfmaestras', 'ftpagos.metodo_id', '=', 'cfmaestras.id')
-            ->where('ftfacturas.turno_id', $request->id)
-            ->where('ftfacturas.estado_id', 938) // Solo pagos válidos 
+            ->where('ftfacturas.turno_id', $turnoId)
+            ->where('ftfacturas.tipo_id', 943) // Facturas de venta
+            ->where('ftfacturas.estado_id', 938) // Solo facturas pagadas/válidas
             ->select('cfmaestras.nombre', DB::raw('SUM(ftpagos.total) as total'))
             ->groupBy('cfmaestras.nombre')
             ->get();
 
-        $totalVentas = $pagos->sum('total');
+        $totalVentas = $pagosVentas->sum('total');
+
+        // 2. EXTRAER PROPINAS (Importante para el arqueo)
+        $totalPropinas = DB::table('ftfacturas')
+            ->where('turno_id', $turnoId)
+            ->where('tipo_id', 943)
+            ->where('estado_id', 938)
+            ->whereNull('deleted_at')
+            ->sum('propina'); // Sumamos la columna propina
+
+        // 3. GASTOS Y AVANCES
+        $totalGastos = DB::table('ftfacturas')
+            ->where('turno_id', $turnoId)
+            ->whereIn('tipo_id', [942, 944])
+            ->whereNull('deleted_at')
+            ->sum('total');
+
+        // 4. NÓMINA
+        $totalNomina = DB::table('ftfacturas')
+            ->where('turno_id', $turnoId)
+            ->where('tipo_id', 1063)
+            ->whereNull('deleted_at')
+            ->sum('total');
+
+        // CÁLCULO FINAL: (Base + Ventas + Propinas) - (Gastos + Nómina)
+        $totalEfectivoEsperado = ($turno->baseinicial + $totalVentas) - ($totalGastos + $totalNomina);
 
         return response()->json([
-            'base_inicial' => $resumen->baseinicial,
-            'ventas_detalle' => $pagos,
-            'total_sistema' => $totalVentas + $resumen->baseinicial,
-            'solo_ventas' => $totalVentas
+            'base_inicial'   => $turno->baseinicial,
+            'ventas_detalle' => $pagosVentas,
+            'solo_ventas'    => $totalVentas,
+            'propinas'       => $totalPropinas,
+            'gastos'         => $totalGastos,
+            'nomina'         => $totalNomina,
+            'total_sistema'  => $totalEfectivoEsperado, 
+            'fecha_apertura' => $turno->fechaapertura,
+            'cajero'         => $turno->persona->personasnaturales->nombre ?? 'Cajero Desconocido'
         ]);
     }
 
@@ -151,11 +182,14 @@ class FtturnosController extends Controller
         if ($turno->estado_id == 927) {
             return redirect()->back()->with('error', 'El turno ya se encuentra cerrado.');
         }
-
+        
         $turno->update([
             'fechacierre' => now(),
-            'estado_id'     => 927, // Estado CERRADO
-            'observaciones' => $turno->observaciones . "\n-- CIERRE AUTOMÁTICO REALIZADO EL " . now()
+            'efectivoreal' => $request->efectivo_real, // Nuevo campo en tu DB
+            'diferencia' => $request->diferencia,      // Nuevo campo en tu DB
+            'estado_id' => 927, // ID del estado "Cerrado"
+            'observaciones' => $turno->observaciones . "\n-- CIERRE AUTOMÁTICO REALIZADO EL " . now(),
+            'updated_by' => Auth::user()->id,
         ]);
 
         return redirect()->back()->with('success', 'Turno finalizado y terminal bloqueada con éxito.');

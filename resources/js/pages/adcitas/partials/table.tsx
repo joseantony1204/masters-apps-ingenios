@@ -162,11 +162,11 @@ export default function Table({ citas, estadosList, turnoActivo, turnosList, met
                                                     <div className="d-flex flex-column">
                                                         <span className="fw-semibold text-dark">
                                                         {detalle.empleadoservicio?.empleado?.persona 
-                                                                ? `${detalle.empleadoservicio.empleado.persona.personasnaturales.nombres} ${detalle.empleadoservicio.empleado.persona.personasnaturales.apellidos}`
+                                                                ? `${detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.nombres} ${detalle.empleadoservicio?.empleado?.persona?.personasnaturales?.apellidos}`
                                                                 : 'Empleado no encontrado'}
                                                         </span>
                                                         <small className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                                            {detalle.empleadoservicio.empleado.persona.identificacion || 'ID N/A'}
+                                                            {detalle.empleadoservicio?.empleado?.persona?.identificacion || 'ID N/A'}
                                                         </small>
                                                     </div>
                                                 </div>

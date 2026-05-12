@@ -76,6 +76,8 @@ return new class extends Migration
             $table->float('baseinicial', 10, 2);
             $table->date('fecha')->comment('Fecha');
             $table->datetime('fechaapertura')->comment('Fecha apertura');
+            $table->float('efectivoreal', 10, 2)->nullable()->default(0);
+            $table->float('diferencia', 10, 2)->nullable()->default(0);
             $table->datetime('fechacierre')->comment('Fecha cierre')->nullable();
 
             $table->unsignedBigInteger('persona_id');

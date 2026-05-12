@@ -165,13 +165,14 @@ class CfempleadosController extends Controller
     {
         // Obtenemos el comercio del usuario autenticado (dueño/admin)
         $user = User::where('persona_id',Auth::user()->persona_id)->first();
+        $comercio = Auth::user()->comercio;
         // Usamos first() para tener el objeto directamente
         $sedePredeterminadaUser = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id)
         ->wherePivot('predeterminada', 1)
         ->first();
 
-        $comercio = Auth::user()->comercio;
         // Todas las sedes del comercio para la lista de la izquierda
         $sedesComercio = $comercio->sedes;
 
@@ -254,7 +255,7 @@ class CfempleadosController extends Controller
         ->orderBy('fechaapertura', 'DESC')
         ->get();
         //Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+       $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         return Inertia::render('cfempleados/show', [
             'empleado' => $empleado,

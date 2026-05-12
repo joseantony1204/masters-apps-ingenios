@@ -106,6 +106,7 @@ class FtfacturasController extends Controller
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id)
         ->wherePivot('predeterminada', 1)
         ->first();
 
@@ -129,7 +130,7 @@ class FtfacturasController extends Controller
         ->get();
 
         // 4. Definir el turno activo por defecto (el primero de la lista)
-       $turnoActivo = $turnosAbiertos->first();
+       $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         //5. --- LÓGICA PARA CARGAR LA CITA ---
         $cita = null;
@@ -446,6 +447,7 @@ class FtfacturasController extends Controller
         // Usamos first() para tener el objeto directamente
         $sedePredeterminada = $user->sedes()
         ->with(['terminal'])
+        ->where('comercio_id', $comercio->id)
         ->wherePivot('predeterminada', 1)
         ->first();
 
@@ -469,7 +471,7 @@ class FtfacturasController extends Controller
         ->get();
 
         // 4. Definir el turno activo por defecto (el primero de la lista)
-        $turnoActivo = $turnosAbiertos->first();
+        $turnoActivo = $turnosAbiertos->where('persona_id', $user->persona_id)->first();
 
         //5. --- LÓGICA PARA CARGAR LA FACTURA ---
         $ftfactura = Ftfacturas::with([
