@@ -1,5 +1,5 @@
 import { Ftfacturas } from '@/types';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import Modal from '@/components/ui/Modal';
@@ -241,6 +241,7 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
     const [buscandoProducto, setBuscandoProducto] = useState(false);
     const [resultadosProductos, setResultadosProductos] = useState<any[]>([]);
     const [filaActiva, setFilaActiva] = useState<number | null>(null); // Para saber en qué fila mostrar sugerencias
+    const buscadorRef = useRef<HTMLDivElement>(null);
 
     const buscarProducto = async (query: string, index: number) => {
         setFilaActiva(index);
@@ -311,6 +312,24 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
             calcularTotales(nuevosItems);
         }
     };
+
+    useEffect(() => {
+        const handleClickFuera = (event: MouseEvent) => {
+            // Si el clic no fue dentro del contenedor del buscador, cerramos
+            if (buscadorRef.current && !buscadorRef.current.contains(event.target as Node)) {
+                setFilaActiva(null);
+                setResultadosProductos([]);
+            }
+        };
+    
+        // Agregamos el evento al documento
+        document.addEventListener("mousedown", handleClickFuera);
+        
+        // Limpiamos el evento al desmontar el componente
+        return () => {
+            document.removeEventListener("mousedown", handleClickFuera);
+        };
+    }, []);
 
     const handleSelectCliente = (cliente: any, tipo: 921 | 922) => {  //921 = 'App\\Models\\Adcitas' | //922 = 'App\\Models\\Personas'
         // Usamos la versión funcional para evitar conflictos de tipos
@@ -776,7 +795,8 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                                 <tr key={index} className="animate__animated animate__fadeIn">
                                     <td className="fw-bold text-muted">{index + 1}</td>
                                     <td style={{ overflow: 'visible', position: 'relative' }}>
-                                        <div className="position-relative">
+                                        
+                                        <div className="position-relative" ref={buscadorRef}>
                                             <input 
                                                 type="text" 
                                                 className={`form-control transition-all border-0 ${filaActiva === index ? 'bg-white shadow ring-primary' : 'bg-light'}`} 
