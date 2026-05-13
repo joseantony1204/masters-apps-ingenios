@@ -244,22 +244,32 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
 
     const buscarProducto = async (query: string, index: number) => {
         setFilaActiva(index);
-        handleItemChange(index, 'nombre', query); // Actualiza el input mientras escribes
-
-        if (query.length < 2) {
+        handleItemChange(index, 'nombre', query); 
+    
+        // SI EL USUARIO BORRA, LIMPIAMOS RESULTADOS INMEDIATAMENTE
+        if (query.trim().length < 2) {
             setResultadosProductos([]);
             return;
         }
-
+    
         setBuscandoProducto(true);
-        const empleado_id = cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id ? cita?.detalle_con_empleadoservicio[0]?.empleadoservicio?.empleado?.id : null;
+        
+        // Obtenemos el ID del empleado de forma segura
+        const empleado_id = cita?.detalle_con_empleadoservicio?.[0]?.empleadoservicio?.empleado?.id || null;
+    
         try {
             const response = await axios.get(route('api.productos.buscar'), {
-                params: { q: query, empleado_id : empleado_id }
+                params: { q: query, empleado_id: empleado_id }
             });
-            setResultadosProductos(response.data);
+            
+            // IMPORTANTE: Solo actualizar si la fila sigue siendo la misma
+            // Esto evita que resultados de una fila vieja aparezcan en la nueva
+            if (filaActiva === index || filaActiva === null) {
+                setResultadosProductos(response.data);
+            }
         } catch (error) {
             console.error("Error buscando producto", error);
+            setResultadosProductos([]);
         } finally {
             setBuscandoProducto(false);
         }
@@ -267,23 +277,39 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
 
     const seleccionarProducto = (producto: any, index: number) => {
         const nuevosItems = [...data.items];
+        
+        // Mantenemos la cantidad actual o por defecto 1
+        const cantidadActual = nuevosItems[index].cantidad || 1;
+        const precioProducto = parseFloat(producto.precio) || 0;
+    
         nuevosItems[index] = {
             ...nuevosItems[index],
             id: producto.id,
-            servicioasignado_id: producto?.servicioasignado_id,
+            servicioasignado_id: producto.servicioasignado_id || null, // Importante para servicios
             producto_id: producto.id,
             nombre: producto.nombre,
-            descripcion: `Producto adicional #${producto.id} - ${producto?.nombre}`,
-            precio: producto.precio || 0,
-            total: (nuevosItems[index].cantidad || 1) * (producto.precio || 0),
-            es_nuevo: false, // Este ya existe en DB
-            tipo_id: producto?.tipo_id,
-            tipo: producto?.tipo,
+            descripcion: producto.tipo === 'SERVICIO' 
+                ? `Servicio #: ${producto?.id} - ${producto?.nombre}` 
+                : `Producto #: ${producto?.id} - ${producto?.nombre}`,
+            precio: precioProducto,
+            cantidad: cantidadActual,
+            total: cantidadActual * precioProducto,
+            es_nuevo: false,
+            tipo_id: producto.tipo_id,
+            tipo: producto.tipo,
         };
         
-        setResultadosProductos([]);
+        // LIMPIEZA CRÍTICA: Cerramos el buscador y vaciamos resultados
+        setResultadosProductos([]); 
         setFilaActiva(null);
-        calcularTotales(nuevosItems); // Usando la función de totales que definimos antes
+        
+        // Actualizamos el estado principal (Asumiendo que usas el setData de Inertia)
+        setData('items', nuevosItems); 
+        
+        // Si tienes una función separada para totales, ejecútala
+        if (typeof calcularTotales === 'function') {
+            calcularTotales(nuevosItems);
+        }
     };
 
     const handleSelectCliente = (cliente: any, tipo: 921 | 922) => {  //921 = 'App\\Models\\Adcitas' | //922 = 'App\\Models\\Personas'
@@ -783,9 +809,9 @@ export default function Fields({ftfactura, data, setData, errors, cita, comercio
                                                     <div className="p-2 bg-light border-bottom">
                                                         <small className="fw-bold text-muted text-uppercase" style={{fontSize: '10px'}}>Resultados encontrados</small>
                                                     </div>
-                                                    {resultadosProductos.map((p) => (
+                                                    {resultadosProductos.map((p, idx) => (
                                                         <button 
-                                                            key={p.id}
+                                                        key={`${p.id}-${p.servicioasignado_id || idx}`} // <--- CLAVE ÚNICA REAL
                                                             type="button"
                                                             className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
                                                             onClick={() => seleccionarProducto(p, index)}

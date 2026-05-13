@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\{Auth,DB};
 
 class ProductosController extends Controller
 {
-    public function buscars(Request $request)
+    //V1
+    public function buscarv1(Request $request)
     {
         $term = $request->get('q');
         $user = Auth::user();
@@ -52,7 +53,8 @@ class ProductosController extends Controller
         return response()->json($productosList);
     }
 
-    public function buscar(Request $request)
+    //V2
+    public function buscarV2(Request $request)
     {
         $term = $request->get('q');
         $empleadoId = $request->get('empleado_id');
@@ -127,6 +129,115 @@ class ProductosController extends Controller
                     ];
                 });
             })
+            ->values();
+
+        // 3. Unión y Orden Final
+        $resultado = $productosList->concat($serviciosList)
+            ->sortBy('nombre')
+            ->values();
+
+        return response()->json($resultado);
+    }
+
+    //V3
+    public function buscar(Request $request)
+    {
+        $term = $request->get('q');
+        $empleadoId = $request->get('empleado_id');
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Usuario no autenticado'], 401);
+        }
+
+        $comercio = $user->comercio;
+        $sedesIds = $comercio->sedes()->pluck('cfsedes.id')->toArray();
+
+        // 1. PRODUCTOS (Venta directa)
+        $productosQuery = Productos::select([
+                'productos.id',
+                DB::raw("null AS servicioasignado_id"),
+                'productos.nombre',
+                'productos.preciosalida AS precio',
+                't.id AS tipo_id',
+                't.nombre AS tipo'
+            ])
+            ->join('cfmaestras AS t', 't.id', '=', 'productos.tipo_id')
+            ->where('estado_id', 858)
+            ->where('tipo_id', 854)
+            ->whereIn('sede_id', $sedesIds);
+
+        if ($term) {
+            $productosQuery->where('productos.nombre', 'LIKE', '%' . $term . '%');
+        }
+
+        $productosList = $productosQuery->orderBy('productos.nombre', 'ASC')->limit(15)->get();
+
+        // 2. SERVICIOS (Filtrado por Servicio o Especialista)
+        $serviciosQuery = Productos::with([
+            'empleadosasignados' => function($q) use ($empleadoId, $term) {
+                $q->where('cfempleados.estado_id', 850)
+                ->when($empleadoId, function($query) use ($empleadoId) {
+                    $query->where('cfempleados.id', $empleadoId);
+                })
+                ->with('persona.personasnaturales');
+            }, 
+            'tipo'
+        ])
+        ->where('estado_id', 858)
+        ->whereIn('sede_id', $sedesIds)
+        // Filtramos los productos que tienen empleados asignados que coincidan
+        ->whereHas('empleadosasignados', function($q) use ($empleadoId, $term) {
+            $q->where('cfempleados.estado_id', 850)
+            ->when($empleadoId, function($query) use ($empleadoId) {
+                $query->where('cfempleados.id', $empleadoId);
+            });
+
+            // ESTA ES LA MEJORA: Buscar por nombre del especialista dentro del whereHas
+            if ($term) {
+                $q->whereHas('persona.personasnaturales', function($queryPn) use ($term) {
+                    $queryPn->where(DB::raw("CONCAT(nombre, ' ', apellido)"), 'LIKE', '%' . $term . '%');
+                });
+            }
+        });
+
+        // Si el término no coincide con el especialista, podría coincidir con el nombre del servicio
+        if ($term) {
+            $serviciosQuery->orWhere(function($query) use ($term, $sedesIds) {
+                $query->whereIn('sede_id', $sedesIds)
+                    ->where('estado_id', 858)
+                    ->where('nombre', 'LIKE', '%' . $term . '%')
+                    ->whereHas('empleadosasignados'); // Que al menos tenga alguien asignado
+            });
+        }
+
+        $serviciosList = $serviciosQuery->get()
+            ->flatMap(function($servicio) use ($term) {
+                return $servicio->empleadosasignados->map(function($emp) use ($servicio, $term) {
+                    $pn = $emp->persona->personasnaturales;
+                    $nombreEmpleado = ($pn->nombres ?? '') . ' ' . ($pn->apellidos ?? '');
+                    
+                    // Filtro final en la colección para asegurar que el item sea relevante
+                    // (Si buscaste "Diego", solo mostramos los servicios de Diego)
+                    $matchTerm = true;
+                    if ($term) {
+                        $matchTerm = str_contains(strtolower($servicio->nombre), strtolower($term)) || 
+                                    str_contains(strtolower($nombreEmpleado), strtolower($term));
+                    }
+
+                    if (!$matchTerm) return null;
+
+                    return [
+                        'id' => $servicio->id,
+                        'servicioasignado_id' => $emp->pivot->id,
+                        'nombre' => "{$servicio->nombre} - [{$nombreEmpleado}]",
+                        'precio' => $emp->pivot->preciopersonalizado ?: $servicio->preciosalida,
+                        'tipo_id' => $servicio->tipo->id,
+                        'tipo' => $servicio->tipo->nombre
+                    ];
+                });
+            })
+            ->filter() // Quita los nulos
             ->values();
 
         // 3. Unión y Orden Final
