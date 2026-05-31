@@ -1757,29 +1757,76 @@ useEffect(() => {
                             </div>
                         </div>
                         
-                        {/* PIE DE TABLA: CONTROLES DE PAGINACIÓN */}
+                        {/* PIE DE TABLA: CONTROLES DE PAGINACIÓN OPTIMIZADOS */}
                         <div className="card-footer bg-transparent border-0 px-4 py-3">
-                            <div className="d-flex justify-content-between align-items-center">
+                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div className="small text-muted">
                                     Página <strong>{paginaActualFt}</strong> de <strong>{totalPaginasFt}</strong>
                                 </div>
                                 <nav>
-                                    <ul className="pagination pagination-sm mb-0 gap-1">
+                                    <ul className="pagination pagination-sm mb-0 gap-1" style={{ flexWrap: 'nowrap' }}>
+                                        {/* Botón Anterior */}
                                         <li className={`page-item ${paginaActualFt === 1 ? 'disabled' : ''}`}>
                                             <button className="page-link rounded border-0 shadow-none" onClick={() => cambiarPagina(paginaActualFt - 1)}>
                                                 <i className="ti ti-chevron-left"></i>
                                             </button>
                                         </li>
                                         
-                                        {/* Generar números de página */}
-                                        {[...Array(totalPaginasFt)].map((_, i) => (
-                                            <li key={i} className={`page-item ${paginaActualFt === i + 1 ? 'active' : ''}`}>
-                                                <button className="page-link rounded border-0 shadow-none px-3" onClick={() => cambiarPagina(i + 1)}>
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        ))}
+                                        {/* LÓGICA DE PÁGINAS TRUNCADAS */}
+                                        {(() => {
+                                            const paginas: any[] = [];
+                                            const maxVisibles = 2; // Cuántas páginas mostrar a la izquierda/derecha de la activa
 
+                                            // Siempre añadir la primera página
+                                            paginas.push(
+                                                <li key={1} className={`page-item ${paginaActualFt === 1 ? 'active' : ''}`}>
+                                                    <button className="page-link rounded border-0 shadow-none px-3" onClick={() => cambiarPagina(1)}>1</button>
+                                                </li>
+                                            );
+
+                                            // Puntos suspensivos al inicio si es necesario
+                                            if (paginaActualFt > maxVisibles + 2) {
+                                                paginas.push(
+                                                    <li key="ellipsis-start" className="page-item disabled">
+                                                        <span className="page-link bg-transparent border-0">...</span>
+                                                    </li>
+                                                );
+                                            }
+
+                                            // Páginas intermedias alrededor de la página actual
+                                            const inicio = Math.max(2, paginaActualFt - maxVisibles);
+                                            const fin = Math.min(totalPaginasFt - 1, paginaActualFt + maxVisibles);
+
+                                            for (let i = inicio; i <= fin; i++) {
+                                                paginas.push(
+                                                    <li key={i} className={`page-item ${paginaActualFt === i ? 'active' : ''}`}>
+                                                        <button className="page-link rounded border-0 shadow-none px-3" onClick={() => cambiarPagina(i)}>{i}</button>
+                                                    </li>
+                                                );
+                                            }
+
+                                            // Puntos suspensivos al final si es necesario
+                                            if (paginaActualFt < totalPaginasFt - maxVisibles - 1) {
+                                                paginas.push(
+                                                    <li key="ellipsis-end" className="page-item disabled">
+                                                        <span className="page-link bg-transparent border-0">...</span>
+                                                    </li>
+                                                );
+                                            }
+
+                                            // Siempre añadir la última página (si hay más de una página en total)
+                                            if (totalPaginasFt > 1) {
+                                                paginas.push(
+                                                    <li key={totalPaginasFt} className={`page-item ${paginaActualFt === totalPaginasFt ? 'active' : ''}`}>
+                                                        <button className="page-link rounded border-0 shadow-none px-3" onClick={() => cambiarPagina(totalPaginasFt)}>{totalPaginasFt}</button>
+                                                    </li>
+                                                );
+                                            }
+
+                                            return paginas;
+                                        })()}
+
+                                        {/* Botón Siguiente */}
                                         <li className={`page-item ${paginaActualFt === totalPaginasFt ? 'disabled' : ''}`}>
                                             <button className="page-link rounded border-0 shadow-none" onClick={() => cambiarPagina(paginaActualFt + 1)}>
                                                 <i className="ti ti-chevron-right"></i>
@@ -1791,6 +1838,7 @@ useEffect(() => {
                         </div>
                     </div>
                 </div>
+                
 
                 {/* COLUMNA DERECHA: Más delgada y estilizada (4 o 5) */}
                 <div className="col-lg-4">

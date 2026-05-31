@@ -14,10 +14,14 @@ class DisponibilidadController extends Controller
     public function generarTurnos($token, Request $request)
     {
         
+        $tiempo = 10;
+        $fechasBloqueadas = ['2026-05-31', '2026-06-20'];
         // 1. Validación obligatoria
         if (!$token) {
             abort(404, 'Token no proporcionado');
         }
+
+        
         // 2. Tu lógica para buscar el comercio y los turnos
         $comercio = Comercios::with(['sedes'])->where('token', $token)->firstOrFail();
         if (!$comercio) {
@@ -31,6 +35,10 @@ class DisponibilidadController extends Controller
         $timezone = 'America/Bogota';
         $ahora = Carbon::now($timezone);
         $fechaFin = Carbon::now($timezone)->addDays(7);
+
+        if ($ahora === '2026-05-31') {
+            abort(404, 'Cerrado');
+        }
 
         if (!$empleadoFiltroId) {
             return response()->json(['error' => 'El parametro empleado es requerido'], 401);
@@ -60,6 +68,11 @@ class DisponibilidadController extends Controller
         $periodo = CarbonPeriod::create($ahora->copy()->startOfDay(), $fechaFin->endOfDay());
 
         foreach ($periodo as $fecha) {
+            // Y dentro del foreach:
+            if (in_array($fecha->format('Y-m-d'), $fechasBloqueadas)) {
+                continue;
+            }
+
             $diaSemana = $this->mapearDia($fecha->dayOfWeek);
             $horarioDia = $empleado->horarios->where('dia_id', $diaSemana)->first();
             
@@ -73,12 +86,12 @@ class DisponibilidadController extends Controller
             
             // Si es hoy, empezamos desde "ahora" redondeado a los próximos 15 min
             if ($cursor->isToday() && $cursor->lt($ahora)) {
-                $minutes = ceil($ahora->minute / 15) * 15;
+                $minutes = ceil($ahora->minute / $tiempo) * $tiempo;
                 $cursor = $ahora->copy()->minute($minutes)->second(0);
                 if ($minutes == 60) $cursor->addHour()->minute(0);
             }
 
-            while ($cursor->copy()->addMinutes(15) <= $finJornada) {
+            while ($cursor->copy()->addMinutes($tiempo) <= $finJornada) {
                 $opcionesEnEstePunto = [];
 
                 foreach ($serviciosDisponibles as $servicio) {
@@ -106,7 +119,7 @@ class DisponibilidadController extends Controller
                     ];
                 }
                 
-                $cursor->addMinutes(15); 
+                $cursor->addMinutes($tiempo); 
             }
 
             if (!empty($turnosDelDia)) {
