@@ -1630,7 +1630,7 @@ useEffect(() => {
                                     Mostrando {indicePrimerItemFt + 1} - {Math.min(indiceUltimoItemFt, facturas.length)} de {facturas.length} registros
                                 </p>
                             </div>
-                            <button className="btn btn-sm btn-light-primary">Ver todo</button>
+                            <button onClick={() => router.get(route('ftfacturas.index'))} className="btn btn-sm btn-light-primary">Ver todo</button>
                         </div>
                         <div className="card-body px-0 pb-0">
                             <div className="table-responsive">
