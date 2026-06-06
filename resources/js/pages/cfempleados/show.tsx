@@ -35,6 +35,7 @@ export default function Show({
 
     // 1. Estados adicionales para visibilidad (puedes usar un objeto para manejar varios)
     const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
+    const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
 
     // 1. Buscamos el objeto de soporte dentro del array de soportes que ahora sí viene cargado
     const logoSoporte = empleado?.persona?.soportes[0];
@@ -660,8 +661,16 @@ export default function Show({
                                 {/* Contenedor Principal del Avatar */}
                                 <div className="position-relative d-inline-flex mb-4">
                                     <div 
-                                        className="avatar avatar-xxl rounded-circle border border-white shadow-sm overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                                        className={`avatar avatar-xxl rounded-circle border border-white shadow-sm overflow-hidden bg-light d-flex align-items-center justify-content-center ${(data.logo || data.current_logo_path) ? 'cursor-zoom-in' : ''}`}
                                         style={{ width: '120px', height: '120px' }}
+                                        onClick={() => {
+                                            // Evaluamos qué imagen está activa para mandarla al lightbox
+                                            if (data.logo) {
+                                                setImagenAmpliada(URL.createObjectURL(data.logo as any));
+                                            } else if (data.current_logo_path) {
+                                                setImagenAmpliada(`..//storage/${data.current_logo_path}`);
+                                            }
+                                        }}
                                     >
                                         {/* LÓGICA DE VISUALIZACIÓN PRIORIZADA */}
                                         {data.logo ? (
@@ -672,7 +681,7 @@ export default function Show({
                                                 alt="Previsualización" 
                                             />
                                         ) : data.current_logo_path ? (
-                                            // 2. Si hay una foto guardada en el servidor
+                                            // 2. Si hay una foto guardada en el servidor (Corregido a /storage/)
                                             <img 
                                                 src={`..//storage/${data.current_logo_path}`} 
                                                 className="w-100 h-100 object-fit-cover" 
@@ -693,9 +702,10 @@ export default function Show({
 
                                     {/* Botón de Acción (Cámara) */}
                                     <label 
-                                        className="btn btn-icon btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle shadow-sm border border-white" 
-                                        style={{ width: '32px', height: '32px', cursor: 'pointer' }}
+                                        className="btn btn-icon btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle shadow-sm border border-white d-flex align-items-center justify-content-center" 
+                                        style={{ width: '32px', height: '32px', cursor: 'pointer', zIndex: 10 }}
                                         title="Cambiar imagen"
+                                        onClick={(e) => e.stopPropagation()} // <--- CRÍTICO: Evita que al dar clic a la cámara se abra el zoom de la foto vieja
                                     >
                                         <i className="ti ti-camera fs-6"></i>
                                         <input 
@@ -706,6 +716,45 @@ export default function Show({
                                         />
                                     </label>
                                 </div>
+
+                                {/* ========================================================================= */}
+                                {/* MODAL LIGHTBOX PARA AMPLIAR LA FOTO (Colócalo al final de tu archivo JSX) */}
+                                {/* ========================================================================= */}
+                                {imagenAmpliada && (
+                                    <div 
+                                        className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center animate__animated animate__fadeIn"
+                                        style={{ 
+                                            backgroundColor: 'rgba(0, 0, 0, 0.75)', 
+                                            zIndex: 3000, 
+                                            backdropFilter: 'blur(5px)' 
+                                        }}
+                                        onClick={() => setImagenAmpliada(null)} // Cierra al hacer clic en el fondo negra
+                                    >
+                                        <div className="position-relative text-center p-3 animate__animated animate__zoomIn animate__faster" onClick={(e) => e.stopPropagation()}>
+                                            {/* Botón de cerrar */}
+                                            <button 
+                                                className="btn btn-sm btn-dark rounded-circle position-absolute" 
+                                                style={{ top: '-15px', right: '-15px', width: '32px', height: '32px', padding: 0 }}
+                                                onClick={() => setImagenAmpliada(null)}
+                                            >
+                                                <i className="ti ti-x fs-5"></i>
+                                            </button>
+                                            
+                                            {/* Imagen Ampliada */}
+                                            <img 
+                                                src={imagenAmpliada} 
+                                                className="img-fluid rounded-4 shadow-2xl" 
+                                                style={{ maxHeight: '75vh', maxWidth: '90vw', objectFit: 'contain' }}
+                                                alt="Visualización ampliada"
+                                            />
+                                            
+                                            {/* Nombre del especialista abajo */}
+                                            <div className="text-white fw-bold mt-3 fs-5">
+                                                {nombreCompleto}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Textos Informativos */}
                                 <div className="mb-3">
