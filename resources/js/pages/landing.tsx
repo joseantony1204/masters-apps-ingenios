@@ -409,10 +409,25 @@ export default function Landing({ comercio, servicios }: any) {
                                             <div key={emp.id} onClick={() => manejarSeleccionEspecialista(emp)}
                                                 className="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
                                                 
-                                                {/* Avatar con iniciales o imagen */}
-                                                <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm" 
-                                                    style={{ width: '48px', height: '48px', fontSize: '16px' }}>
-                                                    {emp.nombre.charAt(0)}
+                                                {/* AVATAR CONDICIONAL (IMAGEN O INICIALES) */}
+                                                <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm overflow-hidden" 
+                                                    style={{ width: '48px', height: '48px', fontSize: '16px', minWidth: '48px' }}>
+                                                    {emp.avatar ? (
+                                                        <img 
+                                                            src={`storage/${emp.avatar}`} 
+                                                            className="w-100 h-100 object-fit-cover" 
+                                                            alt={emp.nombre} 
+                                                            onError={(e) => {
+                                                                // Por si la imagen falla o se borra del storage, muestra la inicial como fallback
+                                                                (e.target as HTMLElement).style.display = 'none';
+                                                                const parent = (e.target as HTMLElement).parentElement;
+                                                                if (parent) parent.innerText = emp.nombre.trim().charAt(0);
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        // Si el avatar es null, ponemos la inicial limpia sin espacios raros
+                                                        emp.nombre.trim().charAt(0).toUpperCase()
+                                                    )}
                                                 </div>
 
                                                 <div className="flex-grow-1">
@@ -431,7 +446,7 @@ export default function Landing({ comercio, servicios }: any) {
 
                                                 <div className="text-end">
                                                     <div className="fw-bold text-primary" style={{ fontSize: '15px' }}>
-                                                        ${Number(emp.precio).toLocaleString()}
+                                                        ${Number(emp.precio).toLocaleString('es-CO')}
                                                     </div>
                                                     <span className="text-primary-emphasis small fw-bold bg-primary-subtle px-2 py-1 rounded-pill" style={{ fontSize: '9px' }}>
                                                         ELEGIR <i className="ti ti-chevron-right ms-1"></i>
@@ -454,8 +469,25 @@ export default function Landing({ comercio, servicios }: any) {
                         {/* Card Integrada de Resumen */}
                         <div className="bg-white border rounded-3 p-3 mb-4 shadow-sm">
                             <div className="d-flex align-items-center mb-3">
-                                <div className="me-3 bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style={{ width: '48px', height: '48px' }}>
-                                    {selectedEmployee?.nombre.charAt(0)}
+                                {/* AVATAR CONDICIONAL (IMAGEN O INICIALES) */}
+                                <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm overflow-hidden" 
+                                    style={{ width: '48px', height: '48px', fontSize: '16px', minWidth: '48px' }}>
+                                    {selectedEmployee.avatar ? (
+                                        <img 
+                                            src={`storage/${selectedEmployee.avatar}`} 
+                                            className="w-100 h-100 object-fit-cover" 
+                                            alt={selectedEmployee.nombre} 
+                                            onError={(e) => {
+                                                // Por si la imagen falla o se borra del storage, muestra la inicial como fallback
+                                                (e.target as HTMLElement).style.display = 'none';
+                                                const parent = (e.target as HTMLElement).parentElement;
+                                                if (parent) parent.innerText = selectedEmployee.nombre.trim().charAt(0);
+                                            }}
+                                        />
+                                    ) : (
+                                        // Si el avatar es null, ponemos la inicial limpia sin espacios raros
+                                        selectedEmployee.nombre.trim().charAt(0).toUpperCase()
+                                    )}
                                 </div>
                                 <div>
                                     <h6 className="fw-bold mb-0 fs-5">{selectedEmployee?.nombre}</h6>

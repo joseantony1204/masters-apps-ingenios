@@ -23,7 +23,10 @@ class LandingController extends Controller
         // Nota: He cambiado 'Productos' por el modelo que uses para servicios, asumiendo que es el mismo
         $servicios = Productos::with([
                 'categoria', 
-                'empleadosasignados.persona.personasnaturales'
+                'empleadosasignados.persona.personasnaturales',
+                'empleadosasignados.persona.soportes' => function($q) {
+                    $q->where('tipo_id', 1)->where('predeterminado', 1);
+                },
             ])
             ->where('estado_id', 858) // Activo
             ->where('tipo_id', '<>', 854) // No es producto/bebida
@@ -44,7 +47,7 @@ class LandingController extends Controller
                     'empleados' => $servicio->empleadosasignados->map(fn($emp) => [
                         'id' => $emp->id,
                         'nombre' => $emp->persona->personasnaturales->nombres . ' ' . $emp->persona->personasnaturales->apellidos,
-                        'avatar' => $emp->persona->foto,
+                        'avatar' => $emp->persona->soportes->first()->ruta ?? null, // Foto del empleado
                         'precio' => $emp->pivot->preciopersonalizado ?: $servicio->preciosalida,
                         'duracion' => $emp->pivot->duracionpersonalizado ?: $servicio->duracion
                     ])
