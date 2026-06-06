@@ -13,7 +13,8 @@ export default function Landing({ comercio, servicios }: any) {
     const [selectedDate, setSelectedDate] = useState('');
     const [activeJornada, setActiveJornada] = useState('Mañana'); 
     const [loadingTurnos, setLoadingTurnos] = useState(false);
-
+    const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
+    
     // 1. Extraer categorías únicas para los servicios
     const categorias = useMemo(() => {
         const unique = new Map();
@@ -408,7 +409,6 @@ export default function Landing({ comercio, servicios }: any) {
                                         {selectedService?.empleados.map((emp: any) => (
                                             <div key={emp.id} onClick={() => manejarSeleccionEspecialista(emp)}
                                                 className="p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center hover-border-primary transition-all cursor-pointer">
-                                                
                                                 {/* AVATAR CONDICIONAL (IMAGEN O INICIALES) */}
                                                 <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm overflow-hidden" 
                                                     style={{ width: '48px', height: '48px', fontSize: '16px', minWidth: '48px' }}>
@@ -429,7 +429,6 @@ export default function Landing({ comercio, servicios }: any) {
                                                         emp.nombre.trim().charAt(0).toUpperCase()
                                                     )}
                                                 </div>
-
                                                 <div className="flex-grow-1">
                                                     <h6 className="fw-bold mb-1 text-dark" style={{ fontSize: '14px' }}>{emp.nombre}</h6>
                                                     <div className="d-flex align-items-center gap-2">
@@ -443,7 +442,6 @@ export default function Landing({ comercio, servicios }: any) {
                                                         </span>
                                                     </div>
                                                 </div>
-
                                                 <div className="text-end">
                                                     <div className="fw-bold text-primary" style={{ fontSize: '15px' }}>
                                                         ${Number(emp.precio).toLocaleString('es-CO')}
@@ -469,26 +467,72 @@ export default function Landing({ comercio, servicios }: any) {
                         {/* Card Integrada de Resumen */}
                         <div className="bg-white border rounded-3 p-3 mb-4 shadow-sm">
                             <div className="d-flex align-items-center mb-3">
+                                
                                 {/* AVATAR CONDICIONAL (IMAGEN O INICIALES) */}
-                                <div className="avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm overflow-hidden" 
-                                    style={{ width: '48px', height: '48px', fontSize: '16px', minWidth: '48px' }}>
+                                <div className={`avatar me-3 bg-primary text-white fw-bold d-flex align-items-center justify-content-center rounded-circle shadow-sm overflow-hidden ${selectedEmployee.avatar ? 'cursor-zoom-in' : ''}`} 
+                                    style={{ width: '48px', height: '48px', fontSize: '16px', minWidth: '48px' }}
+                                    onClick={(e) => {
+                                        // Evitamos que el clic en la foto dispare la selección del empleado de la fila entera
+                                        if (selectedEmployee.avatar) {
+                                            e.stopPropagation(); 
+                                            setImagenAmpliada(`storage/${selectedEmployee.avatar}`);
+                                        }
+                                    }}
+                                >
                                     {selectedEmployee.avatar ? (
                                         <img 
                                             src={`storage/${selectedEmployee.avatar}`} 
                                             className="w-100 h-100 object-fit-cover" 
                                             alt={selectedEmployee.nombre} 
                                             onError={(e) => {
-                                                // Por si la imagen falla o se borra del storage, muestra la inicial como fallback
                                                 (e.target as HTMLElement).style.display = 'none';
                                                 const parent = (e.target as HTMLElement).parentElement;
-                                                if (parent) parent.innerText = selectedEmployee.nombre.trim().charAt(0);
+                                                if (parent) parent.innerText = selectedEmployee.nombre.trim().charAt(0).toUpperCase();
                                             }}
                                         />
                                     ) : (
-                                        // Si el avatar es null, ponemos la inicial limpia sin espacios raros
                                         selectedEmployee.nombre.trim().charAt(0).toUpperCase()
                                     )}
                                 </div>
+
+                                {/* ========================================================================= */}
+                                {/* MODAL LIGHTBOX PARA AMPLIAR LA FOTO (Colócalo al final de tu archivo JSX) */}
+                                {/* ========================================================================= */}
+                                {imagenAmpliada && (
+                                    <div 
+                                        className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center animate__animated animate__fadeIn"
+                                        style={{ 
+                                            backgroundColor: 'rgba(0, 0, 0, 0.75)', 
+                                            zIndex: 3000, 
+                                            backdropFilter: 'blur(5px)' 
+                                        }}
+                                        onClick={() => setImagenAmpliada(null)} // Cierra al hacer clic en el fondo negra
+                                    >
+                                        <div className="position-relative text-center p-3 animate__animated animate__zoomIn animate__faster" onClick={(e) => e.stopPropagation()}>
+                                            {/* Botón de cerrar */}
+                                            <button 
+                                                className="btn btn-sm btn-dark rounded-circle position-absolute" 
+                                                style={{ top: '-15px', right: '-15px', width: '32px', height: '32px', padding: 0 }}
+                                                onClick={() => setImagenAmpliada(null)}
+                                            >
+                                                <i className="ti ti-x fs-5"></i>
+                                            </button>
+                                            
+                                            {/* Imagen Ampliada */}
+                                            <img 
+                                                src={imagenAmpliada} 
+                                                className="img-fluid rounded-4 shadow-2xl" 
+                                                style={{ maxHeight: '75vh', maxWidth: '90vw', objectFit: 'contain' }}
+                                                alt="Visualización ampliada"
+                                            />
+                                            
+                                            {/* Nombre del especialista abajo */}
+                                            <div className="text-white fw-bold mt-3 fs-5">
+                                                {selectedEmployee.nombre}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div>
                                     <h6 className="fw-bold mb-0 fs-5">{selectedEmployee?.nombre}</h6>
                                     <p className="text-muted mb-0 small">{selectedService?.nombre}</p>
