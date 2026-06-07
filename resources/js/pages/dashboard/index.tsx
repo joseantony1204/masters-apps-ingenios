@@ -1014,7 +1014,6 @@ useEffect(() => {
                                             {reservaCita.cargando ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-calendar-plus me-1"></i>}
                                             Agenda Tradicional
                                         </button>
-
                                         
                                         {/* BOTÓN DROPDOWN DE VENTAS Y CAJA */}
                                         <div className="btn-group shadow-sm" ref={dropdownRef} style={{ position: 'relative' }}>
