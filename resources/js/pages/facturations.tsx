@@ -1,6 +1,7 @@
 import AppLandingLayout from '@/layouts/app/app-landing-layout';
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
+import { Head} from '@inertiajs/react';
 
 export default function Facturations({ comercio, reporte, filtros }: any) {
     // El reporte viene como un array según tu JSON
@@ -32,6 +33,7 @@ export default function Facturations({ comercio, reporte, filtros }: any) {
 
     return (
         <AppLandingLayout comercio={comercio}>
+            <Head title="Vantify - Facturacion de servicios" />
             <div className="pb-5 mb-5 px-1">
                 
                 {/* 1. HEADER PERFIL */}

@@ -1,6 +1,6 @@
 import AppLandingLayout from '@/layouts/app/app-landing-layout';
 import React, { useState, useMemo } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 export default function Appointments({ comercio, citas }: any) {
     const hoyStr = new Date().toISOString().split('T')[0];
@@ -28,6 +28,7 @@ export default function Appointments({ comercio, citas }: any) {
 
     return (
         <AppLandingLayout comercio={comercio}>
+            <Head title="Vantify - Agendamiento de empleados" />
             <div className="pb-5 mb-5 px-2">
                 
                 {/* HEADER PERFIL */}

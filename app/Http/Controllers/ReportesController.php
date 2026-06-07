@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Comercios, Cfempleados, Cfmaestra, Adcitas, User, Ftturnos};
+use App\Models\{Comercios, Cfempleados, Cfmaestra, Adcitas, Adresenas, User, Ftturnos};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\{DB,Auth};
@@ -160,6 +160,45 @@ class ReportesController extends Controller
             }
         }
         return $heatmapData;
+    }    
+    
+    public function qualify(Request $request)
+    {
+        // 1. Captura de filtros vía GET
+        $fecha_inicio = $request->input('fecha_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $fecha_fin = $request->input('fecha_fin', Carbon::now()->format('Y-m-d'));
+        $empleado_id = $request->input('empleado_id', 'todos'); // <--- Nuevo filtro de empleado
+
+        $desde = Carbon::parse($fecha_inicio)->startOfDay();
+        $hasta = Carbon::parse($fecha_fin)->endOfDay();
+
+        // 2. Consulta base con sus relaciones necesarias
+        $query = Adresenas::with([
+            'detalle.empleadoservicio.servicio',
+            'detalle.empleadoservicio.empleado.persona.personasnaturales',
+            'persona.personasnaturales'
+        ])
+        ->whereNotNull('fecha')
+        ->whereBetween('fecha', [$desde, $hasta]);
+
+        // 3. Aplicar filtro de empleado si no es 'todos'
+        if ($empleado_id !== 'todos') {
+            $query->whereHas('detalle.empleadoservicio', function ($q) use ($empleado_id) {
+                $q->where('empleado_id', $empleado_id);
+            });
+        }
+
+        $calificaciones = $query->orderBy('fecha', 'desc')->get();
+
+        // 4. Retorno a Inertia incluyendo el filtro seleccionado para mantener el estado
+        return Inertia::render('reportes/qualify/index', [
+            'calificaciones' => $calificaciones,
+            'filtros' => [
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
+                'empleado_id' => $empleado_id // <--- Enviado de vuelta a React
+            ]
+        ]);
     }
 }
 

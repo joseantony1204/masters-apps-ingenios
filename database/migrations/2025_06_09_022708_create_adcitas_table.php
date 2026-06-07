@@ -110,30 +110,6 @@ return new class extends Migration
             $table->unsignedBigInteger('deleted_by')->nullable();  
 
         });
-
-        Schema::dropIfExists('adreseñas');
-        Schema::create('adreseñas', function (Blueprint $table) {
-            $table->id();
-            $table->string('valoracion',5)->comment('valoracion')->nullable();
-            $table->timestamp('fecha', $precision = 0)->useCurrent();
-
-            $table->unsignedBigInteger('detallecita_id');
-
-            $table->foreign('detallecita_id')->references('id')
-                                        ->on('addetallescitas')
-                                        ->onDelete('cascade')
-                                        ->onUpdate('cascade');
-          
-            $table->text('observaciones')->nullable();
-
-            $table->timestamp('created_at', $precision = 0)->useCurrent();
-            $table->unsignedBigInteger('created_by')->default(1);
-            $table->timestamp('updated_at', $precision = 0)->useCurrentOnUpdate()->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamp('deleted_at', $precision = 0)->nullable();
-            $table->unsignedBigInteger('deleted_by')->nullable();  
-
-        });
         
     }
 
@@ -143,7 +119,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('addetallescitas');
-        Schema::dropIfExists('adreseñas');
         Schema::dropIfExists('adcitas');
         Schema::dropIfExists('adclientes');
     }

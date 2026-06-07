@@ -16,10 +16,21 @@ export default function Index() {
         {
             titulo: 'Agenda y Conversión',
             descripcion: 'Análisis de ocupación (Heatmap), tasa de No-Show y fidelización de clientes VIP.',
-            link: route('reportes.citas'), // Asegúrate que este nombre de ruta coincida con tu web.php
+            link: route('reportes.citas'),
             icon: 'ti ti-calendar-stats',
             color: '#4f46e5',
             tag: 'Operativo'
+        },
+        // ==========================================
+        // NUEVO ITEM: CALIFICACIONES Y SATISFACCIÓN
+        // ==========================================
+        {
+            titulo: 'Satisfacción y Reseñas',
+            descripcion: 'Monitoreo de reputación y promedio de estrellas por especialista para evaluar la calidad del servicio.',
+            link: route('reportes.qualify'), // Asegúrate de crear este nombre en tu web.php
+            icon: 'ti ti-star',
+            color: '#ffb703',
+            tag: 'Calidad'
         }
     ];
 

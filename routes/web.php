@@ -27,6 +27,8 @@ Route::get('/landing', [LandingController::class, 'index'])->name('public.landin
 Route::get('/appointments', [LandingController::class, 'appointments'])->name('public.appointments');
 Route::get('/facturations', [LandingController::class, 'facturations'])->name('public.facturations');
 Route::get('/confirmada', [LandingController::class, 'confirmada'])->name('public.confirmada');
+Route::get('/qualify', [LandingController::class, 'qualify'])->name('public.qualify');
+Route::post('/save-qualify', [LandingController::class, 'saveQualify'])->name('public.save-qualify');
 
 Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
@@ -133,6 +135,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('/reportes', [ReportesController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/empleados/', [ReportesController::class, 'empleados'])->name('reportes.empleados');
     Route::get('/reportes/citas/', [ReportesController::class, 'citas'])->name('reportes.citas');
+    Route::get('/reportes/qualify/', [ReportesController::class, 'qualify'])->name('reportes.qualify');
 
 });
 

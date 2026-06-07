@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Comercios, Productos, Adcitas, Cfempleados};
+use App\Models\{Comercios, Productos, Adcitas, Adresenas, Cfempleados};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -160,6 +160,81 @@ class LandingController extends Controller
                 'fecha_fin' => $request->fecha_fin,
             ]
         ]);
+    }
+
+    public function qualify(Request $request)
+    {
+        // 1. Obtener el token de la URL
+        $token = $request->query('service');
+        
+        if (!$token) {
+            abort(404, 'Enlace no válido');
+        }
+
+        // 2. Buscar la calificación con sus relaciones
+        $calificacion = Adresenas::with([
+            'detalle.empleadoservicio.servicio',
+            'detalle.empleadoservicio.empleado.persona.personasnaturales',
+            'detalle.empleadoservicio.empleado.persona.soportes' => function($q) {
+                $q->where('tipo_id', 1)->where('predeterminado', 1);
+            },
+        ])
+        ->where('token', $token)
+        ->first();
+
+        // --- LOGICA DE PROTECCIÓN CORREGIDA ---
+        // Si no existe, es un error inmediato.
+        // Si ya tiene fecha, PERO en la sesión NO hay un mensaje de "success" (recién guardado), entonces expiró.
+        if (!$calificacion || ($calificacion->fecha !== null && !session('success'))) {
+            
+            $comercioId = $calificacion->detalle?->empleadoservicio?->empleado?->comercio_id ?? null;
+            $comercio = $comercioId 
+                ? Comercios::with(['sedes'])->find($comercioId) 
+                : null; 
+
+            return Inertia::render('qualify', [
+                'comercio' => $comercio, 
+                'error' => 'Este enlace de calificación ya expiró, no es válido o ya fue utilizado.'
+            ]);
+        }
+
+        // 3. Obtener el comercio de forma segura
+        $comercioId = $calificacion->detalle?->empleadoservicio?->empleado?->comercio_id;
+        if (!$comercioId) {
+            abort(404, 'Comercio no asociado a este servicio.');
+        }
+        
+        $comercio = Comercios::with(['sedes'])->findOrFail($comercioId);
+
+        // 5. Retornar a la vista (si session('success') existe, React activará "wasSuccessful")
+        return Inertia::render('qualify', [
+            'calificacion' => $calificacion,
+            'comercio' => $comercio,
+        ]);
+    }
+
+    public function saveQualify(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'estrellas' => 'required|integer|min:1|max:5',
+            'comentario' => 'nullable|string|max:500'
+        ]);
+
+        $calificacion = Adresenas::where('token', $request->token)
+            ->whereNull('fecha')
+            ->firstOrFail();
+
+        // Actualizamos el registro con los datos reales enviados por el cliente
+        $calificacion->update([
+            'estrellas' => $request->estrellas,
+            'comentario' => $request->comentario,
+            'fecha' => now()
+        ]);
+
+        // Redirige correctamente usando el parámetro 'service' que espera tu GET
+        return redirect()->route('public.qualify', ['service' => $request->token])
+            ->with('success', '¡Muchas gracias! Tu opinión nos ayuda a mejorar.');
     }
 }
 ?>

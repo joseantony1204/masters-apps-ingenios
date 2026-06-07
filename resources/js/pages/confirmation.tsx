@@ -22,7 +22,7 @@ const ConfirmacionCita = ({ cita, comercio }: Props) => {
 
     return (
         <AppLandingLayout comercio={comercio}>
-            <Head title="Cita Confirmada" />
+            <Head title="Vantify - Cita Confirmada" />
 
             {/* Fondo gris muy sutil para dar contraste a la tarjeta blanca */}
             <div className="min-vh-100 py-5" style={{ backgroundColor: '#f4f7f6' }}>

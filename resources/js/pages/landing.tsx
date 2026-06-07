@@ -2,6 +2,7 @@ import AppLandingLayout from '@/layouts/app/app-landing-layout';
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { router } from '@inertiajs/react'
+import { Head} from '@inertiajs/react';
 
 export default function Landing({ comercio, servicios }: any) {
     const [activeStep, setActiveStep] = useState('servicios');
@@ -300,6 +301,7 @@ export default function Landing({ comercio, servicios }: any) {
 
     return (
         <AppLandingLayout comercio={comercio}>
+            <Head title="Vantify - Agendamiento de servicios" />
             <div className="pb-5 mb-5 px-3">
                 
                 {/* TABS SUPERIORES CON OPCIÓN DE VOLVER */}
