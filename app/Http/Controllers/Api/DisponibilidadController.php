@@ -212,6 +212,7 @@ class DisponibilidadController extends Controller
                     'preciobase' => $servicio->preciosalida,
                     'duracion' => $servicio->duracion,
                     'asignaciones' => $servicio->empleadosasignados->map(fn($emp) => [
+                        'servicioasignado_id' => $emp->pivot->id,
                         'empleado_id' => $emp->id,
                         'nombre' => ($emp->persona->personasnaturales->nombre ?? '') . ' ' . ($emp->persona->personasnaturales->apellido ?? ''),
                         'avatar' => $emp->persona->foto,

@@ -6,10 +6,12 @@ import { useState, useRef, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import CitasModalPos from '@/components/global/citas-modal-pos';
 import CitasModalCancelar from '@/components/global/citas-modal-cancelar';
+
 import CitasOffcanvasReserva from '@/components/global/citas-offcanvas-reserva';
+import CitasOffcanvasReservaRapida from '@/components/global/citas-offcanvas-reserva-rapida';
+
 import { useCierreCaja } from '@/hooks/use-cierre-caja';
 import CajasModalCierre from '@/components/global/cajas-modal-cierre';
-
 import * as bootstrap from 'bootstrap';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -65,6 +67,8 @@ declare global {
 }
 
 import { useReservaCita } from '@/hooks/use-reserva-cita';
+import { useReservaCitaRapida } from '@/hooks/use-reserva-cita-rapida';
+
 import { useFacturacionPos } from '@/hooks/use-facturacion-pos';
 import { Dropdown } from 'bootstrap'; // Importa la clase Dropdown
 import { FacturacionModalPos } from '@/components/global/facturacion-modal-pos';
@@ -76,11 +80,13 @@ export default function Dashboard({ auth, comercio, citas, facturas, cumpleanosH
     const [citaDetalle, setCitaDetalle] = useState<any>(null);
     const [citaCancelar, setCitaCancelar] = useState<any>(null);
     const reservaCita = useReservaCita();
+    const reservaCitaRapida = useReservaCitaRapida();
     const [horaActual, setHoraActual] = useState(new Date());
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [mensajePromo, setMensajePromo] = useState("¡Hola! 🎉 Por ser tu cumpleaños, hoy tienes un 20% de descuento en tu próximo corte. ¡Te esperamos!");
     const {  showCierre, setShowCierre,  resumenCierre, processing, abrirModalCierre, confirmarCierre } = useCierreCaja();
-
+    
+  
 
     // Dentro de tu componente:
 useEffect(() => {
@@ -517,6 +523,8 @@ useEffect(() => {
         precio: '',
         servicio_id: '',
         observaciones: '',
+        servicio_nombre: '',
+        especialista_nombre: '',
     });
     const buscarCliente = async (query: string) => {
         if (query.length < 3) {
@@ -987,14 +995,26 @@ useEffect(() => {
                                             <option>Este Mes</option>
                                         </select>
                                         
+                                        {/* Botón Flujo Tradicional */}
+                                        <button 
+                                            className="btn btn-light-primary btn-sm shadow-sm px-3 border-0 rounded-pill"
+                                            onClick={reservaCitaRapida.abrirModal} 
+                                            disabled={reservaCitaRapida.cargando}
+                                        >
+                                            {reservaCitaRapida.cargando ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-bolt me-1"></i>}
+                                            Agenda Rápida
+                                        </button>
+
+                                        {/* Botón Flujo Express */}
                                         <button 
                                             className="btn btn-light-primary btn-sm shadow-sm px-3 border-0 rounded-pill"
                                             onClick={reservaCita.abrirModal} 
                                             disabled={reservaCita.cargando}
                                         >
                                             {reservaCita.cargando ? <span className="spinner-border spinner-border-sm me-1"></span> : <i className="ti ti-calendar-plus me-1"></i>}
-                                            Agendar cita
+                                            Agenda Tradicional
                                         </button>
+
                                         
                                         {/* BOTÓN DROPDOWN DE VENTAS Y CAJA */}
                                         <div className="btn-group shadow-sm" ref={dropdownRef} style={{ position: 'relative' }}>
@@ -2099,25 +2119,34 @@ useEffect(() => {
                         </div>
 
                         <div className="modal-body p-4">
-                            {/* Resumen del Turno (Igual al anterior) */}
-                            {seleccion && (
+                            {/* --- RESUMEN DEL TURNO (ADAPTADO PARA AMBOS FLUJOS) --- */}
+                            {(seleccion || formReserva.data.servicio_nombre) && (
                                 <div className="alert bg-primary-subtle border border-primary-subtle rounded-3 mb-4 p-3 shadow-sm">
                                     <div className="d-flex align-items-center gap-3">
                                         <div className="bg-white rounded-circle p-2 border border-primary-subtle text-primary shadow-sm">
                                             <i className="ti ti-calendar-event fs-3"></i>
                                         </div>
                                         <div className="flex-grow-1">
-                                            <h6 className="mb-0 fw-bold text-dark">
-                                                {new Date(seleccion.fecha + 'T00:00:00').toLocaleDateString('es-ES', { 
-                                                    weekday: 'long', day: 'numeric', month: 'long' 
-                                                })}
+                                            <h6 className="mb-0 fw-bold text-dark text-capitalize">
+                                                {(() => {
+                                                    const fechaString = seleccion?.fecha || formReserva.data.fecha;
+                                                    if (!fechaString) return 'Fecha por definir';
+                                                    // El truco del 'T00:00:00' evita desfases de zona horaria al formatear strings
+                                                    return new Date(fechaString + 'T00:00:00').toLocaleDateString('es-ES', { 
+                                                        weekday: 'long', day: 'numeric', month: 'long' 
+                                                    });
+                                                })()}
                                             </h6>
-                                            <div className="d-flex align-items-center gap-2 mt-1">
+                                            <div className="d-flex align-items-center flex-wrap gap-2 mt-1">
                                                 <span className="badge bg-primary text-white fw-bold px-3 py-1 fs-7 rounded-pill">
-                                                    <i className="ti ti-clock-check me-1"></i> {seleccion.hora}
+                                                    <i className="ti ti-clock-check me-1"></i> {seleccion?.hora || formReserva.data.hora || 'Ahora'}
                                                 </span>
                                                 <span className="text-muted small">
-                                                    para <strong>{seleccion.servicio.nombre}</strong>
+                                                    para <strong>{seleccion?.servicio?.nombre || formReserva.data.servicio_nombre}</strong>
+                                                </span>
+                                                {/* Badge extra para dar feedback de quién atenderá */}
+                                                <span className="badge bg-light text-dark border fw-medium px-2 py-1 fs-7 rounded-pill">
+                                                    👤 {formReserva.data.especialista_nombre || 'Asignado'}
                                                 </span>
                                             </div>
                                         </div>
@@ -2299,6 +2328,8 @@ useEffect(() => {
                         horainicio: datos.horainicio,
                         horafinal: datos.horafinal,
                         precio: datos.precio,
+                        servicio_nombre: datos.servicio_nombre,
+                        especialista_nombre: datos.especialista_nombre,
                     });
 
                     // 2. Abrimos el modal de confirmación (puedes usar un ID o un estado)
@@ -2311,6 +2342,34 @@ useEffect(() => {
                     }, 300);
                     console.log("Finalizado", datos);
                     reservaCita.cerrarModal();
+                }}
+            />
+            <CitasOffcanvasReservaRapida 
+                state={reservaCitaRapida}
+                onReservar={(datos) => {
+                    // 1. Llenamos el formulario de reserva con los datos del turno
+                    formReserva.setData({
+                        ...formReserva.data,
+                        fecha: datos.fecha,
+                        hora: datos.hora,
+                        servicioasignado_id: datos.servicioasignado_id,
+                        horainicio: datos.horainicio,
+                        horafinal: datos.horafinal,
+                        precio: datos.precio,
+                        servicio_nombre: datos.servicio_nombre,
+                        especialista_nombre: datos.especialista_nombre,
+                    });
+
+                    // 2. Abrimos el modal de confirmación (puedes usar un ID o un estado)
+                    setTimeout(() => {
+                        const modalConfirm = document.getElementById('modalReserva');
+                        if (modalConfirm) {
+                            const modal = new bootstrap.Modal(modalConfirm);
+                            modal.show();
+                        }
+                    }, 300);
+                    console.log("Finalizado", datos);
+                    reservaCitaRapida.cerrarModal();
                 }}
             />
 

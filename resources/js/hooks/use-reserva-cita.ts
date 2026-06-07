@@ -96,7 +96,9 @@ export const useReservaCita = () => {
             horainicio: servicio.horainicio,
             horafinal: servicio.horafinal,
             precio: servicio.precio,
-            especialista_id: especialistaSeleccionado?.empleado_id
+            especialista_id: especialistaSeleccionado?.empleado_id,
+            servicio_nombre: servicioSeleccionado?.nombre,
+            especialista_nombre: especialistaSeleccionado.nombre
         };
     };
 
