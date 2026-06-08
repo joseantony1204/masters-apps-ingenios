@@ -74,12 +74,12 @@ class FtdetallesObserver
                 'estrellas' => 0, // Pendiente
                 'token' => $tokenCalificacion
             ]);
-
+            
             $buttonParam = "qualify?service={$tokenCalificacion}";
-            $paramsWhatsApp = [Str::upper($nombreCliente), Str::upper($comercio->nombre), Str::upper($nombreServicio), Str::upper($nombreEmpleado)];
+            $paramsWhatsApp = [Str::trim(Str::upper($comercio->nombre)), Str::trim(Str::upper($nombreCliente)), Str::trim(Str::upper($nombreServicio)), Str::trim(Str::upper($nombreEmpleado))];
 
             try {
-                //$this->whatsAppService->send($telefonoCliente, 'valoracioncita', $paramsWhatsApp, $buttonParam);
+                $this->whatsAppService->send($telefonoCliente, 'valoracioncita', $paramsWhatsApp, $buttonParam);
                 Log::info("Datos para WhatsApp:", ['telefono' => $telefonoCliente, 'template' => 'valoracioncita', 'params' => $paramsWhatsApp, 'buttonParam' => $buttonParam]);
             } catch (\Exception $e) {
                 Log::error("Error en WhatsApp de calificación: " . $e->getMessage());

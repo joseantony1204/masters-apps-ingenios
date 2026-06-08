@@ -182,6 +182,10 @@ class LandingController extends Controller
         ->where('token', $token)
         ->first();
 
+        if (!$calificacion) {
+            abort(404, 'Enlace no válido');
+        }
+
         // --- LOGICA DE PROTECCIÓN CORREGIDA ---
         // Si no existe, es un error inmediato.
         // Si ya tiene fecha, PERO en la sesión NO hay un mensaje de "success" (recién guardado), entonces expiró.
