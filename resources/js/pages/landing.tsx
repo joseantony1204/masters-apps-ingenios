@@ -438,10 +438,45 @@ export default function Landing({ comercio, servicios }: any) {
                                                             <i className="ti ti-clock me-1 text-primary"></i>
                                                             {emp.duracion} min
                                                         </span>
-                                                        <span className="badge bg-light text-muted border-0 fw-normal">
-                                                            <i className="ti ti-star-filled me-1 text-warning" style={{ fontSize: '10px' }}></i>
-                                                            4.9
+
+                                                        {/* Contenedor de Calificación Optimizado */}
+                                                        <span className="badge bg-light text-muted border-0 fw-normal d-inline-flex align-items-center gap-1">
+                                                            {emp.calificacion && Number(emp.calificacion) > 0 ? ( // O usa emp.calificacion si así se llama en tu mapeo actual
+                                                                <>
+                                                                    {/* El número calificacion (ej: 4.3 o 5.0) */}
+                                                                    <span className="fw-bold text-dark me-1">
+                                                                        {Number(emp.calificacion).toFixed(1)}
+                                                                    </span>
+                                                                    
+                                                                    {/* Estrellas físicas calculadas dinámicamente */}
+                                                                    <div className="d-flex align-items-center text-warning" style={{ gap: '2px' }}>
+                                                                        {/* 1. Estrellas llenas (Rellenado sólido garantizado) */}
+                                                                        {[...Array(Math.round(Number(emp.calificacion)))].map((_, i) => (
+                                                                            <i 
+                                                                                key={`filled-${i}`} 
+                                                                                className="ti ti-star fs-6" 
+                                                                                style={{ fill: 'currentColor' }} // Esto obliga a que se pinte de amarillo
+                                                                            ></i>
+                                                                        ))}
+                                                                        
+                                                                        {/* 2. Estrellas vacías de relleno (Solo el borde sutil) */}
+                                                                        {[...Array(5 - Math.round(Number(emp.calificacion)))].map((_, i) => (
+                                                                            <i 
+                                                                                key={`empty-${i}`} 
+                                                                                className="ti ti-star text-muted opacity-35 fs-6" 
+                                                                                style={{ fill: 'none' }} // Esto evita que se rellene
+                                                                            ></i>
+                                                                        ))}
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                // Si no tiene opiniones aún
+                                                                <span className="text-muted-emphasis fw-bold d-flex align-items-center gap-1" style={{ fontSize: '10px' }}>
+                                                                    <i className="ti ti-star text-warning" style={{ fill: 'currentColor', fontSize: '11px' }}></i> Nuevo
+                                                                </span>
+                                                            )}
                                                         </span>
+                                                        
                                                     </div>
                                                 </div>
                                                 <div className="text-end">
@@ -537,8 +572,46 @@ export default function Landing({ comercio, servicios }: any) {
                                 )}
                                 <div>
                                     <h6 className="fw-bold mb-0 fs-5">{selectedEmployee?.nombre}</h6>
+                                    {/* Contenedor de Calificación Optimizado */}
+                                    <span className="badge bg-light text-muted border-0 fw-normal d-inline-flex align-items-center gap-1">
+                                        {selectedEmployee.calificacion && Number(selectedEmployee.calificacion) > 0 ? ( // O usa emp.calificacion si así se llama en tu mapeo actual
+                                            <>
+                                                {/* El número calificacion (ej: 4.3 o 5.0) */}
+                                                <span className="fw-bold text-dark me-1">
+                                                    {Number(selectedEmployee.calificacion).toFixed(1)}
+                                                </span>
+                                                
+                                                {/* Estrellas físicas calculadas dinámicamente */}
+                                                <div className="d-flex align-items-center text-warning" style={{ gap: '2px' }}>
+                                                    {/* 1. Estrellas llenas (Rellenado sólido garantizado) */}
+                                                    {[...Array(Math.round(Number(selectedEmployee.calificacion)))].map((_, i) => (
+                                                        <i 
+                                                            key={`filled-${i}`} 
+                                                            className="ti ti-star fs-6" 
+                                                            style={{ fill: 'currentColor' }} // Esto obliga a que se pinte de amarillo
+                                                        ></i>
+                                                    ))}
+                                                    
+                                                    {/* 2. Estrellas vacías de relleno (Solo el borde sutil) */}
+                                                    {[...Array(5 - Math.round(Number(selectedEmployee.calificacion)))].map((_, i) => (
+                                                        <i 
+                                                            key={`empty-${i}`} 
+                                                            className="ti ti-star text-muted opacity-35 fs-6" 
+                                                            style={{ fill: 'none' }} // Esto evita que se rellene
+                                                        ></i>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            // Si no tiene opiniones aún
+                                            <span className="text-muted-emphasis fw-bold d-flex align-items-center gap-1" style={{ fontSize: '10px' }}>
+                                                <i className="ti ti-star text-warning" style={{ fill: 'currentColor', fontSize: '11px' }}></i> Nuevo
+                                            </span>
+                                        )}
+                                    </span>
                                     <p className="text-muted mb-0 small">{selectedService?.nombre}</p>
                                 </div>
+                                
                             </div>
                             <div className="pt-3 border-top d-flex justify-content-between align-items-center">
                                 <div className="d-flex align-items-center text-muted small">

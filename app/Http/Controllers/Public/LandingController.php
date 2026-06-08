@@ -27,6 +27,19 @@ class LandingController extends Controller
                 'empleadosasignados.persona.soportes' => function($q) {
                     $q->where('tipo_id', 1)->where('predeterminado', 1);
                 },
+                'empleadosasignados' => function($query) {
+                    $query->where('cfempleados.estado_id', 850) // Empleado activo
+                        // Usamos una subconsulta manual para calcular el promedio exacto pasando por toda la cadena
+                        ->select('cfempleados.*') // Aseguramos traer los campos del empleado
+                        ->selectRaw('(
+                            SELECT ROUND(AVG(r.estrellas),2)
+                            FROM adresenas r
+                            INNER JOIN ftdetalles d ON d.id = r.detalle_id
+                            INNER JOIN cfempleadosservicios es ON es.id = d.model_type_id
+                            WHERE es.empleado_id = cfempleados.id
+                            AND r.fecha IS NOT NULL
+                        ) as promedio_estrellas');
+                },
             ])
             ->where('estado_id', 858) // Activo
             ->where('tipo_id', '<>', 854) // No es producto/bebida
@@ -45,11 +58,13 @@ class LandingController extends Controller
                     'categoria' => $servicio->categoria,
                     // Mapeamos los empleados asignados a este servicio específico
                     'empleados' => $servicio->empleadosasignados->map(fn($emp) => [
+                        'servicioasignado_id' => $emp->pivot->id,
                         'id' => $emp->id,
                         'nombre' => $emp->persona->personasnaturales->nombres . ' ' . $emp->persona->personasnaturales->apellidos,
                         'avatar' => $emp->persona->soportes->first()->ruta ?? null, // Foto del empleado
+                        'calificacion' => $emp->promedio_estrellas ? number_format($emp->promedio_estrellas, 1, '.', '') : '0.0',
                         'precio' => $emp->pivot->preciopersonalizado ?: $servicio->preciosalida,
-                        'duracion' => $emp->pivot->duracionpersonalizado ?: $servicio->duracion
+                        'duracion' => $emp->pivot->duracionpersonalizado ?: $servicio->duracion,
                     ])
                 ];
             });
@@ -59,6 +74,7 @@ class LandingController extends Controller
             'servicios' => $servicios,
         ]);
     }
+
     public function confirmada(Request $request)
     {
         $token = $request->query('token');

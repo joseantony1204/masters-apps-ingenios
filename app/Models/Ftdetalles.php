@@ -64,6 +64,11 @@ class Ftdetalles extends Model
     {
         return $this->belongsTo(\App\Models\Cfmaestra::class, 'estado_id', 'id');
     }
+
+    public function resenas()
+    {
+        return $this->hasOne(\App\Models\Adresenas::class, 'detalle_id', 'id');
+    }
     
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
