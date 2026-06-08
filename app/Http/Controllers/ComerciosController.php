@@ -42,27 +42,30 @@ class ComerciosController extends Controller
             'terminalesInitial' => Ftterminales::with(['sede', 'resolucion'])
                 ->whereIn('sede_id', $sedeIds)
                 ->get(), 
-            // Turnos de CUALQUIER terminal que pertenezca a las sedes del comercio
+            
+            // --- TURNOS PAGINADOS (OPTIMIZADO PARA INERTIA) ---
             'turnosInitial' => Ftturnos::with(['terminal.sede', 'persona.personasnaturales', 'estado'])
                 ->whereIn('terminal_id', function($query) use ($sedeIds) {
                     $query->select('id')->from('ftterminales')->whereIn('sede_id', $sedeIds);
                 })
                 ->orderBy('fechaapertura', 'desc')
-                ->get(),
+                // Paginamos por ejemplo a 10 registros por página
+                ->paginate(3)
+                // Conserva los parámetros actuales de la URL al cambiar de página
+                ->withQueryString(),
             
             // --- DATOS PARA SELECTS (Solo activos) ---
             'sedes' => Cfsedes::where('estado', 1)
                 ->where('comercio_id', $comercio->id)
                 ->select('id', 'nombre')
                 ->get(),
-            'resoluciones' => Ftresoluciones::where('estado', 1)
-                ->where('comercio_id', $comercio->id)
-                ->where('estado', 1)
+            'resoluciones' => Ftresoluciones::where('comercio_id', $comercio->id)
+                ->where('estado', 1) // Limpié el duplicado de 'estado' que tenías aquí
                 ->select('id', 'prefijo', 'numero')
                 ->get(),
             'terminales' => Ftterminales::whereIn('sede_id', $sedeIds)
-                ->select('id', 'nombre')
                 ->where('estado', 1)
+                ->select('id', 'nombre')
                 ->get(),
         ]);
     }

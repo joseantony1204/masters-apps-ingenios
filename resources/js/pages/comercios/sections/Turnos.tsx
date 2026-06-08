@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, Link } from '@inertiajs/react';
 import axios from 'axios';
 
 interface TurnoProps {
@@ -20,14 +20,25 @@ interface TurnoProps {
 }
 
 interface Props {
-    turnosInitial?: any[];
+    // Cambiamos turnosInitial para mapear la estructura del paginador de Laravel
+    turnosInitial?: {
+        data: TurnoProps[];
+        links: { url: string | null; label: string; active: boolean }[];
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
     terminales: { id: number; nombre: string }[];
 }
 
-export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
+export default function ListTurnos({ turnosInitial, terminales }: Props) {
     const [view, setView] = useState<'list' | 'form'>('list');
     const [editData, setEditData] = useState<TurnoProps | null>(null);
     
+    // Extraemos la data interna del paginador con un fallback seguro
+    const turnos = turnosInitial?.data || [];
+    const links = turnosInitial?.links || [];
+
     // Estados para el Modal de Cierre
     const [showCierre, setShowCierre] = useState(false);
     const [resumenCierre, setResumenCierre] = useState<any>(null);
@@ -66,7 +77,6 @@ export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
         setTurnoParaCerrar(turno);
         setLoadingResumen(true);
         try {
-            // Llamada al endpoint que totaliza Ventas -> Facturas -> Pagos
             const response = await axios.get(route('ftturnos.resumen', turno.id));
             setResumenCierre(response.data);
             setShowCierre(true);
@@ -116,66 +126,109 @@ export default function ListTurnos({ turnosInitial = [], terminales }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {turnosInitial.map((t) => (
-                                    <tr key={t.id}>
-                                        <td>
-                                            <div className="fw-bold text-dark">{t.codigo}</div>
-                                            <small className="text-muted">{t.descripcion}</small>
-                                        </td>
-                                        <td>
-                                            <div className="fw-bold text-dark">
-                                                <span className="badge bg-light-info text-info border-info-subtle border">
-                                                    {t.terminal?.nombre || 'Caja '+t.terminal_id}
+                                {turnos.length > 0 ? (
+                                    turnos.map((t) => (
+                                        <tr key={t.id}>
+                                            <td>
+                                                <div className="fw-bold text-dark">{t.codigo}</div>
+                                                <small className="text-muted">{t.descripcion}</small>
+                                            </td>
+                                            <td>
+                                                <div className="fw-bold text-dark">
+                                                    <span className="badge bg-light-info text-info border-info-subtle border">
+                                                        {t.terminal?.nombre || 'Caja '+t.terminal_id}
+                                                    </span>
+                                                </div>
+                                                <small className="text-muted">Sede: {t.terminal?.sede?.nombre || 'Sede no encontrada'}</small>
+                                            </td>
+                                            <td>
+                                                <div className="small fw-bold">Apertura: {t.fechaapertura}</div>
+                                                <small className="text-muted">Por: {t.persona?.personasnaturales?.nombreapellido || 'N/A'}</small>
+                                                <br />
+                                                <small className={t.fechacierre ? "text-muted" : "text-primary fw-bold"}>
+                                                    Cierre: {t.fechacierre || 'Turno en curso...'}
+                                                </small>
+                                            </td>
+                                            <td className="text-end fw-bold text-success">
+                                                ${new Intl.NumberFormat().format(t.baseinicial)}
+                                            </td>
+                                            <td className="text-center">
+                                                <span className={`badge rounded-pill px-3 py-2 bg-light-${t.estado?.observacion || 'secondary'} text-${t.estado?.observacion || 'secondary'}`}>
+                                                    {t.estado?.nombre}
                                                 </span>
-                                            </div>
-                                            <small className="text-muted">Sede: {t.terminal.sede.nombre || 'Sede no encontrada'}</small>
-                                            
-                                        </td>
-                                        <td>
-                                            <div className="small fw-bold">Apertura: {t.fechaapertura}</div>
-                                            <small className="text-muted">Por: {t.persona?.personasnaturales?.nombreapellido || 'N/A'}</small>
-                                            <br />
-                                            <small className={t.fechacierre ? "text-muted" : "text-primary fw-bold"}>
-                                                Cierre: {t.fechacierre || 'Turno en curso...'}
-                                            </small>
-                                        </td>
-                                        <td className="text-end fw-bold text-success">
-                                            ${new Intl.NumberFormat().format(t.baseinicial)}
-                                        </td>
-                                        <td className="text-center">
-                                            <span className={`badge rounded-pill px-3 py-2 bg-light-${t.estado?.observacion || 'secondary'} text-${t.estado?.observacion || 'secondary'}`}>
-                                                {t.estado?.nombre}
-                                            </span>
-                                        </td>
-                                        <td className="text-end">
-                                            {/* Botón Editar (Solo si no está cerrado, ID 927 según tu lógica) */}
-                                            <button 
-                                                onClick={() => handleEdit(t)} 
-                                                className="avtar avtar-s btn-light-primary btn-sm rounded-circle border-0 me-1"
-                                                disabled={t.estado_id === 927}
-                                            >
-                                                <i className="ti ti-edit fs-5"></i>
-                                            </button>
-
-                                            {/* Botón Cierre (Solo si está activo) */}
-                                            {t.estado_id !== 927 && (
+                                            </td>
+                                            <td className="text-end">
                                                 <button 
-                                                    onClick={() => abrirModalCierre(t)}
-                                                   
-                                                    className="avtar avtar-s btn-link-danger btn-sm rounded-circle border-0 me-1"
-                                                    disabled={loadingResumen}
+                                                    onClick={() => handleEdit(t)} 
+                                                    className="avtar avtar-s btn-light-primary btn-sm rounded-circle border-0 me-1"
+                                                    disabled={t.estado_id === 927}
                                                 >
-                                                    <i className="ti ti-lock fs-5"></i>
+                                                    <i className="ti ti-edit fs-5"></i>
                                                 </button>
-                                            )}
+
+                                                {t.estado_id !== 927 && (
+                                                    <button 
+                                                        onClick={() => abrirModalCierre(t)}
+                                                        className="avtar avtar-s btn-link-danger btn-sm rounded-circle border-0 me-1"
+                                                        disabled={loadingResumen}
+                                                    >
+                                                        <i className="ti ti-lock fs-5"></i>
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-4 text-muted small">
+                                            No se encontraron turnos registrados.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>
+
+                    {/* --- COMPONENTE DE PAGINACIÓN DE INERTIA --- */}
+                    {links.length > 3 && (
+                        <div className="d-flex justify-content-between align-items-center mt-3 px-2">
+                            <small className="text-muted">
+                                Mostrando registros del <strong>{turnosInitial?.total ? turnos.length : 0}</strong> de un total de <strong>{turnosInitial?.total}</strong>
+                            </small>
+                            <nav aria-label="Navegación de turnos">
+                                <ul className="pagination pagination-sm mb-0 gap-1">
+                                    {links.map((link, idx) => {
+                                        // Limpiamos los textos devueltos por Laravel para los iconos de flechas
+                                        let label = link.label;
+                                        if (label.includes('Previous')) label = '«';
+                                        if (label.includes('Next')) label = '»';
+
+                                        return (
+                                            <li key={idx} className={`page-item ${link.active ? 'active' : ''} ${!link.url ? 'disabled' : ''}`}>
+                                                {link.url ? (
+                                                    <Link
+                                                        href={link.url}
+                                                        preserveScroll
+                                                        className="page-link rounded border-0 px-3 py-2 fw-semibold"
+                                                        // dangerouslySetInnerHTML maneja strings puros de Laravel perfectamente
+                                                        dangerouslySetInnerHTML={{ __html: label }}
+                                                    />
+                                                ) : (
+                                                    <span 
+                                                        className="page-link rounded border-0 px-3 py-2 text-muted opacity-50"
+                                                        dangerouslySetInnerHTML={{ __html: label }}
+                                                    />
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </nav>
+                        </div>
+                    )}
                 </>
             ) : (
+                /* --- FORMULARIO DE APERTURA --- */
                 <form onSubmit={submit} className="row g-4 p-2">
                     <div className="col-12">
                         <h6 className="fw-bold d-flex align-items-center">
