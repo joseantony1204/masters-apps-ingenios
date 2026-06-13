@@ -14,7 +14,7 @@ class DisponibilidadController extends Controller
     public function generarTurnos($token, Request $request)
     {
         
-        $tiempo = 10;
+        $tiempo = 5;
         $fechasBloqueadas = ['2026-05-31', '2026-06-20'];
         // 1. Validación obligatoria
         if (!$token) {
