@@ -216,7 +216,7 @@ export default function Qualify({ comercio, calificacion, error }: QualifyProps)
                             {/* 5. COMENTARIO CON ICONO */}
                             <div className="mb-4 text-start">
                                 <label className="form-label text-dark fw-bold small ps-1 mb-1" style={{ fontSize: '12.5px' }}>
-                                    ¿Quieres dejar un mensaje u observación? <span className="text-muted fw-normal fs-7">(Opcional)</span>
+                                    ¿Quieres dejar un mensaje, observación, comentario o aspécto para mejorar? <span className="text-muted fw-normal fs-7">(Opcional)</span>
                                 </label>
                                 <div className="position-relative">
                                     <textarea
@@ -245,7 +245,7 @@ export default function Qualify({ comercio, calificacion, error }: QualifyProps)
                                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 ) : (
                                     <>
-                                        Confirmar Calificación 
+                                        Confirmar calificación 
                                         <i className="ti ti-circle-check fs-5"></i>
                                     </>
                                 )}
