@@ -15,7 +15,7 @@ class DisponibilidadController extends Controller
     {
         
         $tiempo = 5;
-        $fechasBloqueadas = ['2026-05-31', '2026-06-20'];
+        $fechasBloqueadas = ['2026-05-31', '2026-06-21'];
         // 1. Validación obligatoria
         if (!$token) {
             abort(404, 'Token no proporcionado');
