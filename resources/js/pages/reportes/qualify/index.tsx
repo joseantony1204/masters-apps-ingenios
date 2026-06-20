@@ -473,35 +473,83 @@ export default function Index({ calificaciones, filtros }: Props) {
 
                             {/* --- COMPONENTE DE PAGINACIÓN --- */}
                             {totalPages > 1 && (
-                                <div className="d-flex justify-content-between align-items-center mt-4 pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
-                                    <button 
-                                        className="btn btn-sm btn-light px-3 py-2 fw-700" 
-                                        style={{ borderRadius: '10px' }}
-                                        disabled={currentPage === 1}
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    >
-                                        Anterior
-                                    </button>
-                                    <div className="d-flex gap-1">
-                                        {[...Array(totalPages)].map((_, i) => (
-                                            <button 
-                                                key={i} 
-                                                className={`btn btn-sm px-3 py-2 fw-700 ${currentPage === i + 1 ? 'btn-primary' : 'btn-light'}`}
-                                                style={{ borderRadius: '10px', backgroundColor: currentPage === i + 1 ? '#4f46e5' : undefined }}
-                                                onClick={() => setCurrentPage(i + 1)}
-                                            >
-                                                {i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button 
-                                        className="btn btn-sm btn-light px-3 py-2 fw-700" 
-                                        style={{ borderRadius: '10px' }}
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    >
-                                        Siguiente
-                                    </button>
+                                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4 pt-3 gap-3" style={{ borderTop: '1px solid #f1f5f9' }}>
+                                    <small className="text-muted fw-600 order-2 order-sm-1">
+                                        Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
+                                    </small>
+                                    
+                                    <nav aria-label="Navegación del historial" className="order-1 order-sm-2">
+                                        <ul className="pagination pagination-sm mb-0 gap-1 align-items-center flex-wrap justify-content-center">
+                                            {/* Botón Anterior */}
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                <button 
+                                                    className="page-link border-0 bg-light text-dark fw-bold px-3 py-2 rounded-3 shadow-none transition-all"
+                                                    disabled={currentPage === 1}
+                                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                >
+                                                    <i className="ti ti-chevron-left me-1"></i> Anterior
+                                                </button>
+                                            </li>
+
+                                            {/* Generación de números con lógica de elipse */}
+                                            {(() => {
+                                                const pages = [];
+                                                const maxVisible = 2; // Número de páginas a mostrar a los lados de la actual
+
+                                                for (let i = 1; i <= totalPages; i++) {
+                                                    // Siempre mostrar la primera, la última, y el rango cercano a la página actual
+                                                    if (
+                                                        i === 1 || 
+                                                        i === totalPages || 
+                                                        (i >= currentPage - maxVisible && i <= currentPage + maxVisible)
+                                                    ) {
+                                                        pages.push(
+                                                            <li key={i} className={`page-item ${currentPage === i ? 'active' : ''}`}>
+                                                                <button 
+                                                                    className="page-link border-0 px-3 py-2 fw-700 rounded-3 shadow-none transition-all"
+                                                                    style={{ 
+                                                                        backgroundColor: currentPage === i ? '#4f46e5' : '#f8fafc',
+                                                                        color: currentPage === i ? '#ffffff' : '#475569'
+                                                                    }}
+                                                                    onClick={() => setCurrentPage(i)}
+                                                                >
+                                                                    {i}
+                                                                </button>
+                                                            </li>
+                                                        );
+                                                    } 
+                                                    // Agregar elipse a la izquierda si hay un hueco
+                                                    else if (i === currentPage - maxVisible - 1 && i > 1) {
+                                                        pages.push(
+                                                            <li key="ellipsis-left" className="page-item disabled px-2">
+                                                                <span className="text-muted fw-bold">...</span>
+                                                            </li>
+                                                        );
+                                                    } 
+                                                    // Agregar elipse a la derecha si hay un hueco
+                                                    else if (i === currentPage + maxVisible + 1 && i < totalPages) {
+                                                        pages.push(
+                                                            <li key="ellipsis-right" className="page-item disabled px-2">
+                                                                <span className="text-muted fw-bold">...</span>
+                                                            </li>
+                                                        );
+                                                    }
+                                                }
+                                                return pages;
+                                            })()}
+
+                                            {/* Botón Siguiente */}
+                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                <button 
+                                                    className="page-link border-0 bg-light text-dark fw-bold px-3 py-2 rounded-3 shadow-none transition-all"
+                                                    disabled={currentPage === totalPages}
+                                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                >
+                                                    Siguiente <i className="ti ti-chevron-right ms-1"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
                                 </div>
                             )}
                         </div>
