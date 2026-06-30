@@ -237,7 +237,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
 
         // 3. FILTRO DE TIEMPO: Últimos 2 meses
         // Comparamos la fecha de la factura con la fecha actual menos 2 meses
-        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(6));
+        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(2));
 
         // 4. EJECUTAMOS LA CONSULTA
         $citas = $adcitas->orderby('adcitas.fecha', 'DESC')
@@ -254,7 +254,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
 
         // 1. FILTRO DE TIEMPO: Últimos 6 meses
         // Comparamos la fecha de la factura con la fecha actual menos 6 meses
-        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(6));
+        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(2));
 
         // 2. Filtro de seguridad por comercio
         $ftfacturas->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
@@ -417,7 +417,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
         // 3. FILTRO DE TIEMPO: Últimos 2 meses
         // Comparamos la fecha de la factura con la fecha actual menos 2 meses
-        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(6));
+        $adcitas->where('adcitas.fecha', '>=', now()->subMonths(2));
 
         // 4. EJECUTAMOS LA CONSULTA
         $citas = $adcitas->orderby('adcitas.fecha', 'DESC')
@@ -433,7 +433,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
 
         // 1. FILTRO DE TIEMPO: Últimos 6 meses
         // Comparamos la fecha de la factura con la fecha actual menos 6 meses
-        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(6));
+        $ftfacturas->where('ftfacturas.fecha', '>=', now()->subMonths(2));
 
         // 2. Filtro de seguridad por comercio
         $ftfacturas->whereHas('turnos.terminal.sede', function ($q) use ($comercio) {
