@@ -295,7 +295,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
             DB::raw("CONCAT_WS(' ', pn.apellido, pn.segundoapellido) AS apellidos")
         ]);
 
-        $facturas = $ftfacturas->orderBy('ftfacturas.fecha', 'DESC')->get();
+        $facturas = $ftfacturas->take(100)->orderBy('ftfacturas.fecha', 'DESC')->get();
 
         // En tu Controller de Laravel
         $hoy = now(); // Usa la fecha del sistema (configurada en America/Bogota)
@@ -333,6 +333,7 @@ Route::middleware(['auth', 'verified','check.comercio'])->group(function () {
         ]);
     })->name('dashboard');
 });
+
 
 Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
     Route::get('dashboard/analytics', function () {
@@ -484,7 +485,7 @@ Route::middleware(['auth', 'verified', 'check.comercio'])->group(function () {
             ->select('adclientes.id', 'adclientes.persona_id', DB::raw('count(adcitas.id) as total_visitas'))
             ->groupBy('adclientes.id','adclientes.persona_id')
             ->orderByDesc('total_visitas')
-            ->take(10)
+            ->take(100)
             ->get()
             ->map(function($item) {
                 return [
