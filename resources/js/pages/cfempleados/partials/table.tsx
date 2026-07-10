@@ -117,7 +117,7 @@ export default function Table({ empleados }: Props) {
                                                 <i className="ti ti-id me-1"></i>{item.identificacion}
                                             </span>
                                             <span className="badge bg-light-primary text-primary border border-primary-subtle fw-medium px-2 py-1" style={{ fontSize: '10px' }}>
-                                                <i className="ti ti-calendar-event me-1"></i>{item.edad.split(' ')[0]} años
+                                                <i className="ti ti-calendar-event me-1"></i>{item?.edad.split(' ')[0]} años
                                             </span>
                                         </div>
 
